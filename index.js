@@ -3,7 +3,7 @@ const express = require("express");
 const requestLogger = require("./middleware/reqLogger");
 const { setIO } = require("./config/socketSetup");
 const { socketConfig } = require("./config/socketConfig");
-// const routes = require('./routers/index');
+const router = require('./routes/index');
 const db  = require('./config/db');
 require('./helpers/cron');
 const cors = require("cors")
@@ -49,7 +49,7 @@ const start = async () => {
         console.log('Connection has been established successfully.');
         console.log("...........................................................................")
 
-        // await db.User.sync({ alter : true });
+        // await db.sequelize.sync({ alter : true });
 
         server.listen(PORT, () => {
             console.log(`${projectName} is running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
@@ -60,7 +60,7 @@ const start = async () => {
 };
 start();
 
-// app.use(routes);
+app.use(router);
 
 // Error handling for unexpected issues
 app.use((err, req, res, next) => {

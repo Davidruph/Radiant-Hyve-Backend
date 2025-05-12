@@ -1,6 +1,8 @@
 const { db } = require("../config/db")
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require("uuid");
+
 
 exports.checkToken = async (data, user_id) => {
     let tokenData = {
@@ -19,12 +21,19 @@ exports.checkToken = async (data, user_id) => {
     }
     console.log("userid", user_id);
 
-    const jwtToken = jwt.sign({
+    var jwtToken = jwt.sign({
         id: user_id,
         token_id: token.id
-    }, `${process.env.JWT_SECRET_KEY}`);
+    }, `${process.env.JWT_SECRET_KEY}`, { expiresIn: '1d' });
 
-    return jwtToken
+    await token.update({
+        refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    })
+
+    return {
+        token: jwtToken,
+        refresh_token: token.refresh_token,
+    }
 }
 
 // exports.checkToken = async (data, user_id) => {

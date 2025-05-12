@@ -75,4 +75,5 @@ const verifyGuestToken = (req, res, next) => {
         res.status(401).json({ message: 'Authentication failed' });
     }
 };
+
 module.exports = { verifyToken, verifyGuestToken };

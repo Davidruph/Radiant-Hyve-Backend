@@ -7,9 +7,10 @@ const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const phoneUtil = PhoneNumberUtil.getInstance()
-const { sendOtpEmail } = require('../../utils/email');
+// const { sendOtpEmail } = require('../../utils/email');
 const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
+const { checkToken } = require('../../helpers/checkToken')
 
 
 const login = async (req, res) => {
@@ -40,36 +41,37 @@ const login = async (req, res) => {
             return res.status(400).json({ status: 0, message: 'Your account is blocked.' });
         }
 
-        let tokenRecord = await db.Token.findOne({
-            where: {
-                device_id: device_id,
-                device_token: device_token,
-                device_type: device_type,
-                user_id: user.id
-            }
-        })
+        // let tokenRecord = await db.Token.findOne({
+        //     where: {
+        //         device_id: device_id,
+        //         device_token: device_token,
+        //         device_type: device_type,
+        //         user_id: user.id
+        //     }
+        // })
 
-        if (!tokenRecord) {
-            tokenRecord = await db.Token.create({
-                device_id,
-                device_token,
-                device_type,
-                user_id: user.id,
-                refresh_token: uuidv4(),
-                token_expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-            });
-        }
+        // if (!tokenRecord) {
+        //     tokenRecord = await db.Token.create({
+        //         device_id,
+        //         device_token,
+        //         device_type,
+        //         user_id: user.id,
+        //         refresh_token: uuidv4(),
+        //         token_expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        //     });
+        // }
 
-        const token = await jwt.sign(
-            { user_id: user.id, token_id: tokenRecord.id },
-            process.env.JWT_SECRET_KEY, { expiresIn: '1d' }
-        );
+        // const token = await jwt.sign(
+        //     { user_id: user.id, token_id: tokenRecord.id },
+        //     process.env.JWT_SECRET_KEY, { expiresIn: '1d' }
+        // );
 
+        const token = await checkToken({ device_token, device_id, device_type }, user.id);
         return res.status(200).json({
             status: 1,
             message: 'Login successful.',
-            token,
-            refresh_token: tokenRecord.refresh_token,
+            token: token.token,
+            refresh_token: token.refresh_token,
             data: user
         });
 
@@ -85,9 +87,9 @@ const login = async (req, res) => {
 
 const superAdminLogin = async (req, res) => {
     try {
-        const { email, password,  device_id, device_token, device_type, } = req.body;
+        const { email, password, device_id, device_token, device_type, } = req.body;
 
-        const user = await db.User.findOne({ where: { email} });
+        const user = await db.User.findOne({ where: { email } });
 
         if (!user) {
             return res.status(404).json({ status: 0, message: 'User not found.' });
@@ -343,7 +345,7 @@ module.exports = {
     forgotePasswor,
     verifyForgotePasswordOtp,
     resetPassword,
-    
+
     changePassword,
     logout,
     refreshToken,
