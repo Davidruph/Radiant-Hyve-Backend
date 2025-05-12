@@ -12,6 +12,34 @@ const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
 const { checkToken } = require('../../helpers/checkToken')
 
+const singup = async (req, res) => {
+    try {
+        const { email, password, } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const existingUser = await db.User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ status: 0, message: 'Email already exists.' });
+        }
+        const user = await db.User.create({
+            email: email,
+            password: hashedPassword,
+            role: 'super_admin',
+        });
+
+        return res.status(201).json({
+            status: 1,
+            message: 'User created successfully',
+            data: user,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 0,
+            message: 'Error creating user',
+            error: error.message
+        });
+    }
+}
 
 const login = async (req, res) => {
     const {
@@ -67,6 +95,7 @@ const login = async (req, res) => {
         // );
 
         const token = await checkToken({ device_token, device_id, device_type }, user.id);
+        
         return res.status(200).json({
             status: 1,
             message: 'Login successful.',
@@ -339,6 +368,7 @@ const refreshToken = async (req, res) => {
 
 
 module.exports = {
+    singup,
     login,
     superAdminLogin,
 

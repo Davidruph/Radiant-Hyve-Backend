@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { db } = require('../config/db');
+const  db  = require('../config/db');
 const jwtSecretKey = process.env.JWT_SECRET_KEY;
 
 const verifyToken = (req, res, next) => {
