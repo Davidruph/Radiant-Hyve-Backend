@@ -85,7 +85,7 @@ const login = async (req, res) => {
 
 const superAdminLogin = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password,  device_id, device_token, device_type, } = req.body;
 
         const user = await db.User.findOne({ where: { email} });
 

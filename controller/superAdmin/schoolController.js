@@ -68,8 +68,7 @@ const listSchool = async (req, res) => {
 }
 
 const editSchool = async (req, res) => {
-    const { id } = req.query;
-    const { name, address } = req.body;
+    const { name, address, id } = req.body;
 
     try {
         const school = await db.User.findByPk(id);
@@ -92,8 +91,7 @@ const editSchool = async (req, res) => {
 };
 
 const changeSchoolPassword = async (req, res) => {
-    const { id } = req.query;
-    const { password } = req.body;
+    const { password, id } = req.body;
     try {
         const school = await db.User.findByPk(id);
         if (!school) {
@@ -112,6 +110,11 @@ const changeSchoolPassword = async (req, res) => {
 
 const deleteSchool = async (req, res) => {
     const { id } = req.query;
+
+    if (!id) {
+        return res.status(400).json({ status: 0, message: 'id is required' });
+    }
+
     try {
         const school = await db.User.findByPk(id);
         if (!school) {
@@ -127,6 +130,11 @@ const deleteSchool = async (req, res) => {
 
 const getSchoolById = async (req, res) => {
     const { id } = req.query;
+
+    if (!id) {
+        return res.status(400).json({ status: 0, message: 'id is required' });
+    }
+
     try {
         const school = await db.User.findByPk(id);
         if (!school) {
@@ -181,7 +189,7 @@ const getSchoolById = async (req, res) => {
         console.error('Error retrieving school:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
-}
+};
 
 
 
