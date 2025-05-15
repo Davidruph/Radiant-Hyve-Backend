@@ -4,11 +4,12 @@ const { Op, Sequelize } = require('sequelize');
 const fs = require('fs').promises;
 const path = require("path");
 const { error } = require('console');
+const bcrypt = require('bcrypt')
 const { upload } = require('../../helpers/storage');
 
 
 const addShift = async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal" ) {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -16,7 +17,9 @@ const addShift = async (req, res) => {
 
         let school_id = null
         if (req.user.role == "principal") {
-            const principal = await db.User.findByPk(req.user.id)
+            var principal = await db.User.findOne({
+                where: {id:req.user.id, is_deleted: false}
+            })
             school_id = principal.school_id
         } else {
             school_id = req.user.id
@@ -41,15 +44,17 @@ const addShift = async (req, res) => {
 }
 
 const editShift = async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal" ) {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
         const { shift_id, shift_name, shift_fee } = req.body
 
-        let school_id = null
+       let school_id = null
         if (req.user.role == "principal") {
-            const principal = await db.User.findByPk(req.user.id)
+            const principal = await db.User.findOne({
+                where: {id:req.user.id, is_deleted: false}
+            })
             school_id = principal.school_id
         } else {
             school_id = req.user.id
@@ -83,7 +88,7 @@ const editShift = async (req, res) => {
 }
 
 const listShift = async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal" ) {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -94,9 +99,11 @@ const listShift = async (req, res) => {
         const limit = 10
         const offset = (page - 1) * limit
 
-        let school_id = null
+       let school_id = null
         if (req.user.role == "principal") {
-            const principal = await db.User.findByPk(req.user.id)
+            const principal = await db.User.findOne({
+                where: {id:req.user.id, is_deleted: false}
+            })
             school_id = principal.school_id
         } else {
             school_id = req.user.id
@@ -105,7 +112,7 @@ const listShift = async (req, res) => {
 
         if (search) {
             whereCondition[Op.or] = [
-                { shift_name: { [Op.iLike]: `${search}%` } },
+                { shift_name: { [Op.like]: `${search}%` } },
             ];
         }
         const shift = await db.Shift.findAndCountAll({

@@ -43,6 +43,16 @@ const validation = (req, res, next) => {
 }
 
 
+exports.updateSchoolValidation = () => {
+    return [
+        [
+            check('name').optional().not().isEmpty().withMessage('School Name is required'),
+            check('address').optional().not().isEmpty().withMessage('address is required'),
+        ],
+        validation
+    ];
+}
+
 exports.addPrincipalValidation = () => {
     return [
         [
@@ -280,7 +290,7 @@ exports.addStaffValidation = () => {
     ];
 }
 
-exports.editPrincipalValidation = () => {
+exports.ediStaffValidation = () => {
     return [
         [
             check('staff_id').not().isEmpty().withMessage('staff_id is required'),
@@ -391,6 +401,26 @@ exports.editShiftValidation = () => {
             check('shift_id').not().isEmpty().withMessage('shift_id is required'),
             check('shift_fee').optional().not().isEmpty().withMessage('shift_fee is required'),
             check('shift_name').optional().not().isEmpty().withMessage('shift_name is required'),
+        ],
+        validation
+    ];
+}
+
+exports.assignStudentValidation = () => {
+    return [
+        [
+            check('student_id').not().isEmpty().withMessage('student_id is required'),
+            check('teacher_id').not().isEmpty().withMessage('teacher_id is required'),
+        ],
+        validation
+    ];
+}
+
+exports.listStudentValidation = () => {
+    return [
+        [
+            check('shift_id').not().isEmpty().withMessage('shift_id is required'),
+            check('page').not().isEmpty().withMessage('page is required'),
         ],
         validation
     ];

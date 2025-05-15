@@ -73,7 +73,8 @@ const editPrincipal = async (req, res) => {
         const principal = await db.User.findOne({
             where: {
                 id: principal_id,
-                school_id: req.user.id
+                school_id: req.user.id,
+                is_deleted: false
             },
         })
 
@@ -104,7 +105,7 @@ const editPrincipal = async (req, res) => {
             experience: experience || principal.experience,
         })
 
-        return res.status(200).json({ status: 1, message: "Principal updated successfully" });
+        return res.status(200).json({ status: 1, message: "Principal updated successfully", data: principal });
 
     } catch (error) {
         console.error('Error edit principal:', error);
@@ -122,7 +123,8 @@ const changePrincipalPassword = async (req, res) => {
         const principal = await db.User.findOne({
             where: {
                 id: principal_id,
-                school_id: req.user.id
+                school_id: req.user.id,
+                is_deleted: false
             },
         })
 
@@ -167,12 +169,13 @@ const listPrincipal = async (req, res) => {
         const whereCondition = {
             role: "principal",
             school_id: req.user.id,
+            is_deleted: false
         };
 
         if (search) {
             whereCondition[Op.or] = [
-                { full_name: { [Op.iLike]: `${search}%` } },  // Use Op.like if using MySQL
-                { email: { [Op.iLike]: `${search}%` } }
+                { full_name: { [Op.like]: `${search}%` } },
+                { email: { [Op.like]: `${search}%` } }
             ];
         }
 
@@ -214,7 +217,8 @@ const getPrincipal = async (req, res) => {
             where: {
                 id: principal_id,
                 role: "principal",
-                school_id: req.user.id
+                school_id: req.user.id,
+                is_deleted: false
             },
             attributes: ["id", "email", "password", "full_name", "gender", "dob", "qualification", "designation", "experience", "mobile_no", "country_code", "iso_code", "profile_pic"],
             include: [
@@ -254,7 +258,8 @@ const deletePrincipal = async (req, res) => {
             where: {
                 id: principal_id,
                 school_id: req.user.id,
-                role: "principal"
+                role: "principal",
+                is_deleted: false
             },
         })
 
@@ -265,7 +270,9 @@ const deletePrincipal = async (req, res) => {
             await deleteFromS3(principal.profile_pic);
         }
 
-        await principal.destroy()
+        await principal.update({
+            is_deleted: true
+        })
 
         return res.status(200).json({
             status: 1,
@@ -288,7 +295,7 @@ const blockPrincipal = async (req, res) => {
             return res.status(400).json({ status: 0, message: "principal_id is required." })
         }
         const principal = await db.User.findOne({
-            where: { id: principal_id, role: "principal", school_id: req.user.id },
+            where: { id: principal_id, role: "principal", school_id: req.user.id, is_deleted: false },
         });
 
         if (!principal) {
@@ -318,6 +325,35 @@ const blockPrincipal = async (req, res) => {
     }
 }
 
+const editProfile = async (req, res) => {
+    if (req.user.role !== "school") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
+    }
+    const { name, address } = req.body;
+
+    try {
+        const school = await db.User.findOne({
+            where: {
+                id: req.user.id,
+                role: 'school',
+                is_deleted: false
+            },
+        });
+
+        school.school_name = name || school.school_name;
+        school.address = address || school.address;
+
+        await school.save();
+
+        return res.status(200).json({ status: 1, message: 'School updated successfully', data: school });
+
+    } catch (error) {
+        console.error('Error updating school:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+
+}
+
 module.exports = {
     addPrincipal,
     editPrincipal,
@@ -326,4 +362,5 @@ module.exports = {
     getPrincipal,
     deletePrincipal,
     blockPrincipal,
+    editProfile,
 }

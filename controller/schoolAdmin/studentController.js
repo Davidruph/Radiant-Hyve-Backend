@@ -8,7 +8,7 @@ const { upload } = require('../../helpers/storage');
 
 
 const getNewStudent = async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -20,12 +20,13 @@ const getNewStudent = async (req, res) => {
         const offset = (page - 1) * limit
         let school_id = null
         if (req.user.role == "principal") {
-            const principal = await db.User.findByPk(req.user.id)
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
             school_id = principal.school_id
         } else {
             school_id = req.user.id
         }
-
         const whereClause = { school_id, request_status: 'pending' };
 
         if (search) {
@@ -58,7 +59,7 @@ const getNewStudent = async (req, res) => {
 }
 
 const getAllStudent = async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -70,12 +71,20 @@ const getAllStudent = async (req, res) => {
         const offset = (page - 1) * limit
         let school_id = null
         if (req.user.role == "principal") {
-            const principal = await db.User.findByPk(req.user.id)
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
             school_id = principal.school_id
         } else {
             school_id = req.user.id
         }
+        const shift = await db.Shift.findOne({
+            where: { school_id }
+        })
 
+        if (!shift) {
+            return res.status(404).json({ status: 0, message: 'shift not found' })
+        }
         const whereClause = {
             school_id,
             request_status: 'accepted',
@@ -114,7 +123,7 @@ const getAllStudent = async (req, res) => {
 }
 
 const getStudent = async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -123,9 +132,18 @@ const getStudent = async (req, res) => {
         if (!student_id) {
             return res.status(400).json({ status: 0, message: "student_id is require" })
         }
+         let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: {id:req.user.id, is_deleted: false}
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
 
         const student = await db.Student.findOne({
-            where: { id: student_id, },
+            where: { id: student_id,school_id },
         })
 
         if (!student) {
@@ -145,14 +163,23 @@ const getStudent = async (req, res) => {
 }
 
 const editStatus = async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
         const { student_id, status } = req.body
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
 
         const student = await db.Student.findOne({
-            where: { id: student_id, status: "pending" },
+            where: { id: student_id, status: "pending" , school_id},
         })
 
         if (!student) {
@@ -174,15 +201,25 @@ const editStatus = async (req, res) => {
     }
 }
 
-const studentAssignTeacher =async (req, res) => {
-    if (req.user.role != "school" || req.user.role != "principal") {
+const studentAssignTeacher = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
         const { student_id, teacher_id } = req.body
 
+         let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: {id:req.user.id, is_deleted: false}
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
         const student = await db.Student.findOne({
-            where: { id: student_id, status: "accepted" },
+            where: { id: student_id, status: "accepted", school_id },
         })
 
         if (!student) {
@@ -190,11 +227,11 @@ const studentAssignTeacher =async (req, res) => {
         }
 
         const teacher = await db.User.findOne({
-            where: { id: teacher_id },
+            where: { id: teacher_id , role: "teacher", school_id},
         })
 
-        if(!teacher){
-            return res.status(404).json({ status: 0, message: "Teacher not found"})
+        if (!teacher) {
+            return res.status(404).json({ status: 0, message: "Teacher not found" })
         }
 
         await student.update({
@@ -212,10 +249,74 @@ const studentAssignTeacher =async (req, res) => {
     }
 }
 
+const listTeacher = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: {id:req.user.id, is_deleted: false}
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+        const teachers = await db.User.findAll({
+            where: { role: "teacher", is_deleted: false, school_id },
+            attributes: ["id", "full_name", "profile_pic"],
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: 'List of teachers',
+            data: teachers
+        })
+
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error" });
+    }
+}
+
+const getShift = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+         let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: {id:req.user.id, is_deleted: false}
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const shift = await db.Shift.findAll({
+            where: { school_id },
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: 'List of shifts',
+            data: shift
+        })
+
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error" });
+    }
+}
+
 module.exports = {
     getNewStudent,
     getAllStudent,
     getStudent,
     editStatus,
-    studentAssignTeacher
+    studentAssignTeacher,
+    listTeacher,
+    getShift,
 }

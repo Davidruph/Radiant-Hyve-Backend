@@ -57,6 +57,7 @@ const listSchool = async (req, res) => {
         const schools = await db.User.findAndCountAll({
             where: {
                 role: 'school',
+                is_deleted: false
             },
             attributes: ['id', 'school_name', 'email', 'address', 'subscription_plan', 'is_blocked'],
             limit: limit,
@@ -88,6 +89,7 @@ const editSchool = async (req, res) => {
             where: {
                 id: id,
                 role: 'school',
+                is_deleted: false
             },
         });
 
@@ -118,6 +120,7 @@ const changeSchoolPassword = async (req, res) => {
             where: {
                 id: id,
                 role: 'school',
+                is_deleted: false
             },
         });
         if (!school) {
@@ -155,6 +158,7 @@ const deleteSchool = async (req, res) => {
             where: {
                 id: id,
                 role: 'school',
+                is_deleted: false
             },
         });
         if (!school) {
@@ -165,7 +169,9 @@ const deleteSchool = async (req, res) => {
                 user_id: id,
             },
         });
-        await school.destroy();
+        await school.update({
+            is_deleted: true
+        });
         return res.status(200).json({ status: 1, message: 'School deleted successfully' });
     } catch (error) {
         console.error('Error deleting school:', error);
@@ -188,6 +194,7 @@ const getSchoolById = async (req, res) => {
             where: {
                 id: id,
                 role: 'school',
+                is_deleted: false
             },
         }); 
         if (!school) {

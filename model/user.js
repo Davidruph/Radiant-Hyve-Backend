@@ -107,6 +107,10 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
                 defaultValue: 'regular',
             },
+            is_deleted:{
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            }
         },
         {
             tableName: "tbl_user",
