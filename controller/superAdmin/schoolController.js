@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('../../config/db')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { Op, Sequelize } = require('sequelize');
+const { Op, Sequelize, where } = require('sequelize');
 const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
@@ -13,9 +13,16 @@ const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upl
 
 
 const addSchool = async (req, res) => {
+    if(req.user.role != "super_admin"){
+        return res.status(401).json({message: "Unauthorized"})
+    }
     const { name, email, password, address } = req.body;
 
     try {
+        const existingUser = await db.User.findOne({where: {email}})
+        if(existingUser){
+            return res.status(400).json({message: "Email already exists"})
+        }
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await db.User.create({
@@ -35,6 +42,9 @@ const addSchool = async (req, res) => {
 };
 
 const listSchool = async (req, res) => {
+    if(req.user.role != "super_admin"){
+        return res.status(401).json({message: "Unauthorized"})
+    }
     try {
         const { page } = req.query
 
@@ -68,10 +78,18 @@ const listSchool = async (req, res) => {
 }
 
 const editSchool = async (req, res) => {
+    if(req.user.role != "super_admin"){
+        return res.status(401).json({message: "Unauthorized"})
+    }
     const { name, address, id } = req.body;
 
     try {
-        const school = await db.User.findByPk(id);
+        const school = await db.User.findOne({
+            where: {
+                id: id,
+                role: 'school',
+            },
+        });
 
         if (!school) {
             return res.status(404).json({ status: 0, message: 'School not found' });
@@ -91,15 +109,29 @@ const editSchool = async (req, res) => {
 };
 
 const changeSchoolPassword = async (req, res) => {
+    if(req.user.role != "super_admin"){
+        return res.status(401).json({message: "Unauthorized"})
+    }
     const { password, id } = req.body;
     try {
-        const school = await db.User.findByPk(id);
+        const school = await db.User.findOne({
+            where: {
+                id: id,
+                role: 'school',
+            },
+        });
         if (!school) {
             return res.status(404).json({ status: 0, message: 'School not found' });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         school.password = hashedPassword;
         await school.save();
+        await db.Token.destroy({
+            where: {
+                user_id: id,
+            },
+        });
+
         return res.status(200).json({ status: 1, message: 'School password updated successfully' });
     } catch (error) {
         console.error('Error updating school password:', error);
@@ -109,6 +141,9 @@ const changeSchoolPassword = async (req, res) => {
 }
 
 const deleteSchool = async (req, res) => {
+    if(req.user.role != "super_admin"){
+        return res.status(401).json({message: "Unauthorized"})
+    }
     const { id } = req.query;
 
     if (!id) {
@@ -116,10 +151,20 @@ const deleteSchool = async (req, res) => {
     }
 
     try {
-        const school = await db.User.findByPk(id);
+        const school = await db.User.findOne({
+            where: {
+                id: id,
+                role: 'school',
+            },
+        });
         if (!school) {
             return res.status(404).json({ status: 0, message: 'School not found' });
         }
+        await db.Token.destroy({
+            where: {
+                user_id: id,
+            },
+        });
         await school.destroy();
         return res.status(200).json({ status: 1, message: 'School deleted successfully' });
     } catch (error) {
@@ -129,6 +174,9 @@ const deleteSchool = async (req, res) => {
 };
 
 const getSchoolById = async (req, res) => {
+    if(req.user.role != "super_admin"){
+        return res.status(401).json({message: "Unauthorized"})
+    }
     const { id } = req.query;
 
     if (!id) {
@@ -136,7 +184,12 @@ const getSchoolById = async (req, res) => {
     }
 
     try {
-        const school = await db.User.findByPk(id);
+        const school = await db.User.findOne({
+            where: {
+                id: id,
+                role: 'school',
+            },
+        }); 
         if (!school) {
             return res.status(404).json({ status: 0, message: 'School not found' });
         }
@@ -181,7 +234,7 @@ const getSchoolById = async (req, res) => {
             data: data,
             teacher_count: teacherCount || 0,
             principal_count: principalCount || 0,
-            parent_count: parentCount  || 0,
+            parent_count: parentCount || 0,
             student_count: studentCount || 0,
         });
     }

@@ -19,6 +19,15 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 onDelete: 'CASCADE',
             },
+            school_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'tbl_user',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+            },
         },
         {
             tableName: "tbl_shift",

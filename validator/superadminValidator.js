@@ -59,8 +59,8 @@ exports.addSchoolValidation = () => {
 exports.updateSchoolValidation = () => {
     return [
         [
-            check('name').not().isEmpty().withMessage('School Name is required'),
-            check('address').not().isEmpty().withMessage('address is required'),
+            check('name').optional().not().isEmpty().withMessage('School Name is required'),
+            check('address').optional().not().isEmpty().withMessage('address is required'),
             check('id').not().isEmpty().withMessage('School id is required'),
         ],
         validation

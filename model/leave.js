@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT('long'),
                 allowNull: true,
             },
+            leave_request_status: {
+                type: DataTypes.ENUM( 'pending','accepted', 'rejected'),
+                defaultValue: 'pending',
+                allowNull: false,
+            },
             teacher_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
