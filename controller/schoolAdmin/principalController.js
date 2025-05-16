@@ -8,6 +8,7 @@ const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
+const phoneUtil = PhoneNumberUtil.getInstance()
 
 
 
@@ -27,6 +28,36 @@ const addPrincipal = async (req, res) => {
         if (req.files && req.files.profile_pic) {
             var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
         }
+
+        if (mobile_no) {
+            const existMobile = await db.User.findOne({
+                where: { mobile_no, iso_code, country_code }
+            })
+
+            if (existMobile) {
+                return res.status(409).json({
+                    status: 0,
+                    message: 'This mobile number is already registered.'
+                });
+            }
+        }
+
+        if (mobile_no && iso_code && country_code) {
+            try {
+                var number = phoneUtil.parse(req.body.mobile_no, req.body.iso_code);
+
+            } catch {
+                return res.status(400).json({ Status: 0, message: "Number or ISO code not matched." });
+            }
+
+            const isValid = phoneUtil.isValidNumber(number);
+            if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
+
+            const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+
+        }
+
 
         const hashedPassword = await bcrypt.hash(password, 10)
         const principal = await db.User.create({
@@ -90,6 +121,35 @@ const editPrincipal = async (req, res) => {
 
         if (req.files?.profile_pic && principal.profile_pic) {
             await deleteFromS3(principal.profile_pic);
+        }
+
+        if (mobile_no) {
+            const existMobile = await db.User.findOne({
+                where: { mobile_no, iso_code, country_code }
+            })
+
+            if (existMobile) {
+                return res.status(409).json({
+                    status: 0,
+                    message: 'This mobile number is already registered.'
+                });
+            }
+        }
+
+        if (mobile_no && iso_code && country_code) {
+            try {
+                var number = phoneUtil.parse(req.body.mobile_no, req.body.iso_code);
+
+            } catch {
+                return res.status(400).json({ Status: 0, message: "Number or ISO code not matched." });
+            }
+
+            const isValid = phoneUtil.isValidNumber(number);
+            if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
+
+            const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+
         }
 
         await principal.update({
@@ -190,7 +250,7 @@ const listPrincipal = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: 'principal retrieved successfully',
-            total_school: principal.count,
+            total_principal: principal.count,
             current_page: parseInt(page),
             totalPage: Math.ceil(principal.count / limit),
             data: principal.rows
@@ -265,9 +325,6 @@ const deletePrincipal = async (req, res) => {
 
         if (!principal) {
             return res.status(404).json({ status: 0, message: "Principal not found" })
-        }
-        if (principal.profile_pic) {
-            await deleteFromS3(principal.profile_pic);
         }
 
         await principal.update({

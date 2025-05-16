@@ -13,8 +13,13 @@ const staff = require('../controller/schoolAdmin/staffController');
 const schoolvalidator = require('../validator/schollValidator');
 
 const shift = require("../controller/schoolAdmin/shiftController")
-
+const parent = require("../controller/schoolAdmin/parentController")
 const student = require("../controller/schoolAdmin/studentController")
+const certificate = require("../controller/schoolAdmin/certificationController")
+const medification = require("../controller/schoolAdmin/medicationController")
+const event = require("../controller/schoolAdmin/eventController")
+
+
 
 router.put('/edit_school_profile',verifyToken, schoolvalidator.updateSchoolValidation(), principal.editProfile);
 
@@ -54,8 +59,37 @@ router.get('/get_shift',verifyToken, student.getShift);
 
 
 
+router.post('/add_parent',verifyToken, imageUpload, schoolvalidator.addparentlValidation(), parent.addparent);
+router.put('/edit_parent',verifyToken, imageUpload, schoolvalidator.editparentlValidation(), parent.editParent);
+router.patch('/change_parent_password',verifyToken,schoolvalidator.changeParentPasswordValidation(), parent.editparentPassword);
+router.delete('/delete_parent',verifyToken, parent.deletedParent);
+router.get('/get_parent',verifyToken, parent.parentDetails);
+router.get('/list_parent',verifyToken, parent.listParent);
+router.post('/block_parent',verifyToken, parent.blockParent);
 
 
+
+router.post('/add_certification',verifyToken, schoolvalidator.addCertificateValidation(), certificate.addCertificate);
+router.put('/edit_certification',verifyToken, schoolvalidator.editCertificateValidation(), certificate.editCertification);
+router.get('/get_certification',verifyToken, certificate.getCertificat);
+router.get('/list_certification',verifyToken, certificate.listCertificate);
+router.delete('/delete_certification',verifyToken, certificate.deleteCertificat);
+
+
+
+router.post('/add_medification',verifyToken,schoolvalidator.addMedificationValidation(), medification.addMedication);
+router.put('/edit_medification',verifyToken, schoolvalidator.editMedificationValidation(), medification.editMedication);
+router.get('/get_medification',verifyToken, medification.getMedication);
+router.get('/list_medification',verifyToken, medification.listMedication);
+router.delete('/delete_medification',verifyToken, medification.deleteMedication);
+
+
+
+router.post('/add_event',verifyToken,schoolvalidator.addEventValidation(), event.createEvent);
+router.put('/edit_event',verifyToken, schoolvalidator.editEventValidation(), event.editEvent);
+router.get('/get_event',verifyToken, event.getEvent);
+router.get('/list_event',verifyToken, event.listEvent);
+router.delete('/delete_event',verifyToken, event.deleteEvent);
 
 
 

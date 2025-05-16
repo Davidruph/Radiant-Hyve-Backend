@@ -46,7 +46,7 @@ const getNewStudent = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: 'student request retrieved successfully',
-            total_school: student.count,
+            total_student: student.count,
             current_page: parseInt(page),
             totalPage: Math.ceil(student.count / limit),
             data: student.rows
@@ -110,7 +110,7 @@ const getAllStudent = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: 'student request retrieved successfully',
-            total_school: student.count,
+            total_student: student.count,
             current_page: parseInt(page),
             totalPage: Math.ceil(student.count / limit),
             data: student.rows

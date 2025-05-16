@@ -125,7 +125,7 @@ const listShift = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: 'shift retrieved successfully',
-            total_school: shift.count,
+            total_shift: shift.count,
             current_page: parseInt(page),
             totalPage: Math.ceil(shift.count / limit),
             data: shift.rows

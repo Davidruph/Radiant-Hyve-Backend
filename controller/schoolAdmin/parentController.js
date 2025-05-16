@@ -1,23 +1,22 @@
 require('dotenv').config();
 const db = require('../../config/db')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
 const { Op, Sequelize } = require('sequelize');
 const fs = require('fs').promises;
-const bcrypt = require('bcrypt')
 const path = require("path");
-const { error } = require('console');
-const { upload } = require('../../helpers/storage');
-const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
+const { error } = require('console');
+const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
 
 
-
-const addStaff = async (req, res) => {
+const addparent = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { email, password, full_name, gender, dob, about_staff, joining_date, experience, mobile_no, country_code, iso_code } = req.body
+        const { email, password, full_name, gender, mobile_no, country_code, iso_code, address } = req.body
         const profileImage = req.files.profile_pic[0];
 
         const existingUser = await db.User.findOne({ where: { email } })
@@ -37,6 +36,7 @@ const addStaff = async (req, res) => {
         } else {
             school_id = req.user.id
         }
+
         if (mobile_no) {
             const existMobile = await db.User.findOne({
                 where: { mobile_no, iso_code, country_code }
@@ -66,8 +66,9 @@ const addStaff = async (req, res) => {
 
         }
 
+
         const hashedPassword = await bcrypt.hash(password, 10)
-        const Staff = await db.User.create({
+        const parent = await db.User.create({
             email: email,
             password: hashedPassword,
             full_name: full_name,
@@ -75,41 +76,38 @@ const addStaff = async (req, res) => {
             mobile_no,
             country_code,
             iso_code,
-            dob: dob,
-            joining_date: joining_date,
-            about_staff: about_staff,
             profile_pic: newProfilePicPath,
-            experience: experience,
-            role: 'teacher',
+            address,
+            role: 'parent',
             school_id: school_id
         })
 
         await db.AddRole.create({
             school_id,
-            add_to: Staff.id,
+            add_to: parent.id,
             add_by: req.user.id,
-            add_role: "teacher"
+            add_role: "parent"
         })
 
         return res.status(200).json({
             status: 1,
-            message: "Staff Added Successfully",
-            data: Staff
+            message: "parent Added Successfully",
+            data: parent
         })
 
     } catch (error) {
-        console.error('Error adding principal:', error);
+        console.error('Error adding parent:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
 }
 
-const editStaff = async (req, res) => {
+const editParent = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
 
     try {
-        const { staff_id, full_name, gender, dob, about_staff, joining_date, experience, mobile_no, country_code, iso_code } = req.body
+        const { parent_id, full_name, gender, mobile_no, country_code, iso_code, address } = req.body
 
         let school_id = null
         if (req.user.role == "principal") {
@@ -120,17 +118,16 @@ const editStaff = async (req, res) => {
         } else {
             school_id = req.user.id
         }
-        const staff = await db.User.findOne({
+        const parent = await db.User.findOne({
             where: {
-                id: staff_id,
-                role: "teacher",
+                id: parent_id,
                 school_id,
                 is_deleted: false
             },
         })
 
-        if (!staff) {
-            return res.status(404).json({ status: 0, message: "staff not found" })
+        if (!parent) {
+            return res.status(404).json({ status: 0, message: "parent not found" })
         }
 
         let profileImage = null;
@@ -139,8 +136,8 @@ const editStaff = async (req, res) => {
             var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
         }
 
-        if (req.files?.profile_pic && staff.profile_pic) {
-            await deleteFromS3(staff.profile_pic);
+        if (req.files?.profile_pic && parent.profile_pic) {
+            await deleteFromS3(parent.profile_pic);
         }
 
         if (mobile_no) {
@@ -172,80 +169,26 @@ const editStaff = async (req, res) => {
 
         }
 
-        await staff.update({
-            gender: gender || staff.gender,
-            full_name: full_name || staff.full_name,
-            mobile_no: mobile_no || staff.mobile_no,
-            country_code: country_code || staff.country_code,
-            iso_code: iso_code || staff.iso_code,
-            dob: dob || staff.dob,
-            about_staff: about_staff || staff.about_staff,
-            joining_date: joining_date || staff.joining_date,
-            profile_pic: newProfilePicPath || staff.profile_pic,
-            experience: experience || staff.experience,
+        await parent.update({
+            gender: gender || parent.gender,
+            full_name: full_name || parent.full_name,
+            mobile_no: mobile_no || parent.mobile_no,
+            country_code: country_code || parent.country_code,
+            iso_code: iso_code || parent.iso_code,
+            address: address || parent.address,
+            profile_pic: newProfilePicPath || parent.profile_pic,
+            experience: experience || parent.experience,
         })
 
-        return res.status(200).json({ status: 1, message: "staff updated successfully", data: staff });
+        return res.status(200).json({ status: 1, message: "parent updated successfully", data: parent });
 
     } catch (error) {
-        console.error('Error edit staff:', error);
+        console.error('Error edit parent:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
 };
 
-const changeStaffPassword = async (req, res) => {
-    if (req.user.role != "school" && req.user.role != "principal") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
-    }
-    try {
-        const { password, staff_id } = req.body
-
-        let school_id = null
-        if (req.user.role == "principal") {
-            const principal = await db.User.findOne({
-                where: { id: req.user.id, is_deleted: false }
-            })
-            school_id = principal.school_id
-        } else {
-            school_id = req.user.id
-        }
-
-        const staff = await db.User.findOne({
-            where: {
-                id: staff_id,
-                school_id,
-                role: "teacher",
-                is_deleted: false
-            },
-        })
-
-        if (!staff) {
-            return res.status(404).json({ status: 0, message: "staff not found" })
-        }
-        const hashedPassword = await bcrypt.hash(password, 10)
-
-        await principal.update({
-            password: hashedPassword
-        })
-
-        await db.Token.destroy({
-            where: {
-                user_id: staff_id,
-            },
-        });
-
-        return res.status(200).json({
-            status: 1,
-            message: "Password changed successfully",
-        })
-
-    } catch (error) {
-        console.error('Error edit principal:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
-    }
-}
-
-const listStaff = async (req, res) => {
+const listParent = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
@@ -268,7 +211,7 @@ const listStaff = async (req, res) => {
         }
 
         const whereCondition = {
-            role: "teacher",
+            role: "parent",
             school_id,
             is_deleted: false
         };
@@ -280,9 +223,19 @@ const listStaff = async (req, res) => {
             ];
         }
 
-        const Staff = await db.User.findAndCountAll({
+        const parent = await db.User.findAndCountAll({
             where: whereCondition,
-            attributes: ["id", "email", "full_name", "gender"],
+            attributes: ["id", "email", "password", "mobile_no", "country_code", "iso_code", "profile_pic", "address","full_name",
+                [
+                    Sequelize.literal(`(
+                                SELECT COUNT(*) 
+                                FROM tbl_student t2 
+                                WHERE t2.parent_id = User.id 
+                            )`),
+                    "total_student"
+                ],
+
+            ],
             limit,
             offset,
             order: [['createdAt', 'DESC']],
@@ -290,29 +243,30 @@ const listStaff = async (req, res) => {
 
         return res.status(200).json({
             status: 1,
-            message: 'Staff retrieved successfully',
-            total_staff: Staff.count,
+            message: 'parent retrieved successfully',
+            total_parent: parent.count,
             current_page: parseInt(page),
-            totalPage: Math.ceil(Staff.count / limit),
-            data: Staff.rows
+            totalPage: Math.ceil(parent.count / limit),
+            data: parent.rows
         });
 
     } catch (error) {
-        console.error('Error list Staff:', error);
+        console.error('Error list parent:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
+
 }
 
-const getStaff = async (req, res) => {
+const parentDetails = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
 
     try {
-        const { staff_id } = req.query
+        const { parent_id } = req.query
 
-        if (!staff_id) {
-            return res.status(400).json({ status: 0, message: 'staff_id is requried' })
+        if (!parent_id) {
+            return res.status(400).json({ status: 0, message: 'parent_id is requried' })
         }
 
         let school_id = null
@@ -325,58 +279,55 @@ const getStaff = async (req, res) => {
             school_id = req.user.id
         }
 
-        const Staff = await db.User.findOne({
+        const parent = await db.User.findOne({
             where: {
-                id: staff_id,
+                id: parent_id,
                 is_deleted: false,
-                role: "teacher",
+                role: "parent",
                 school_id
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "dob", "about_staff", "joining_date", "experience", "mobile_no", "country_code", "iso_code", "profile_pic",
+            attributes: ["id", "email", "password", "full_name", "gender", "mobile_no", "country_code", "iso_code", "profile_pic",
                 [
                     Sequelize.literal(`(
-                                SELECT COUNT(*) 
-                                FROM tbl_student t2 
-                                WHERE t2.teacher_id = ${staff_id}
-                            )`),
+                                    SELECT COUNT(*) 
+                                    FROM tbl_student t2 
+                                    WHERE t2.parent_id = ${parent_id}
+                                )`),
                     "total_student"
                 ],
             ],
             include: [
                 {
-                    model: db.Attendance,
-                    as: "userAttend"
+                    model: db.Student,
+                    as: "Students",
+                    required: false
                 }
             ]
         })
 
-        if (!Staff) {
-            return res.status(404).json({ status: 0, message: "Staff not found" })
+        if (!parent) {
+            return res.status(404).json({ status: 0, message: "parent not found" })
         }
 
         return res.status(200).json({
             status: 1,
-            message: 'Staff get successfully',
-            data: Staff
+            message: 'parent get successfully',
+            data: parent
         });
 
     } catch (error) {
         console.error('Error get Staff:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
+
 }
 
-const deleteStaff = async (req, res) => {
+const editparentPassword = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
-
     try {
-        const { staff_id } = req.query
-
-        if (!staff_id) {
-            return res.status(400).json({ status: 0, message: 'staff_id is requried' })
-        }
+        const { password, parent_id } = req.body
 
         let school_id = null
         if (req.user.role == "principal") {
@@ -388,43 +339,50 @@ const deleteStaff = async (req, res) => {
             school_id = req.user.id
         }
 
-        const Staff = await db.User.findOne({
+        const parent = await db.User.findOne({
             where: {
-                id: staff_id,
-                role: "teacher",
+                id: parent_id,
                 school_id,
+                role: "parent",
                 is_deleted: false
             },
         })
 
-        if (!Staff) {
-            return res.status(404).json({ status: 0, message: "Staff not found" })
+        if (!parent) {
+            return res.status(404).json({ status: 0, message: "parent not found" })
         }
+        const hashedPassword = await bcrypt.hash(password, 10)
 
-        await Staff.update({
-            is_deleted: true
+        await parent.update({
+            password: hashedPassword
         })
+
+        await db.Token.destroy({
+            where: {
+                user_id: parent_id,
+            },
+        });
 
         return res.status(200).json({
             status: 1,
-            message: 'Staff deleted successfully',
+            message: "Password changed successfully",
         })
 
     } catch (error) {
-        console.error('Error delete Staff:', error);
+        console.error('Error edit parent:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
 }
 
-const blockStaff = async (req, res) => {
+const blockParent = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { staff_id } = req.body
+        const { parent_id } = req.body
 
-        if (!staff_id) {
-            return res.status(400).json({ status: 0, message: 'staff_id is requried' })
+        if (!parent_id) {
+            return res.status(400).json({ status: 0, message: 'parent_id is requried' })
         }
 
         let school_id = null
@@ -437,35 +395,35 @@ const blockStaff = async (req, res) => {
             school_id = req.user.id
         }
 
-        const Staff = await db.User.findOne({
+        const parent = await db.User.findOne({
             where: {
-                id: staff_id,
-                role: "teacher",
+                id: parent_id,
+                role: "parent",
                 school_id,
                 is_deleted: false
             },
         })
 
-        if (!Staff) {
-            return res.status(404).json({ status: 0, message: "Staff not found" })
+        if (!parent) {
+            return res.status(404).json({ status: 0, message: "parent not found" })
         }
 
-        const wasBlocked = Staff.is_blocked;
+        const wasBlocked = parent.is_blocked;
         const newIsBlockedStatus = !wasBlocked;
 
-        await Staff.update({
+        await parent.update({
             is_blocked: newIsBlockedStatus,
         });
 
         if (newIsBlockedStatus) {
-            await db.Token.destroy({ where: { user_id: staff_id } });
+            await db.Token.destroy({ where: { user_id: parent_id } });
         }
 
         return res.status(200).json({
             status: 1,
             message: newIsBlockedStatus
-                ? "Staff blocked successfully"
-                : "Staff unblocked successfully",
+                ? "parent blocked successfully"
+                : "parent unblocked successfully",
         });
     } catch (error) {
         console.error("Error processing block/unblock request:", error);
@@ -473,14 +431,17 @@ const blockStaff = async (req, res) => {
     }
 }
 
-const assignStudentList = async (req, res) => {
+const deletedParent = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { staff_id, page, search } = req.query
-        const limit = 10
-        const offset = (page - 1) * limit
+        const { parent_id } = req.query
+
+        if (!parent_id) {
+            return res.status(400).json({ status: 0, message: 'parent_id is requried' })
+        }
+
         let school_id = null
         if (req.user.role == "principal") {
             const principal = await db.User.findOne({
@@ -491,61 +452,46 @@ const assignStudentList = async (req, res) => {
             school_id = req.user.id
         }
 
-        const Staff = await db.User.findOne({
+        const parent = await db.User.findOne({
             where: {
-                id: staff_id,
-                role: "teacher",
+                id: parent_id,
+                role: "parent",
                 school_id,
                 is_deleted: false
             },
         })
 
-        if (!Staff) {
-            return res.status(404).json({ status: 0, message: "Staff not found" })
+        if (!parent) {
+            return res.status(404).json({ status: 0, message: "parent not found" })
         }
 
-        const whereClause = {
-            teacher_id: staff_id
-        };
+        await parent.update({
+            is_deleted: true,
+        });
 
-        if (search) {
-            whereClause[Op.or] = [
-                { full_name: { [Op.iLike]: `%${search}%` } },
-                { parent_name: { [Op.iLike]: `%${search}%` } },
-            ];
-        }
-
-        const student = await db.Student.findAndCountAll({
-            where: whereClause,
-            limit,
-            offset,
-            order: [['createdAt', 'DESC']],
-        })
+        await db.Token.destroy({ where: { user_id: parent_id } });
 
         return res.status(200).json({
             status: 1,
-            message: 'Staff assign student retrieved successfully',
-            total_school: student.count,
-            current_page: parseInt(page),
-            totalPage: Math.ceil(student.count / limit),
-            data: student.rows
+            message: "parent deleted successfully"
         });
     } catch (error) {
-        console.error("Error :", error);
+        console.error("Error processing :", error);
         return res.status(500).json({ status: 0, message: "Internal Server Error" });
     }
+
 }
 
 
 
 
+
 module.exports = {
-    editStaff,
-    addStaff,
-    getStaff,
-    listStaff,
-    changeStaffPassword,
-    deleteStaff,
-    blockStaff,
-    assignStudentList,
+    addparent,
+    blockParent,
+    editparentPassword,
+    parentDetails,
+    listParent,
+    editParent,
+    deletedParent
 }

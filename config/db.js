@@ -28,6 +28,9 @@ db.AddRole = require('../model/addRole')(sequelize, Sequelize, Model)
 db.User.hasMany(db.AddRole, {foreignKey: 'school_id',as: 'School'})
 db.AddRole.belongsTo(db.User, {foreignKey: 'school_id', as: 'addSchool'})
 
+db.User.hasMany(db.Student, {foreignKey: 'parent_id',as: 'Students'})
+db.Student.belongsTo(db.User, {foreignKey: 'parent_id', as: 'StudentParent'})
+
 db.User.hasMany(db.AddRole, {foreignKey: 'add_to',as: 'AddToRole'})
 db.AddRole.belongsTo(db.User, {foreignKey: 'add_to', as: 'AddRole'})
 

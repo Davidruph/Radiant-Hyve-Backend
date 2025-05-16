@@ -425,3 +425,250 @@ exports.listStudentValidation = () => {
         validation
     ];
 }
+
+
+exports.addparentlValidation = () => {
+    return [
+        [
+            check('full_name').not().isEmpty().withMessage('full_name is required'),
+            check('email').not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
+            check("password")
+                .notEmpty().withMessage("Password is required")
+                .isLength({ min: 8, max: 20 }).withMessage("Password must be between 8 and 20 characters long"),
+            check('iso_code').not().isEmpty().withMessage('iso_code is required'),
+            check('address').not().isEmpty().withMessage('address is required'),
+            check('country_code').not().isEmpty().withMessage('country_code is required'),
+            check('mobile_no').not().isEmpty().withMessage('mobile_no is required'),
+            check("gender").not().isEmpty().withMessage("gender is required")
+                .isIn(['male', 'female', 'other']).withMessage("Invalid gender, valid gender are: 'male', 'female', 'other'"),
+            check("profile_pic")
+                .custom((value, { req }) => {
+                    const maxFiles = 1;
+                    const allowedMimeTypes = [
+                        'image/jpeg',
+                        'image/jpg',
+                        'image/png',
+                        'image/gif',
+                        'application/octet-stream',
+                    ];
+                    const maxSize = 10 * 1024 * 1024; // 5 MB
+
+                    const files = req.files?.profile_pic;
+
+                    if (!files || !Array.isArray(files) || files.length === 0) {
+                        throw new Error("profile_pic required!");
+                    }
+
+                    if (files.length > maxFiles) {
+                        files.forEach(file => {
+                            try {
+                                fs.unlinkSync(file.path);
+                            } catch (e) {
+                                console.log("File already deleted or not found");
+                            }
+                        });
+                        throw new Error(`Maximum ${maxFiles} file(s) allowed!`);
+                    }
+
+                    const file = files[0];
+
+                    if (!allowedMimeTypes.includes(file.mimetype)) {
+                        try {
+                            fs.unlinkSync(file.path);
+                        } catch (e) {
+                            console.log("File already deleted or not found");
+                        }
+                        throw new Error("Only JPG, JPEG, PNG,  files are allowed!");
+                    }
+
+                    if (file.size > maxSize) {
+                        try {
+                            fs.unlinkSync(file.path);
+                        } catch (e) {
+                            console.log("File already deleted or not found");
+                        }
+                        throw new Error("File size must be less than 5 MB!");
+                    }
+
+                    return true;
+                }),
+        ],
+        validation
+    ];
+}
+
+exports.editparentlValidation = () => {
+    return [
+        [
+            check('parent_id').not().isEmpty().withMessage('parent_id is required'),
+            check('full_name').optional().not().isEmpty().withMessage('full_name is required'),
+            check('iso_code').optional().not().isEmpty().withMessage('iso_code is required'),
+            check('country_code').optional().not().isEmpty().withMessage('country_code is required'),
+            check('mobile_no').optional().not().isEmpty().withMessage('mobile_no is required'),
+            check('address').optional().not().isEmpty().withMessage('address is required'),
+            check("gender").optional().not().isEmpty().withMessage("gender is required")
+                .isIn(['male', 'female', 'other']).withMessage("Invalid gender, valid gender are: 'male', 'female', 'other'"),
+            check("profile_pic")
+                .custom((value, { req }) => {
+                    const maxFiles = 1;
+                    const allowedMimeTypes = [
+                        'image/jpeg',
+                        'image/jpg',
+                        'image/png',
+                        'image/gif',
+                        'application/octet-stream',
+                    ];
+                    const maxSize = 10 * 1024 * 1024; // 5 MB
+
+                    const files = req.files?.profile_pic;
+
+                    if (!files || !Array.isArray(files) || files.length === 0) {
+                        return true;
+                    }
+
+                    if (files.length > maxFiles) {
+                        files.forEach(file => {
+                            try {
+                                fs.unlinkSync(file.path);
+                            } catch (e) {
+                                console.log("File already deleted or not found");
+                            }
+                        });
+                        throw new Error(`Maximum ${maxFiles} file(s) allowed!`);
+                    }
+
+                    const file = files[0];
+
+                    if (!allowedMimeTypes.includes(file.mimetype)) {
+                        try {
+                            fs.unlinkSync(file.path);
+                        } catch (e) {
+                            console.log("File already deleted or not found");
+                        }
+                        throw new Error("Only JPG, JPEG, PNG,  files are allowed!");
+                    }
+
+                    if (file.size > maxSize) {
+                        try {
+                            fs.unlinkSync(file.path);
+                        } catch (e) {
+                            console.log("File already deleted or not found");
+                        }
+                        throw new Error("File size must be less than 5 MB!");
+                    }
+
+                    return true;
+                }),
+        ],
+        validation
+    ];
+}
+
+exports.changeParentPasswordValidation = () => {
+    return [
+        [
+            check('parent_id').not().isEmpty().withMessage('parent_id is required'),
+            check("password")
+                .notEmpty().withMessage("Password is required")
+                .isLength({ min: 8, max: 20 }).withMessage("Password must be between 8 and 20 characters long"),
+        ],
+        validation
+    ];
+}
+
+
+exports.addCertificateValidation = () => {
+    return [
+        [
+            check('institution_name').not().isEmpty().withMessage('institution_name is required'),
+            check('hire_checklist').not().isEmpty().withMessage('hire_checklist is required'),
+            check('staff_id').not().isEmpty().withMessage('staff_id is required'),
+        ],
+        validation
+    ];
+}
+
+exports.editCertificateValidation = () => {
+    return [
+        [
+            check('certificate_id').not().isEmpty().withMessage('certificate_id is required'),
+            check('institution_name').optional().not().isEmpty().withMessage('institution_name is required'),
+            check('hire_checklist').optional().not().isEmpty().withMessage('hire_checklist is required'),
+            check('staff_id').optional().not().isEmpty().withMessage('staff_id is required'),
+        ],
+        validation
+    ];
+}
+
+exports.addMedificationValidation = () => {
+    return [
+        [
+            check('mobile_no').not().isEmpty().withMessage('mobile_no is required'),
+            check('country_code').not().isEmpty().withMessage('country_code is required'),
+            check('iso_code').not().isEmpty().withMessage('iso_code is required'),
+            check('medication_details').not().isEmpty().withMessage('medication_details is required'),
+            check('type_disease').not().isEmpty().withMessage('type_disease is required'),
+            check('doctor_name').not().isEmpty().withMessage('doctor_name is required'),
+            check('student_id').not().isEmpty().withMessage('student_id is required'),
+        ],
+        validation
+    ];
+}
+
+exports.editMedificationValidation = () => {
+    return [
+        [
+            check('medication_id').not().isEmpty().withMessage('medication_id is required'),
+            check('mobile_no').optional().not().isEmpty().withMessage('mobile_no is required'),
+            check('country_code').optional().not().isEmpty().withMessage('country_code is required'),
+            check('iso_code').not().optional().isEmpty().withMessage('iso_code is required'),
+            check('medication_details').optional().not().isEmpty().withMessage('medication_details is required'),
+            check('type_disease').optional().not().isEmpty().withMessage('type_disease is required'),
+            check('doctor_name').optional().not().isEmpty().withMessage('doctor_name is required'),
+            check('student_id').optional().not().isEmpty().withMessage('student_id is required'),
+        ],
+        validation
+    ];
+}
+
+
+exports.addEventValidation = () => {
+    return [
+        [
+            check('event_name').not().isEmpty().withMessage('event_name is required'),
+            check('about_event').not().isEmpty().withMessage('about_event is required'),
+            check('color_name').not().isEmpty().withMessage('color_name is required'),
+            check("event_attend").not().isEmpty().withMessage("event_attend is required")
+                .isIn(['all', 'principal', 'teacher', 'parent']).withMessage("Invalid event_attend, valid event_attend are: 'all', 'principal', 'teacher', 'parent'"),
+            check("event_date")
+                .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
+                .withMessage("Invalid event_date format for dob"),
+            check("start_time").custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+            check("end_time").custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+        ],
+        validation
+    ];
+}
+
+exports.editEventValidation = () => {
+    return [
+        [
+            check('event_id').not().isEmpty().withMessage('event_id is required'),
+            check('event_name').optional().not().isEmpty().withMessage('event_name is required'),
+            check('about_event').optional().not().isEmpty().withMessage('about_event is required'),
+            check('color_name').optional().not().isEmpty().withMessage('color_name is required'),
+            check("event_attend").optional().not().isEmpty().withMessage("event_attend is required")
+                .isIn(['all', 'principal', 'teacher', 'parent']).withMessage("Invalid event_attend, valid event_attend are: 'all', 'principal', 'teacher', 'parent'"),
+            check("event_date").optional()
+                .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
+                .withMessage("Invalid event_date format for dob"),
+            check("start_time").optional().custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+            check("end_time").optional().custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for end_time"),
+        ],
+        validation
+    ];
+}
