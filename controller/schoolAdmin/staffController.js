@@ -282,7 +282,7 @@ const listStaff = async (req, res) => {
 
         const Staff = await db.User.findAndCountAll({
             where: whereCondition,
-            attributes: ["id", "email", "full_name", "gender"],
+            attributes: ["id", "email", "full_name", "gender", "is_blocked", "is_deleted",],
             limit,
             offset,
             order: [['createdAt', 'DESC']],
@@ -332,7 +332,7 @@ const getStaff = async (req, res) => {
                 role: "teacher",
                 school_id
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "dob", "about_staff", "joining_date", "experience", "mobile_no", "country_code", "iso_code", "profile_pic",
+            attributes: ["id", "email", "password", "full_name", "gender", "dob", "about_staff", "joining_date", "experience", "mobile_no", "country_code", "iso_code", "profile_pic","is_blocked", "is_deleted",
                 [
                     Sequelize.literal(`(
                                 SELECT COUNT(*) 

@@ -125,7 +125,12 @@ const editPrincipal = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { mobile_no, iso_code, country_code }
+                where: { 
+                    mobile_no, 
+                    iso_code, 
+                    country_code,
+                    id: {[Op.not]: principal_id}
+                }
             })
 
             if (existMobile) {
@@ -241,7 +246,7 @@ const listPrincipal = async (req, res) => {
 
         const principal = await db.User.findAndCountAll({
             where: whereCondition,
-            attributes: ["id", "email", "password", "full_name", "gender", "dob", "qualification", "designation", "experience", "mobile_no", "country_code", "iso_code"],
+            attributes: ["id", "email", "password", "full_name", "gender", "dob", "qualification", "designation", "experience", "mobile_no", "country_code", "iso_code", "is_blocked", "is_deleted"],
             limit,
             offset,
             order: [['createdAt', 'DESC']],
@@ -280,7 +285,7 @@ const getPrincipal = async (req, res) => {
                 school_id: req.user.id,
                 is_deleted: false
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "dob", "qualification", "designation", "experience", "mobile_no", "country_code", "iso_code", "profile_pic"],
+            attributes: ["id", "email", "password", "full_name", "gender", "dob", "qualification", "designation", "experience", "mobile_no", "country_code", "iso_code", "profile_pic",  "is_blocked", "is_deleted"],
             include: [
                 {
                     model: db.Attendance,

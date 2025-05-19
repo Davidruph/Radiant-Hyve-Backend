@@ -225,7 +225,7 @@ const listParent = async (req, res) => {
 
         const parent = await db.User.findAndCountAll({
             where: whereCondition,
-            attributes: ["id", "email", "password", "mobile_no", "country_code", "iso_code", "profile_pic", "address","full_name",
+            attributes: ["id", "email", "password", "mobile_no", "country_code", "iso_code", "profile_pic", "address","full_name", "is_blocked", "is_deleted",
                 [
                     Sequelize.literal(`(
                                 SELECT COUNT(*) 
@@ -286,7 +286,7 @@ const parentDetails = async (req, res) => {
                 role: "parent",
                 school_id
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "mobile_no", "country_code", "iso_code", "profile_pic",
+            attributes: ["id", "email", "password", "full_name", "gender", "mobile_no", "country_code", "iso_code", "profile_pic","is_blocked", "is_deleted",
                 [
                     Sequelize.literal(`(
                                     SELECT COUNT(*) 
