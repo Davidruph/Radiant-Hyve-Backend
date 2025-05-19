@@ -145,7 +145,12 @@ const editStaff = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { mobile_no, iso_code, country_code }
+                where: { 
+                    mobile_no, 
+                    iso_code, 
+                    country_code,
+                    id: {[Op.not]: staff_id}
+                }
             })
 
             if (existMobile) {
@@ -201,6 +206,7 @@ const changeStaffPassword = async (req, res) => {
         const { password, staff_id } = req.body
 
         let school_id = null
+        // let principal = {};
         if (req.user.role == "principal") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
@@ -224,7 +230,7 @@ const changeStaffPassword = async (req, res) => {
         }
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        await principal.update({
+        await staff.update({
             password: hashedPassword
         })
 
