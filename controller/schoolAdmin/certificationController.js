@@ -219,7 +219,7 @@ const listCertificate = async (req, res) => {
                     where: search
                         ? {
                             full_name: {
-                                [Op.iLike]: `%${search}%`
+                                [Op.like]: `%${search}%`
                             }
                         }
                         : [],

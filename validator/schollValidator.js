@@ -411,6 +411,7 @@ exports.assignStudentValidation = () => {
         [
             check('student_id').not().isEmpty().withMessage('student_id is required'),
             check('teacher_id').not().isEmpty().withMessage('teacher_id is required'),
+            check('request_status').not().isEmpty().withMessage('request_status is required').isIn(['pending','accepted', 'rejected']).withMessage("Invalid value for request_status. allowed valued are 'pending','accepted', 'rejected'"),
         ],
         validation
     ];

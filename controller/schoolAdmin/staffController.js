@@ -516,8 +516,8 @@ const assignStudentList = async (req, res) => {
 
         if (search) {
             whereClause[Op.or] = [
-                { full_name: { [Op.iLike]: `%${search}%` } },
-                { parent_name: { [Op.iLike]: `%${search}%` } },
+                { full_name: { [Op.like]: `%${search}%` } },
+                { parent_name: { [Op.like]: `%${search}%` } },
             ];
         }
 

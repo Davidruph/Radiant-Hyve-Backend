@@ -156,7 +156,6 @@ const editPrincipal = async (req, res) => {
             if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
 
         }
-
         await principal.update({
             gender: gender || principal.gender,
             full_name: full_name || principal.full_name,
