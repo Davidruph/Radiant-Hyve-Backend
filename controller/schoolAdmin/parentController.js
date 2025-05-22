@@ -177,7 +177,6 @@ const editParent = async (req, res) => {
             iso_code: iso_code || parent.iso_code,
             address: address || parent.address,
             profile_pic: newProfilePicPath || parent.profile_pic,
-            experience: experience || parent.experience,
         })
 
         return res.status(200).json({ status: 1, message: "parent updated successfully", data: parent });
@@ -234,7 +233,6 @@ const listParent = async (req, res) => {
                             )`),
                     "total_student"
                 ],
-
             ],
             limit,
             offset,

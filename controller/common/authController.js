@@ -54,7 +54,7 @@ const login = async (req, res) => {
     console.log(req.body);
 
     try {
-        const user = await db.User.findOne({ where: { email, role } });
+        const user = await db.User.findOne({ where: { email, role , is_deleted: false} });
 
         if (!user) {
             return res.status(404).json({ status: 0, message: 'User not found.' });
@@ -181,7 +181,7 @@ const forgotePasswor = async (req, res) => {
     }
 
     try {
-        const user = await db.User.findOne({ where: { email, role } });
+        const user = await db.User.findOne({ where: { email, role, is_deleted: false } });
 
         if (!user) {
             return res.status(404).json({ status: 0, message: 'user not found.' });
@@ -211,7 +211,7 @@ const verifyForgotePasswordOtp = async (req, res) => {
     const { otp, email, role } = req.body;
 
     try {
-        const user = await db.User.findOne({ where: { email, role } });
+        const user = await db.User.findOne({ where: { email, role ,  is_deleted: false} });
 
         if (!user) {
             return res.status(404).json({ status: 0, message: 'User not found.' });

@@ -52,6 +52,7 @@ router.get('/list_shift',verifyToken, shift.listShift);
 router.get('/get_student',verifyToken, student.getStudent);
 router.get('/list_all_student',verifyToken, schoolvalidator.listStudentValidation(), student.getAllStudent);
 router.get('/list_new_student',verifyToken, student.getNewStudent);
+router.get('/list_waiting_student',verifyToken, student.listWaitingStudent);
 router.patch('/edit_student_status',verifyToken, student.editStatus);
 router.patch('/student_assign_teacher',verifyToken,schoolvalidator.assignStudentValidation(), student.studentAssignTeacher);
 router.get('/list_teacher',verifyToken, student.listTeacher);
