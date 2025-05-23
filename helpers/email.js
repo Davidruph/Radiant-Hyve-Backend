@@ -1,26 +1,28 @@
 require('dotenv').config()
 const nodemailer = require("nodemailer");
 const { sendOTPToEmail, profileVerificationRejectedHtml, profileVerificationAcceptedHtml } = require('./templetes')
-let smtpUser = process.env.SMTPUSER
-let smtpPass = process.env.SMTPPASS
+let mailTrapHost = process.env.MAILTRAPHOST
+let mailTrapPass = process.env.MAILTRAPPASS
 let projectName = process.env.PROJECT_NAME
 
-//Nodemailer stuff
-const transporter = nodemailer.createTransport({
-  service: "gmail",
+var transporter = nodemailer.createTransport({
+  host: mailTrapHost,
+  port: 2525,
   auth: {
-    user: smtpUser,
-    pass: smtpPass,
-  },
+    user: "api",
+    pass: mailTrapPass
+  }
 });
-//send otp to email address
-const sendOTPVerificationEmail = async ({ email_id, otp }) => {
 
-  let htmlContent = sendOTPToEmail(otp);
+const sendOTPVerificationEmail = async ({ email, otp }) => {
+  console.log( email, otp);
+  
+
+let htmlContent = sendOTPToEmail(otp);
 
   let mail_option = {
-    from: `${projectName} <${smtpUser}>`,
-    to: email_id,
+  from: `"Radiant Hyve" <hello@cubesinfotech.in>`,
+    to: email,
     subject: "Verification Code: Complete Your Email Verification",
     html: htmlContent,
   };

@@ -31,6 +31,11 @@ db.AddRole.belongsTo(db.User, {foreignKey: 'school_id', as: 'addSchool'})
 db.User.hasMany(db.Student, {foreignKey: 'parent_id',as: 'Students'})
 db.Student.belongsTo(db.User, {foreignKey: 'parent_id', as: 'StudentParent'})
 
+db.User.hasMany(db.Student, {foreignKey: 'teacher_id',as: 'Student'})
+db.Student.belongsTo(db.User, {foreignKey: 'teacher_id', as: 'Teacher'})
+
+
+
 db.User.hasMany(db.AddRole, {foreignKey: 'add_to',as: 'AddToRole'})
 db.AddRole.belongsTo(db.User, {foreignKey: 'add_to', as: 'AddRole'})
 

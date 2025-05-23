@@ -18,6 +18,19 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT('long'),
                 allowNull: true,
             },
+            student_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'tbl_student',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+            },
+            is_all:{
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
             admin_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
@@ -28,15 +41,6 @@ module.exports = (sequelize, DataTypes) => {
                 onDelete: 'CASCADE',
             },
             school_id: {
-                type: DataTypes.INTEGER,
-                allowNull: true,
-                references: {
-                    model: 'tbl_user',
-                    key: 'id',
-                },
-                onDelete: 'CASCADE',
-            },
-            parent_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
                 references: {

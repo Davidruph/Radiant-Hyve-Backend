@@ -160,6 +160,14 @@ const getCertificat = async (req, res) => {
                       WHERE t2.id = Certification.staff_id
                     )`),
                     'staff_name'
+                ],
+                [
+                    Sequelize.literal(`(
+                      SELECT t2.profile_pic
+                      FROM tbl_user t2
+                      WHERE t2.id = Certification.staff_id
+                    )`),
+                    'profile_pic'
                 ]
             ],
         })
@@ -226,7 +234,9 @@ const listCertificate = async (req, res) => {
                     required: true
                 }
             ],
-
+            order: [['id', 'DESC']],
+            limit,
+            offset
         })
 
         return res.status(200).json({

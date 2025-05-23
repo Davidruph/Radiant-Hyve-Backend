@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const  db  = require('../config/db');
+const db = require('../config/db');
 const jwtSecretKey = process.env.JWT_SECRET_KEY;
 
 const verifyToken = (req, res, next) => {
@@ -68,6 +68,7 @@ const verifyGuestToken = (req, res, next) => {
                 return res.status(401).json({ error: 'Invalid token' });
             }
             req.user = User;
+            req.token = tokens;
             next();
         });
     } catch (error) {

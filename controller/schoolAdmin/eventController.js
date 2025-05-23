@@ -17,7 +17,7 @@ const createEvent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { event_attend, color_name, about_event, end_time, start_time, event_date, event_name } = req.body
+        const {color_name, about_event, end_time, start_time, event_date, event_name, is_principal, is_teacher, is_parent, is_all } = req.body
 
         let school_id = null
         if (req.user.role == "principal") {
@@ -36,9 +36,9 @@ const createEvent = async (req, res) => {
             end_time: end_time,
             about_event: about_event,
             color_name: color_name,
-            event_attend: event_attend,
             school_id,
-            admin_id: req.user.id
+            admin_id: req.user.id,
+            is_principal, is_teacher, is_parent, is_all 
         })
 
         return res.status(200).json({
@@ -58,7 +58,7 @@ const editEvent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { event_id, event_attend, color_name, about_event, end_time, start_time, event_date, event_name } = req.body
+        const { event_id, is_principal, is_teacher, is_parent, is_all , color_name, about_event, end_time, start_time, event_date, event_name } = req.body
 
         let school_id = null
         if (req.user.role == "principal") {
@@ -85,7 +85,10 @@ const editEvent = async (req, res) => {
             end_time: end_time || event.end_time,
             about_event: about_event || event.about_event,
             color_name: color_name || event.color_name,
-            event_attend: event_attend || event.event_attend,
+            is_principal: is_principal || event.is_principal,
+            is_teacher: is_teacher || event.is_teacher,
+            is_parent: is_parent || event.is_parent,
+            is_all: is_all || event.is_all
         })
 
         return res.status(200).json({

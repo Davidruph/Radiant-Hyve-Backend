@@ -87,7 +87,7 @@ const sendOTPToEmail = (otp) =>
       <img src="https://promarvel.com:8800/uploads/promarvel.png" alt="App Logo"  style="width: 80px; height: auto"/>
     </div>
     <div class="content">
-      <h1>Complete Your Profile Verification</h1>
+      <h1>Complete Your Forgot Password Verification</h1>
       <p style="margin-bottom: 30px">Your verification code is,</p>
       <span class="code">${otp}</span>
       <div style="margin-top: 30px">

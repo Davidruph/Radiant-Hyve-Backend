@@ -18,6 +18,8 @@ const student = require("../controller/schoolAdmin/studentController")
 const certificate = require("../controller/schoolAdmin/certificationController")
 const medification = require("../controller/schoolAdmin/medicationController")
 const event = require("../controller/schoolAdmin/eventController")
+const sleep_loag = require("../controller/schoolAdmin/sleeplogsController")
+
 
 
 
@@ -83,6 +85,8 @@ router.put('/edit_medification',verifyToken, schoolvalidator.editMedificationVal
 router.get('/get_medification',verifyToken, medification.getMedication);
 router.get('/list_medification',verifyToken, medification.listMedication);
 router.delete('/delete_medification',verifyToken, medification.deleteMedication);
+router.get('/list_students',verifyToken, medification.listStudent);
+
 
 
 
@@ -93,7 +97,10 @@ router.get('/list_event',verifyToken, event.listEvent);
 router.delete('/delete_event',verifyToken, event.deleteEvent);
 
 
-
+router.post('/add_sleep_loag',verifyToken,schoolvalidator.addSleepLoagValidation(), sleep_loag.addSleepLog);
+router.put('/edit_sleep_loag',verifyToken, schoolvalidator.editSleepLoagValidation(), sleep_loag.editSleepLog);
+router.get('/get_sleep_loag',verifyToken, sleep_loag.getSleepLog);
+router.get('/list_sleep_loag',verifyToken, sleep_loag.listSleepLog);
 
 
 

@@ -26,9 +26,21 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
-            event_attend: {
-                type: DataTypes.ENUM('all', 'principal', 'teacher', 'parent'),
-                allowNull: true, 
+            is_all: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
+            is_parent: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
+            is_teacher: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
+            is_principal: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
             },
             admin_id: {
                 type: DataTypes.INTEGER,

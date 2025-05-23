@@ -11,6 +11,7 @@ const phoneUtil = PhoneNumberUtil.getInstance()
 const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
 const { checkToken } = require('../../helpers/checkToken')
+const {sendOTPVerificationEmail} = require('../../helpers/email')
 
 const singup = async (req, res) => {
     try {
@@ -190,7 +191,7 @@ const forgotePasswor = async (req, res) => {
         const otp = Math.floor(1000 + Math.random() * 9000);
         await user.update({ otp, otp_created_at: new Date(), is_otp_Verify: false });
 
-        // await sendOtpEmail(email, otp);
+        await sendOTPVerificationEmail({email, otp});
 
         return res.status(200).json({
             status: 1,
@@ -323,11 +324,7 @@ const getProfile = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        const tokenRecord = await db.Token.destroy({
-            where: {
-                user_id: req.user.id,
-            }
-        });
+                await req.token.destroy()
 
         if (!tokenRecord) {
             return res.status(404).json({ status: 0, message: 'Token not found.' });

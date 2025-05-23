@@ -411,7 +411,7 @@ exports.assignStudentValidation = () => {
         [
             check('student_id').not().isEmpty().withMessage('student_id is required'),
             check('teacher_id').not().isEmpty().withMessage('teacher_id is required'),
-            check('request_status').not().isEmpty().withMessage('request_status is required').isIn(['pending','accepted', 'rejected']).withMessage("Invalid value for request_status. allowed valued are 'pending','accepted', 'rejected'"),
+            check('request_status').not().isEmpty().withMessage('request_status is required').isIn(['pending', 'accepted', 'rejected']).withMessage("Invalid value for request_status. allowed valued are 'pending','accepted', 'rejected'"),
         ],
         validation
     ];
@@ -639,8 +639,10 @@ exports.addEventValidation = () => {
             check('event_name').not().isEmpty().withMessage('event_name is required'),
             check('about_event').not().isEmpty().withMessage('about_event is required'),
             check('color_name').not().isEmpty().withMessage('color_name is required'),
-            check("event_attend").not().isEmpty().withMessage("event_attend is required")
-                .isIn(['all', 'principal', 'teacher', 'parent']).withMessage("Invalid event_attend, valid event_attend are: 'all', 'principal', 'teacher', 'parent'"),
+            check('is_all').not().isEmpty().withMessage('is_all is required'),
+            check('is_parent').not().isEmpty().withMessage('is_parent is required'),
+            check('is_teacher').not().isEmpty().withMessage('is_teacher is required'),
+            check('is_principal').not().isEmpty().withMessage('is_principal is required'),
             check("event_date")
                 .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
                 .withMessage("Invalid event_date format for dob"),
@@ -660,8 +662,10 @@ exports.editEventValidation = () => {
             check('event_name').optional().not().isEmpty().withMessage('event_name is required'),
             check('about_event').optional().not().isEmpty().withMessage('about_event is required'),
             check('color_name').optional().not().isEmpty().withMessage('color_name is required'),
-            check("event_attend").optional().not().isEmpty().withMessage("event_attend is required")
-                .isIn(['all', 'principal', 'teacher', 'parent']).withMessage("Invalid event_attend, valid event_attend are: 'all', 'principal', 'teacher', 'parent'"),
+            check('is_all').optional().not().isEmpty().withMessage('is_all is required'),
+            check('is_parent').optional().not().isEmpty().withMessage('is_parent is required'),
+            check('is_teacher').optional().not().isEmpty().withMessage('is_teacher is required'),
+            check('is_principal').optional().not().isEmpty().withMessage('is_principal is required'),
             check("event_date").optional()
                 .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
                 .withMessage("Invalid event_date format for dob"),
@@ -669,6 +673,33 @@ exports.editEventValidation = () => {
                 .withMessage("Invalid time format for start_time"),
             check("end_time").optional().custom(value => moment(value, "HH:mm", true).isValid())
                 .withMessage("Invalid time format for end_time"),
+        ],
+        validation
+    ];
+}
+
+
+exports.addSleepLoagValidation = () => {
+    return [
+        [
+            check('student_id').not().isEmpty().withMessage('student_id is required'),
+            check("start_time").custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+            check("end_time").custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+        ],
+        validation
+    ];
+}
+
+exports.editSleepLoagValidation = () => {
+    return [
+        [
+            check('id').not().isEmpty().withMessage('sleep loag id is required'),
+            check("start_time").optional().custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+            check("end_time").optional().custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
         ],
         validation
     ];

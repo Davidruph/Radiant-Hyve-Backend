@@ -85,7 +85,6 @@ const getAllStudent = async (req, res) => {
             request_status: 'accepted',
         };
 
-        // Add shift_id to whereClause only if it's not 0
         if (shift_id && parseInt(shift_id) !== 0) {
             const shift = await db.Shift.findOne({ where: { school_id } });
             if (!shift) {
@@ -146,6 +145,14 @@ const getStudent = async (req, res) => {
 
         const student = await db.Student.findOne({
             where: { id: student_id, school_id },
+            include: [
+                {
+                    model: db.User,
+                    as: "Teacher",
+                    attributes: ['id', 'full_name']
+                }
+            ],
+
         })
 
         if (!student) {

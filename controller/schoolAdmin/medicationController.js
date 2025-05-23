@@ -21,16 +21,11 @@ const addMedication = async (req, res) => {
         const { student_id, doctor_name, type_disease, medication_details, iso_code, country_code, mobile_no } = req.body
 
         let school_id = null
-        if (req.user.role == "principal") {
+        if (req.user.role == "principal" || req.user.role == "teacher") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })
             school_id = principal.school_id
-        } else if (req.user.role == "teacher") {
-            const teacher = await db.User.findOne({
-                where: { id: req.user.id, is_deleted: false }
-            })
-            school_id = teacher.school_id
         } else {
             school_id = req.user.id
         }
@@ -91,16 +86,11 @@ const editMedication = async (req, res) => {
         const { medication_id, student_id, doctor_name, type_disease, medication_details, iso_code, country_code, mobile_no } = req.body
 
         let school_id = null
-        if (req.user.role == "principal") {
+        if (req.user.role == "principal" || req.user.role == "teacher") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })
             school_id = principal.school_id
-        } else if (req.user.role == "teacher") {
-            const teacher = await db.User.findOne({
-                where: { id: req.user.id, is_deleted: false }
-            })
-            school_id = teacher.school_id
         } else {
             school_id = req.user.id
         }
@@ -176,16 +166,11 @@ const getMedication = async (req, res) => {
         }
 
         let school_id = null
-        if (req.user.role == "principal") {
+        if (req.user.role == "principal" || req.user.role == "teacher") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })
             school_id = principal.school_id
-        } else if (req.user.role == "teacher") {
-            const teacher = await db.User.findOne({
-                where: { id: req.user.id, is_deleted: false }
-            })
-            school_id = teacher.school_id
         } else {
             school_id = req.user.id
         }
@@ -234,16 +219,11 @@ const listMedication = async (req, res) => {
         const offset = (page - 1) * limit
 
         let school_id = null
-        if (req.user.role == "principal") {
+        if (req.user.role == "principal" || req.user.role == "teacher") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })
             school_id = principal.school_id
-        } else if (req.user.role == "teacher") {
-            const teacher = await db.User.findOne({
-                where: { id: req.user.id, is_deleted: false }
-            })
-            school_id = teacher.school_id
         } else {
             school_id = req.user.id
         }
@@ -262,6 +242,9 @@ const listMedication = async (req, res) => {
                     'student_name'
                 ]
             ],
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']],
         })
 
         return res.status(200).json({
@@ -292,16 +275,11 @@ const deleteMedication = async (req, res) => {
         }
 
         let school_id = null
-        if (req.user.role == "principal") {
+        if (req.user.role == "principal" || req.user.role == "teacher") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })
             school_id = principal.school_id
-        } else if (req.user.role == "teacher") {
-            const teacher = await db.User.findOne({
-                where: { id: req.user.id, is_deleted: false }
-            })
-            school_id = teacher.school_id
         } else {
             school_id = req.user.id
         }
@@ -317,6 +295,8 @@ const deleteMedication = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Medication not found " })
         }
 
+        await medication.destroy()
+
         return res.status(200).json({ status: 1, message: "medication deleted successfully", data: medication })
 
     } catch (error) {
@@ -326,12 +306,66 @@ const deleteMedication = async (req, res) => {
 
 }
 
+const listStudent = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        let school_id = null
+        if (req.user.role == "principal" || req.user.role == "teacher") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const medicationRecords = await db.MedicationInfo.findAll({
+            where: {
+                school_id: school_id
+            },
+            attributes: ["student_id"],
+            raw: true
+        })
+
+        const studentIdsWithMedication = medicationRecords.map(m => m.student_id);
+
+        const whereCondition = {
+            school_id,
+            request_status: 'accepted',
+        };
+
+        if (studentIdsWithMedication.length > 0) {
+            whereCondition.id = {
+                [db.Sequelize.Op.notIn]: studentIdsWithMedication
+            };
+        }
+
+        const student = await db.Student.findAll({
+            where: whereCondition,
+            attributes: ["id", "full_name"]
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'student retrieved successfully',
+            data: student
+        });
+
+    } catch (error) {
+        console.error('Error deleted medication:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
 
 
-module.exports ={
+
+module.exports = {
     addMedication,
     editMedication,
     getMedication,
     listMedication,
     deleteMedication,
+    listStudent,
 }

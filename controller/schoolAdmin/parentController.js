@@ -142,7 +142,12 @@ const editParent = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { mobile_no, iso_code, country_code }
+                where: { 
+                    mobile_no, 
+                    iso_code, 
+                    country_code,
+                    id: {[Op.not]: parent_id}
+                }
             })
 
             if (existMobile) {
@@ -284,7 +289,7 @@ const parentDetails = async (req, res) => {
                 role: "parent",
                 school_id
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "mobile_no", "country_code", "iso_code", "profile_pic","is_blocked", "is_deleted",
+            attributes: ["id", "email", "password", "full_name", "gender", "mobile_no", "country_code", "iso_code", "profile_pic","is_blocked", "is_deleted","address",
                 [
                     Sequelize.literal(`(
                                     SELECT COUNT(*) 
