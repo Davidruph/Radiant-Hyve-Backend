@@ -46,7 +46,7 @@ const sendOTPToEmail = (otp) =>
     .code {
       font-size: 32px; /* Increased OTP size */
       font-weight: bold;
-      color: #000000;
+      color:rgb(57, 21, 185);
       background: #ffeeee;
       display: inline-block;
       padding: 15px 30px;
@@ -84,7 +84,7 @@ const sendOTPToEmail = (otp) =>
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://promarvel.com:8800/uploads/promarvel.png" alt="App Logo"  style="width: 80px; height: auto"/>
+      <img src="http://138.197.38.184:8800/uploads/app_logo.png" alt="App Logo"  style="width: 80px; height: auto"/>
     </div>
     <div class="content">
       <h1>Complete Your Forgot Password Verification</h1>

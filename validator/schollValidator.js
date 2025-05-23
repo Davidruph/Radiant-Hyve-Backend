@@ -704,3 +704,40 @@ exports.editSleepLoagValidation = () => {
         validation
     ];
 }
+
+exports.addMenuValidation = () => {
+    return [
+        [
+            check('student_id').optional().not().isEmpty().withMessage('student_id is required'),
+            check('is_all').not().isEmpty().withMessage('is_all is required'),
+            check('menu_days').not().isEmpty().withMessage('menu_days is required'),
+            check('menu_type').not().isEmpty().withMessage('menu_type is required'),
+            check("menu_date")
+                .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
+                .withMessage("Invalid menu_date format for dob"),
+            check('about_meal').not().isEmpty().withMessage('about_meal is required'),
+            check("menu_time").custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+        ],
+        validation
+    ];
+}
+
+exports.editMenuValidation = () => {
+    return [
+        [
+            check('menu_id').not().isEmpty().withMessage('menu_id is required'),
+            check('student_id').optional().not().isEmpty().withMessage('student_id is required'),
+            check('is_all').optional().not().isEmpty().withMessage('is_all is required'),
+            check('menu_days').optional().not().isEmpty().withMessage('menu_days is required'),
+            check('menu_type').optional().not().isEmpty().withMessage('menu_type is required'),
+            check("menu_date").optional()
+                .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
+                .withMessage("Invalid menu_date format for dob"),
+            check('about_meal').optional().not().isEmpty().withMessage('about_meal is required'),
+            check("menu_time").optional().custom(value => moment(value, "HH:mm", true).isValid())
+                .withMessage("Invalid time format for start_time"),
+        ],
+        validation
+    ];
+}

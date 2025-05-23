@@ -150,9 +150,13 @@ const getStudent = async (req, res) => {
                     model: db.User,
                     as: "Teacher",
                     attributes: ['id', 'full_name']
+                },
+                {
+                    model: db.Shift,
+                    as: "Shift",
+                    attributes: ['id', 'shift_name']
                 }
             ],
-
         })
 
         if (!student) {

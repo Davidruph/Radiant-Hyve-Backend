@@ -21,7 +21,7 @@ const sendOTPVerificationEmail = async ({ email, otp }) => {
 let htmlContent = sendOTPToEmail(otp);
 
   let mail_option = {
-  from: `"Radiant Hyve" <hello@cubesinfotech.in>`,
+  from: `"Radiant Hyve" <info@cubesinfotech.in>`,
     to: email,
     subject: "Verification Code: Complete Your Email Verification",
     html: htmlContent,

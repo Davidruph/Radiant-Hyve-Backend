@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('../../config/db')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { Op, Sequelize } = require('sequelize');
+const { Op, Sequelize, col, fn, where } = require('sequelize');
 const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
@@ -17,7 +17,7 @@ const createEvent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const {color_name, about_event, end_time, start_time, event_date, event_name, is_principal, is_teacher, is_parent, is_all } = req.body
+        const { color_name, about_event, end_time, start_time, event_date, event_name, is_principal, is_teacher, is_parent, is_all } = req.body
 
         let school_id = null
         if (req.user.role == "principal") {
@@ -29,7 +29,7 @@ const createEvent = async (req, res) => {
             school_id = req.user.id
         }
 
-        const event = await db.Event.creat({
+        const event = await db.Event.create({
             event_name: event_name,
             event_date: event_date,
             start_time: start_time,
@@ -38,7 +38,7 @@ const createEvent = async (req, res) => {
             color_name: color_name,
             school_id,
             admin_id: req.user.id,
-            is_principal, is_teacher, is_parent, is_all 
+            is_principal, is_teacher, is_parent, is_all
         })
 
         return res.status(200).json({
@@ -58,7 +58,7 @@ const editEvent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { event_id, is_principal, is_teacher, is_parent, is_all , color_name, about_event, end_time, start_time, event_date, event_name } = req.body
+        const { event_id, is_principal, is_teacher, is_parent, is_all, color_name, about_event, end_time, start_time, event_date, event_name } = req.body
 
         let school_id = null
         if (req.user.role == "principal") {
@@ -180,9 +180,9 @@ const listEvent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { month } = req.query
-        if (!month) {
-            return res.status(400).json({ status: 0, message: "month is required" })
+        const { month, year } = req.query
+        if (!month || !year) {
+            return res.status(400).json({ status: 0, message: "month and year is required" })
         }
 
         let school_id = null
@@ -197,9 +197,10 @@ const listEvent = async (req, res) => {
 
         const event = await db.Event.findAll({
             where: {
-                id: event_id, school_id,
+                school_id,
                 [Op.and]: [
-                    where(fn('MONTH', col('event_date')), month)
+                    where(fn('MONTH', col('event_date')), month),
+                    where(fn('YEAR', col('event_date')), year)
                 ]
             }
         })

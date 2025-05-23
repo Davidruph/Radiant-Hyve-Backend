@@ -35,6 +35,13 @@ const addSleepLog = async (req, res) => {
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
+        const existSleppLog = await db.Menu.findOne({
+            where: {student_id }
+        })
+
+        if(existSleppLog){
+            return res.status(400).json({ message: 'Sleep log already exist' });
+        }
 
         const sleep_log = await db.SleepLoag.create({
             start_time,
@@ -42,7 +49,7 @@ const addSleepLog = async (req, res) => {
             student_name: student.full_name,
             student_id,
             parent_id: student.parent_id,
-            admin_id: req.user.id
+            admin_id: req.user.id,
         });
 
         return res.status(200).json({
@@ -167,8 +174,6 @@ const getSleepLog = async (req, res) => {
         const sleepLogs = await db.SleepLoag.findOne({
             where: { id: id },
             order: [['id', 'DESC']],
-            limit,
-            offset
         });
 
         return res.status(200).json({

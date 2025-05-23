@@ -19,8 +19,11 @@ const certificate = require("../controller/schoolAdmin/certificationController")
 const medification = require("../controller/schoolAdmin/medicationController")
 const event = require("../controller/schoolAdmin/eventController")
 const sleep_loag = require("../controller/schoolAdmin/sleeplogsController")
+const menu = require("../controller/schoolAdmin/mealTrackController")
+const home = require("../controller/schoolAdmin/homeController")
 
 
+router.get('/deshbord_count',verifyToken, home.desbordCount);
 
 
 router.put('/edit_school_profile',verifyToken, schoolvalidator.updateSchoolValidation(), principal.editProfile);
@@ -102,6 +105,13 @@ router.put('/edit_sleep_loag',verifyToken, schoolvalidator.editSleepLoagValidati
 router.get('/get_sleep_loag',verifyToken, sleep_loag.getSleepLog);
 router.get('/list_sleep_loag',verifyToken, sleep_loag.listSleepLog);
 
+
+router.post('/add_menu',verifyToken,schoolvalidator.addMenuValidation(), menu.addMenu);
+router.put('/edit_menu',verifyToken, schoolvalidator.addMenuValidation(), menu.editMenu);
+router.get('/get_menu',verifyToken, menu.getMenu);
+router.get('/list_menu',verifyToken, menu.listMenu);
+router.delete('/delete_menu',verifyToken, menu.deleteMenu);
+router.get('/list_all_student',verifyToken, menu.listStudent);
 
 
 
