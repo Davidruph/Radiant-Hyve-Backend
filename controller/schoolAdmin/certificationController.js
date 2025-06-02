@@ -78,7 +78,7 @@ const editCertification = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Certificate not found" })
         }
 
-        await db.Certification.update({
+        await certification.update({
             staff_id: staff_id || certification.staff_id,
             hire_checklist: hire_checklist || certification.hire_checklist,
             institution_name: institution_name || certification.institution_name

@@ -324,11 +324,7 @@ const getProfile = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-                await req.token.destroy()
-
-        if (!tokenRecord) {
-            return res.status(404).json({ status: 0, message: 'Token not found.' });
-        }
+        await req.token.destroy()
 
         return res.status(200).json({ status: 1, message: 'Logout successful.' });
     } catch (error) {

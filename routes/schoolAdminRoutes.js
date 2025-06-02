@@ -111,7 +111,7 @@ router.put('/edit_menu',verifyToken, schoolvalidator.addMenuValidation(), menu.e
 router.get('/get_menu',verifyToken, menu.getMenu);
 router.get('/list_menu',verifyToken, menu.listMenu);
 router.delete('/delete_menu',verifyToken, menu.deleteMenu);
-router.get('/list_all_student',verifyToken, menu.listStudent);
+router.get('/get_all_student',verifyToken, menu.listStudent);
 
 
 

@@ -17,10 +17,32 @@ const desbordCount = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const principal = await db.User.count({ where: { school_id: req.user.id, role: "principal" } })
-        const staff = await db.User.count({ where: { school_id: req.user.id, role: "teacher" } })
-        const parent = await db.User.count({ where: { school_id: req.user.id, role: "parent" } })
-        const student = await db.Student.count({ where: { school_id: req.user.id, request_status: 'accepted' }})
+        const principal = await db.User.count({ where: { school_id: req.user.id, role: "principal", is_deleted: false } })
+        const staff = await db.User.count({ where: { school_id: req.user.id, role: "teacher", is_deleted: false } })
+        const parent = await db.User.count({ where: { school_id: req.user.id, role: "parent", is_deleted: false } })
+        const student = await db.Student.count({ where: { school_id: req.user.id, request_status: 'accepted' } })
+        const today = new Date();
+
+        const nextWeek = new Date();
+        nextWeek.setDate(today.getDate() + 7);
+
+        const upcomingBirthday = await db.User.count({
+            where: {
+                school_id: req.user.id,
+                is_deleted: false,
+                [Op.and]: [
+                    where(
+                        fn('TO_CHAR', col('dob'), 'MM-DD'),
+                        {
+                            [Op.between]: [
+                                formatDateMMDD(today),
+                                formatDateMMDD(nextWeek)
+                            ]
+                        }
+                    )
+                ],
+            }
+        });
 
         return res.status(200).json({
             status: 1,
@@ -29,7 +51,8 @@ const desbordCount = async (req, res) => {
                 total_principal: principal,
                 total_staff: staff,
                 total_parent: parent,
-                total_student: student
+                total_student: student,
+                total_upcoming_birthday: upcomingBirthday
             }
         })
 
@@ -39,7 +62,75 @@ const desbordCount = async (req, res) => {
     }
 }
 
+const getUpcomingBirthday = async (req, res) => {
+    if (req.user.role != "school") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { role } = req.query;
+        const today = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(today.getDate() + 7);
+        const upcomingBirthdays = await db.User.findAll({
+            where: {
+                school_id: req.user.id,
+                is_deleted: false,
+                role: role || { [Op.in]: ['principal', 'parent', 'teacher'] }, 
+                [Op.and]: [
+                    Sequelize.where(
+                        Sequelize.fn('TO_CHAR', Sequelize.col('dob'), 'MM-DD'),
+                        {
+                            [Op.between]: [
+                                formatDateMMDD(today),
+                                formatDateMMDD(nextWeek)
+                            ]
+                        }
+                    )
+                ],
+            },
+            attributes: ['id', 'full_name', 'dob', 'role', 'email']
+        });
+        return res.status(200).json({
+            status: 1,
+            message: "Upcoming birthdays retrieved successfully",
+            data: upcomingBirthdays
+        });
+    }
+    catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const getProfile = async (req, res) => {
+    if (req.user.role != "school") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { id } = req.query;
+        if (!id) {
+            return res.status(400).json({ status: 0, message: "id is required" });
+        }
+        const user = await db.User.findOne({
+            where: { id: id, is_deleted: false, school_id: req.user.id },
+        })
+        if (!user) {
+            return res.status(404).json({ status: 0, message: "User not found" });
+        }
+        return res.status(200).json({
+            status: 1,
+            message: "Profile retrieved successfully",
+            data: user
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
 
 module.exports = {
     desbordCount,
+    getUpcomingBirthday,
+    getProfile,
 }

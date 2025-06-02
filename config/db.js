@@ -105,14 +105,14 @@ db.Menu.belongsTo(db.User, {foreignKey: 'school_id', as: 'Menu'})
 db.Menu.hasMany(db.MenuDay, {foreignKey: 'menu_id',as: 'MenuDay'})
 db.MenuDay.belongsTo(db.Menu, {foreignKey: 'menu_id', as: 'dayMenu'})
 
-db.Student.hasMany(db.Menu, {foreignKey: 'Student',as: 'StudentsMenu'})
-db.Menu.belongsTo(db.Student, {foreignKey: 'Student', as: 'student'})
+db.Student.hasMany(db.Menu, {foreignKey: 'student_id',as: 'StudentsMenu'})
+db.Menu.belongsTo(db.Student, {foreignKey: 'student_id', as: 'student'})
 
 db.User.hasMany(db.Shift, {foreignKey: "admin_id",as: "adminShift",});
 db.Shift.belongsTo(db.User, {oreignKey: "admin_id",as: "Shiftadmin",}); 
 
 
-db.Student.hasMany(db.SleepLoag, {foreignKey: "Student",as: "SleepLoag",});
+db.Student.hasMany(db.SleepLoag, {foreignKey: "student_id",as: "SleepLoag",});
 db.SleepLoag.belongsTo(db.Student, {oreignKey: "student_id",as: "studentSleepLoag",}); 
 
 db.User.hasMany(db.SleepLoag, {foreignKey: 'parent_id',as: 'studentSleepLoag'})

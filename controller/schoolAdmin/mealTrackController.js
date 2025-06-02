@@ -186,6 +186,7 @@ const listMenu = async (req, res) => {
                 }
             ],
             order: [['id', 'DESC']],
+            distinct: true,
             offset: offset,
             limit: limit
         })

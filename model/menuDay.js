@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: true,
                 references: {
-                    model: 'tbl_user',
+                    model: 'tbl_menu',
                     key: 'id',
                 },
                 onDelete: 'CASCADE',
