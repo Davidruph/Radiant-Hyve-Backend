@@ -39,7 +39,7 @@ const addparent = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { mobile_no, iso_code, country_code }
+                where: { mobile_no, iso_code, country_code , is_deleted: false}
             })
 
             if (existMobile) {
@@ -65,7 +65,6 @@ const addparent = async (req, res) => {
             if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
 
         }
-
 
         const hashedPassword = await bcrypt.hash(password, 10)
         const parent = await db.User.create({
@@ -146,7 +145,8 @@ const editParent = async (req, res) => {
                     mobile_no, 
                     iso_code, 
                     country_code,
-                    id: {[Op.not]: parent_id}
+                    id: {[Op.not]: parent_id},
+                    is_deleted: false
                 }
             })
 

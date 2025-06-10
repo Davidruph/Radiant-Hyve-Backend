@@ -39,7 +39,7 @@ const addStaff = async (req, res) => {
         }
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { mobile_no, iso_code, country_code }
+                where: { mobile_no, iso_code, country_code, is_deleted: false }
             })
 
             if (existMobile) {
@@ -149,7 +149,8 @@ const editStaff = async (req, res) => {
                     mobile_no, 
                     iso_code, 
                     country_code,
-                    id: {[Op.not]: staff_id}
+                    id: {[Op.not]: staff_id},
+                    is_deleted: false
                 }
             })
 

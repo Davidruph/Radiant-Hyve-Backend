@@ -31,7 +31,7 @@ const addPrincipal = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { mobile_no, iso_code, country_code }
+                where: { mobile_no, iso_code, country_code, is_deleted: false }
             })
 
             if (existMobile) {
@@ -129,7 +129,8 @@ const editPrincipal = async (req, res) => {
                     mobile_no, 
                     iso_code, 
                     country_code,
-                    id: {[Op.not]: principal_id}
+                    id: {[Op.not]: principal_id},
+                    is_deleted: false
                 }
             })
 
