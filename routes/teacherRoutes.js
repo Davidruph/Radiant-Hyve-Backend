@@ -18,5 +18,8 @@ router.get('/list_menu_student',verifyToken, teacher.listMenu);
 router.get('/list_sleep_loag_student',verifyToken, teacher.listSleepLog);
 router.get('/list_medification_student',verifyToken, teacher.listMedication);
 
+router.get('/teacher_all_student',verifyToken, teacher.listStudetMenu);
+
+
 
 module.exports = router;

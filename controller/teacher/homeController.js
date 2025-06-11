@@ -121,9 +121,16 @@ const listMenu = async (req, res) => {
 
         const menu = await db.Menu.findAndCountAll({
             where: {
-                student_id: {
-                    [Op.in]: studentIds
-                },
+                [Op.or]: [
+                    {
+                        student_id: {
+                            [Op.in]: studentIds
+                        }
+                    },
+                    {
+                        is_all: true
+                    }
+                ]
             },
             attributes: {
                 include: [
@@ -266,9 +273,35 @@ const listMedication = async (req, res) => {
     }
 }
 
+const listStudetMenu = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const student = await db.Student.findAll({
+            where: {
+                teacher_id: req.user.id,
+                request_status: 'accepted',
+            },
+            attributes: ['id', 'full_name'],
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'student retrieved successfully',
+            data: student
+        });
+    } catch (error) {
+        console.error('Error fetching student menu:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+
 module.exports = {
     editProfile,
     listMenu,
     listSleepLog,
-    listMedication
+    listMedication,
+    listStudetMenu
 };

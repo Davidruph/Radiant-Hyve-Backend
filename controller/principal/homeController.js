@@ -131,7 +131,7 @@ const editPrincipal = async (req, res) => {
                     mobile_no,
                     iso_code,
                     country_code,
-                    id: { [Op.not]: principal_id },
+                    id: { [Op.not]: req.user.id },
                     is_deleted: false
                 }
             })
