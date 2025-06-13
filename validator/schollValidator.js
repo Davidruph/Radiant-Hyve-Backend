@@ -741,3 +741,13 @@ exports.editMenuValidation = () => {
         validation
     ];
 }
+
+exports.getAttedanceCountValidation = () => {
+    return [
+        [
+            check('user_id').not().isEmpty().withMessage('user_id is required'),
+            check('year').not().isEmpty().withMessage('year is required'),
+        ],
+        validation
+    ];
+}

@@ -82,15 +82,12 @@ router.get('/list_certification',verifyToken, certificate.listCertificate);
 router.delete('/delete_certification',verifyToken, certificate.deleteCertificat);
 
 
-
 router.post('/add_medification',verifyToken,schoolvalidator.addMedificationValidation(), medification.addMedication);
 router.put('/edit_medification',verifyToken, schoolvalidator.editMedificationValidation(), medification.editMedication);
 router.get('/get_medification',verifyToken, medification.getMedication);
 router.get('/list_medification',verifyToken, medification.listMedication);
 router.delete('/delete_medification',verifyToken, medification.deleteMedication);
 router.get('/list_students',verifyToken, medification.listStudent);
-
-
 
 
 router.post('/add_event',verifyToken,schoolvalidator.addEventValidation(), event.createEvent);
@@ -107,12 +104,13 @@ router.get('/list_sleep_loag',verifyToken, sleep_loag.listSleepLog);
 
 
 router.post('/add_menu',verifyToken,schoolvalidator.addMenuValidation(), menu.addMenu);
-router.put('/edit_menu',verifyToken, schoolvalidator.addMenuValidation(), menu.editMenu);
+router.put('/edit_menu',verifyToken, schoolvalidator.editMenuValidation(), menu.editMenu);
 router.get('/get_menu',verifyToken, menu.getMenu);
 router.get('/list_menu',verifyToken, menu.listMenu);
 router.delete('/delete_menu',verifyToken, menu.deleteMenu);
 router.get('/get_all_student',verifyToken, menu.listStudent);
 
+router.get('/get_attedance_count',verifyToken,schoolvalidator.getAttedanceCountValidation(), principal.getAttedanceCount);
 
 
 

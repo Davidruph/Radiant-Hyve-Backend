@@ -297,7 +297,7 @@ const deleteMedication = async (req, res) => {
 
         await medication.destroy()
 
-        return res.status(200).json({ status: 1, message: "medication deleted successfully", data: medication })
+        return res.status(200).json({ status: 1, message: "medication deleted successfully" })
 
     } catch (error) {
         console.error('Error deleted medication:', error);

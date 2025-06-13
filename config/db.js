@@ -112,7 +112,7 @@ db.User.hasMany(db.Shift, {foreignKey: "admin_id",as: "adminShift",});
 db.Shift.belongsTo(db.User, {oreignKey: "admin_id",as: "Shiftadmin",}); 
 
 
-db.Student.hasMany(db.SleepLoag, {foreignKey: "student_id",as: "SleepLoag",});
+db.Student.hasOne(db.SleepLoag, {foreignKey: "student_id",as: "SleepLoag",});
 db.SleepLoag.belongsTo(db.Student, {oreignKey: "student_id",as: "studentSleepLoag",}); 
 
 db.User.hasMany(db.SleepLoag, {foreignKey: 'parent_id',as: 'studentSleepLoag'})

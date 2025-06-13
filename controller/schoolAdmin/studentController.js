@@ -301,12 +301,12 @@ const listTeacher = async (req, res) => {
 }
 
 const getShift = async (req, res) => {
-    if (req.user.role != "school" && req.user.role != "principal") {
+    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
         let school_id = null
-        if (req.user.role == "principal") {
+        if (req.user.role == "principal" || req.user.role == "teacher") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })

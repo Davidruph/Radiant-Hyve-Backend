@@ -115,3 +115,15 @@ exports.editPrincipalValidation = () => {
         validation
     ];
 }
+
+
+exports.attendanceValidation = () => {
+    return [
+        [
+            check('address').not().isEmpty().withMessage('address is required'),
+            check('latitude').not().isEmpty().withMessage('latitude is required'),
+            check('longitude').not().isEmpty().withMessage('longitude is required'),
+        ],
+        validation
+    ];
+}

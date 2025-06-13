@@ -49,6 +49,19 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 onDelete: 'CASCADE',
             },
+            school_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'tbl_user',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+            },
+            is_submitted: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            }
         },
         {
             tableName: "tbl_student_attendance",

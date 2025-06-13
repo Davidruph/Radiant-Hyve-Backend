@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('../../config/db')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { Op, Sequelize } = require('sequelize');
+const { Op, fn, col, literal } = require("sequelize");
 const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
@@ -125,11 +125,11 @@ const editPrincipal = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { 
-                    mobile_no, 
-                    iso_code, 
+                where: {
+                    mobile_no,
+                    iso_code,
                     country_code,
-                    id: {[Op.not]: principal_id},
+                    id: { [Op.not]: principal_id },
                     is_deleted: false
                 }
             })
@@ -285,7 +285,7 @@ const getPrincipal = async (req, res) => {
                 school_id: req.user.id,
                 is_deleted: false
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "dob", "qualification", "designation", "experience", "mobile_no", "country_code", "iso_code", "profile_pic",  "is_blocked", "is_deleted"],
+            attributes: ["id", "email", "password", "full_name", "gender", "dob", "qualification", "designation", "experience", "mobile_no", "country_code", "iso_code", "profile_pic", "is_blocked", "is_deleted"],
             include: [
                 {
                     model: db.Attendance,
@@ -416,6 +416,82 @@ const editProfile = async (req, res) => {
 
 }
 
+const getAttedanceCount = async (req, res) => {
+    if (req.user.role !== "school" && req.user.role !== "principal") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
+    }
+
+    try {
+        const { user_id, year } = req.query;
+
+        if (!user_id || !year) {
+            return res.status(400).json({ status: 0, message: "user_id and year are required" });
+        }
+
+        let school_id;
+        if (req.user.role === "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            });
+            school_id = principal.school_id;
+        } else {
+            school_id = req.user.id;
+        }
+
+        const user = await db.User.findOne({
+            where: {
+                id: user_id,
+                school_id,
+                role: { [Op.or]: ['teacher', 'principal'] }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ status: 0, message: "User not found" });
+        }
+
+        const attendanceData = await db.Attendance.findAll({
+            attributes: [
+                [fn('MONTH', col('date')), 'month'],
+                [fn('COUNT', col('id')), 'count']
+            ],
+            where: {
+                user_id,
+                school_id,
+                date: {
+                    [Op.gte]: new Date(`${year}-01-01`),
+                    [Op.lte]: new Date(`${year}-12-31`)
+                }
+            },
+            group: [literal('MONTH(date)')],
+            order: [literal('MONTH(date) ASC')]
+        });
+
+        const monthMap = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const response = {};
+
+        monthMap.forEach(month => {
+            response[month] = 0;
+        });
+
+        attendanceData.forEach(row => {
+            const monthIndex = parseInt(row.dataValues.month) - 1;
+            const monthName = monthMap[monthIndex];
+            response[monthName] = parseInt(row.dataValues.count);
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Attendance summary retrieved successfully',
+            data: response
+        });
+
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+};
+
 module.exports = {
     addPrincipal,
     editPrincipal,
@@ -425,4 +501,5 @@ module.exports = {
     deletePrincipal,
     blockPrincipal,
     editProfile,
+    getAttedanceCount
 }

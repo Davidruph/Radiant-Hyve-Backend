@@ -9,6 +9,7 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
+const moment = require('moment')
 
 
 
@@ -130,7 +131,8 @@ const listMenu = async (req, res) => {
                     {
                         is_all: true
                     }
-                ]
+                ],
+                school_id: req.user.school_id
             },
             attributes: {
                 include: [
@@ -217,17 +219,17 @@ const listSleepLog = async (req, res) => {
 }
 
 const listMedication = async (req, res) => {
-    if (req.user.role != "teacher") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    if (req.user.role !== "teacher") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
     }
 
     try {
-        const { page } = req.query
+        const { page, search } = req.query;
         if (!page) {
-            return res.status(400).json({ status: 0, message: 'page is required' });
+            return res.status(400).json({ status: 0, message: 'Page is required' });
         }
-        const limit = 10
-        const offset = (page - 1) * limit
+        const limit = 10;
+        const offset = (page - 1) * limit;
 
         const student = await db.Student.findAll({
             where: {
@@ -237,52 +239,94 @@ const listMedication = async (req, res) => {
         });
         const studentIds = student.map(s => s.id);
 
-        const medication = await db.MedicationInfo.findAndCountAll({
-            where: {
-                student_id: {
-                    [Op.in]: studentIds
-                },
+        let whereClause = {
+            student_id: {
+                [Op.in]: studentIds,
             },
-            attributes: ["id", "student_id", "mobile_no", "country_code", "iso_code", "medication_details", "type_disease", "doctor_name",
+        };
+
+        if (search) {
+            whereClause = {
+                ...whereClause,
+                [Op.or]: [
+                    {
+                        doctor_name: {
+                            [Op.like]: `%${search}%`, // Case-insensitive search for doctor_name
+                        },
+                    },
+                    {
+                        '$MedicationInfoStudent.full_name$': {
+                            [Op.like]: `%${search}%`, // Case-insensitive search for student_name
+                        },
+                    },
+                ],
+            };
+        }
+
+        const medication = await db.MedicationInfo.findAndCountAll({
+            where: whereClause,
+            attributes: [
+                "id",
+                "student_id",
+                "mobile_no",
+                "country_code",
+                "iso_code",
+                "medication_details",
+                "type_disease",
+                "doctor_name",
                 [
                     Sequelize.literal(`(
-                      SELECT t2.full_name
-                      FROM tbl_student t2
-                      WHERE t2.id = MedicationInfo.student_id
+                        SELECT t2.full_name
+                        FROM tbl_student t2
+                        WHERE t2.id = MedicationInfo.student_id
                     )`),
-                    'student_name'
-                ]
+                    'student_name',
+                ],
+            ],
+            include: [
+                {
+                    model: db.Student,
+                    as: 'MedicationInfoStudent',
+                    attributes: [], 
+                },
             ],
             limit,
             offset,
             order: [['createdAt', 'DESC']],
-        })
+        });
 
         return res.status(200).json({
             status: 1,
-            message: 'medication retrieved successfully',
+            message: 'Medication retrieved successfully',
             total_medication: medication.count,
             current_page: parseInt(page),
             totalPage: Math.ceil(medication.count / limit),
-            data: medication.rows
+            data: medication.rows,
         });
-
     } catch (error) {
-        console.error('Error get medication:', error);
+        console.error('Error getting medication:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
-}
+};
 
 const listStudetMenu = async (req, res) => {
     if (req.user.role != "teacher") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
+        const {search} = req.query;
+        const whereClause = {
+            teacher_id: req.user.id,
+            request_status: 'accepted',
+            };
+        if (search) {
+            whereClause[Op.or] = [
+                { full_name: { [Op.like]: `%${search}%` } },
+            ];
+        }
+
         const student = await db.Student.findAll({
-            where: {
-                teacher_id: req.user.id,
-                request_status: 'accepted',
-            },
+            where: whereClause,
             attributes: ['id', 'full_name'],
         });
 
@@ -303,5 +347,5 @@ module.exports = {
     listMenu,
     listSleepLog,
     listMedication,
-    listStudetMenu
+    listStudetMenu,
 };

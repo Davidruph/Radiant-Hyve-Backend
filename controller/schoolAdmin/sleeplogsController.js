@@ -35,8 +35,8 @@ const addSleepLog = async (req, res) => {
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
-        const existSleppLog = await db.Menu.findOne({
-            where: {student_id }
+        const existSleppLog = await db.SleepLoag.findOne({
+            where: {student_id: student_id }
         })
 
         if(existSleppLog){

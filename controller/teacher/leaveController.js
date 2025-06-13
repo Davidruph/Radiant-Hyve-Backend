@@ -34,23 +34,43 @@ const applyLeave = async (req, res) => {
     }
 }
 
-const getLeave = async (req, res) => {
-    if (req.user.role != "teacher" && req.user.role != "principal") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+const listLeave = async (req, res) => {
+    if (req.user.role !== "teacher") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
     }
+
     try {
-        const { month, year } = req.query;
-        if (!month || !year) {
-            return res.status(400).json({ status: 0, message: "month and year is required" })
+        let { month, year } = req.query;
+
+        let monthArray = [];
+        if (month) {
+            monthArray = Array.isArray(month)
+                ? month.map(Number)
+                : typeof month === 'string'
+                    ? month.split(',').map(Number)
+                    : [];
         }
+
+        const whereClause = {
+            teacher_id: req.user.id
+        };
+
+        const andConditions = [];
+
+        if (year) {
+            andConditions.push(where(fn('YEAR', col('event_date')), year));
+        }
+
+        if (monthArray.length > 0) {
+            andConditions.push(where(fn('MONTH', col('event_date')), { [Op.in]: monthArray }));
+        }
+
+        if (andConditions.length > 0) {
+            whereClause[Op.and] = andConditions;
+        }
+
         const leaves = await db.Levave.findAll({
-            where: {
-                teacher_id: req.user.id,
-                [Op.and]: [
-                    where(fn('MONTH', col('event_date')), month),
-                    where(fn('YEAR', col('event_date')), year)
-                ]
-            },
+            where: whereClause,
             order: [['createdAt', 'DESC']]
         });
 
@@ -64,10 +84,10 @@ const getLeave = async (req, res) => {
         console.error('Error :', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
-}
+};
 
 
 module.exports = {
     applyLeave,
-    getLeave,
+    listLeave,
 };

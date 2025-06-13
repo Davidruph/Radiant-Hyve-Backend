@@ -7,11 +7,11 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
             },
             clock_in_time: {
-                type: DataTypes.TIME,
+                type: DataTypes.DATE,
                 allowNull: true,
             },
             clock_out_time: {
-                type: DataTypes.TIME,
+                type: DataTypes.DATE,
                 allowNull: true,
             },
             is_clock_in: {
@@ -22,6 +22,30 @@ module.exports = (sequelize, DataTypes) => {
             role: {
                 type: DataTypes.ENUM('principal', 'teacher'),
                 allowNull: true, 
+            },
+            clock_in_address: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            clock_in_latitude: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            clock_in_longitude: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            clock_out_address: {
+                type: DataTypes.STRING,
+                allowNull: true
+            },
+            clock_out_latitude: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            clock_out_longitude: {
+                type: DataTypes.STRING,
+                allowNull: true,
             },
             user_id: {
                 type: DataTypes.INTEGER,

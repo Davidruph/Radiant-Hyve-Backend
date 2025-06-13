@@ -276,7 +276,16 @@ const getMenu = async (req, res) => {
                 {
                     model: db.Student,
                     as: 'student',
-                    attributes: ["id", "full_name"]
+                    attributes: ["id", "full_name", "mobile_no", "country_code", "iso_code",
+                        [
+                        Sequelize.literal(`(
+                           SELECT t2.shift_name
+                           FROM tbl_shift t2
+                           WHERE t2.id = student.shift_id
+                        )`),
+                        'shift_name'
+                        ],
+                    ]
                 }
             ],
         })

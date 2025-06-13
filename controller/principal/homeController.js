@@ -9,13 +9,14 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
-
+const moment = require('moment')
 
 const Attendance = async (req, res) => {
     if (req.user.role != "teacher" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
+        const { address, latitude, longitude } = req.body;
         const user = await db.User.findOne({
             where: { id: req.user.id, is_deleted: false }
         })
@@ -27,7 +28,10 @@ const Attendance = async (req, res) => {
         if (existigAttendance) {
             await existigAttendance.update({
                 is_clock_in: false,
-                clock_out_time: moment().format('HH:mm:ss'),
+                clock_out_time: moment().toDate(),
+                clock_out_address: address,
+                clock_out_latitude: latitude,
+                clock_out_longitude: longitude,
             })
             return res.status(200).json({
                 status: 1,
@@ -40,8 +44,11 @@ const Attendance = async (req, res) => {
                 school_id: user.school_id,
                 is_clock_in: true,
                 date: moment().format('YYYY-MM-DD'),
-                clock_in_time: moment().format('HH:mm:ss'),
+                clock_in_time: moment().toDate(),
                 clock_out_time: null,
+                clock_in_address: address,
+                clock_in_latitude: latitude,
+                clock_in_longitude: longitude,
                 role: user.role
             })
 
@@ -58,7 +65,7 @@ const Attendance = async (req, res) => {
     }
 }
 
-const getAttendance = async (req, res) => {
+const listAttendance = async (req, res) => {
     if (req.user.role != "teacher" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
@@ -70,6 +77,13 @@ const getAttendance = async (req, res) => {
         const limit = 10;
         const offset = (page - 1) * limit;
 
+        const lastAttendance = await db.Attendance.findOne({
+            where: {
+                user_id: req.user.id,
+            },
+            order: [['id', 'DESC']],
+        });
+
         const attendance = await db.Attendance.findAndCountAll({
             where: {
                 user_id: req.user.id,
@@ -77,7 +91,7 @@ const getAttendance = async (req, res) => {
                 //     [Op.gte]: Sequelize.literal('CURRENT_DATE - INTERVAL 30 DAY')
                 // }
             },
-            order: [['date', 'DESC']],
+            order: [['id', 'DESC']],
             limit: limit,
             offset: offset,
         });
@@ -85,6 +99,7 @@ const getAttendance = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: 'Attendance retrieved successfully',
+            is_clock_in: lastAttendance ? lastAttendance.is_clock_in : false,
             total_attendance: attendance.count,
             current_page: parseInt(page),
             totalPage: Math.ceil(attendance.count / limit),
@@ -96,13 +111,43 @@ const getAttendance = async (req, res) => {
     }
 }
 
+const getAttendance = async (req, res) => {
+    if (req.user.role != "teacher" && req.user.role != "principal") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { attendance_id } = req.query
+        if (!attendance_id) {
+            return res.status(400).json({ status: 0, message: "attendance_id is required" })
+        }
+
+        const attendance = await db.Attendance.findOne({
+            where: {
+                id: attendance_id,
+                user_id: req.user.id,
+            },
+        });
+        if (!attendance) {
+            return res.status(404).json({ status: 0, message: 'Attendance not found' });
+        }
+        return res.status(200).json({
+            status: 1,
+            message: 'Attendance retrieved successfully',
+            data: attendance
+        });
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error", error: error.message });
+    }
+}
+
 const editPrincipal = async (req, res) => {
     if (req.user.role !== "principal") {
         return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
     }
 
     try {
-        const {full_name, dob,  qualification, gender, designation, experience, mobile_no, country_code, iso_code} = req.body;
+        const { full_name, dob, qualification, gender, designation, experience, mobile_no, country_code, iso_code } = req.body;
         const principal = await db.User.findOne({
             where: {
                 id: req.user.id,
@@ -180,9 +225,78 @@ const editPrincipal = async (req, res) => {
     }
 };
 
+const listOtherAttedance = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, user_id } = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, message: "page is required" });
+        }
+        if (!user_id) {
+            return res.status(400).json({ status: 0, message: "user_id is required" })
+        }
+        const limit = 10;
+        const offset = (page - 1) * limit;
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const user = await db.User.findOne({
+            where: {
+                id: user_id,
+                school_id,
+                role: {
+                    [Op.or]: ['teacher', 'principal']
+                }
+            },
+        })
+
+        if(!user){
+            return res.status(404).json({ status: 0, message: "User not found"})
+        }
+
+        const attendance = await db.Attendance.findAndCountAll({
+            where: {
+                user_id: user_id,
+                school_id,
+                // date: {
+                //     [Op.gte]: Sequelize.literal('CURRENT_DATE - INTERVAL 30 DAY')
+                // }
+            },
+            order: [['id', 'DESC']],
+            limit: limit,
+            offset: offset,
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Attendance retrieved successfully',
+            total_attendance: attendance.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(attendance.count / limit),
+            data: attendance.rows
+        });
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+
 
 module.exports = {
     Attendance,
+    listAttendance,
+    editPrincipal,
     getAttendance,
-    editPrincipal
+
+    listOtherAttedance,
 };

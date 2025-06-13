@@ -9,6 +9,10 @@ const imageUpload = upload.fields([
 ]);
 const teacherValidator = require('../validator/teacherValidator');
 const teacher = require('../controller/teacher/homeController');
+const leave = require('../controller/teacher/leaveController');
+
+const student = require('../controller/teacher/studentController');
+
 
 
 router.put('/edit_teacher_profile',verifyToken, imageUpload, teacherValidator.ediStaffValidation(), teacher.editProfile);
@@ -20,6 +24,19 @@ router.get('/list_medification_student',verifyToken, teacher.listMedication);
 
 router.get('/teacher_all_student',verifyToken, teacher.listStudetMenu);
 
+router.post('/staff_apply_leave',verifyToken, teacherValidator.applyLeaveValidation(), leave.applyLeave)
+router.get('/list_leave_teacher',verifyToken, leave.listLeave);
 
+router.post('/student_attedance',verifyToken, teacherValidator.studeneAttedanceValidation(), student.studentAttendance)
+
+router.post('/submitted_attedance',verifyToken, student.submittedAttedance)
+
+router.get('/list_student_attedance',verifyToken, teacherValidator.listAttedanceValidation(), student.listStudentAttedance);
+
+router.get('/list_student_teacher',verifyToken, teacherValidator.listAttedanceValidation(), student.listStudentTeacher);
+
+router.get('/student_details',verifyToken, student.studentDetails);
+
+router.get('/get_student_attedance',verifyToken, teacherValidator.getAttedanceValidation(), student.getStudentAttedance);
 
 module.exports = router;

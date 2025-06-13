@@ -1,0 +1,391 @@
+require('dotenv').config();
+const db = require('../../config/db')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const { Op, Sequelize } = require('sequelize');
+const fs = require('fs').promises;
+const path = require("path");
+const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
+const { error } = require('console');
+const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
+const phoneUtil = PhoneNumberUtil.getInstance()
+const moment = require('moment');
+const messsage = require('../../model/messsage');
+
+
+
+const studentAttendance = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id, attendance_status } = req.body;
+
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                teacher_id: req.user.id,
+                request_status: 'accepted',
+            },
+        });
+
+        if (!student) {
+            return res.status(404).json({ status: 0, message: "Student not found" });
+        }
+
+        let attendance = {}
+        attendance = await db.Attendance.findOne({
+            where: {
+                student_id: student_id,
+                date: moment().format('YYYY-MM-DD')
+            },
+        });
+
+        if (attendance.is_submitted) {
+            return res.status(400).json({ status: 0, message: "Attendance already submitted for today" });
+        }
+
+        if (!attendance && attendance_status === 'out') {
+            return res.status(400).json({ status: 0, message: "Attendance not found for today" });
+        }
+
+        if (attendance && attendance_status == "out") {
+            attendance.is_out = true;
+            attendance.out_time = moment().toDate();
+        }
+
+        if (attendance && (attendance_status === 'present' || attendance_status === 'absent')) {
+            attendance.attendance_status = attendance_status;
+            attendance.present_time = moment().toDate()
+        }
+
+        await attendance.save();
+        if (!attendance && attendance_status === 'out') {
+            attendance = await db.Attendance.create({
+                student_id: student_id,
+                date: moment().format('YYYY-MM-DD'),
+                attendance_status: attendance_status,
+                teacher_id: req.user.id,
+                school_id: req.user.school_id,
+                parent_id: student.parent_id,
+                present_time: moment().toDate()
+            });
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "Attendance updated successfully",
+            data: attendance
+        });
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const submittedAttedance = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const attendance = await db.StudentAttendance.update(
+            {
+                is_submitted: true
+            },
+            {
+                where: {
+                    student_id: student_id,
+                    date: moment().format('YYYY-MM-DD')
+                }
+            }
+        );
+
+        return res.status(200).json({
+            status: 1,
+            message: "Attendance submitted successfully",
+            data: attendance
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const listStudentAttedance = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { type, page, date, search } = req.query
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        let attendance = []
+        if (type == "present" || type == "absent") {
+            attendance = await db.StudentAttendance.findAndCountAll({
+                where: {
+                    student_id: student_id,
+                    date: date ? date : moment().format('YYYY-MM-DD'),
+                    attendance_status: type
+                },
+                include: [
+                    {
+                        model: db.Student,
+                        as: 'studentAttendance',
+                        attributes: [],
+                        where: search
+                            ? {
+                                full_name: {
+                                    [Op.like]: `%${search}%`
+                                }
+                            }
+                            : []
+                    }
+                ],
+                attributes: {
+                    include: [
+                        [
+                            Sequelize.literal(`(
+                    SELECT t2.full_name
+                    FROM tbl_student t2
+                    WHERE t2.id = StudentAttendance.student_id
+                )`),
+                            'student_name',
+                        ],
+                    ]
+                },
+                limit,
+                offset,
+                order: [['id', 'DESC']]
+            });
+        } else if (type == "out") {
+            attendance = await db.StudentAttendance.findAndCountAll({
+                where: {
+                    student_id: student_id,
+                    date: moment().format('YYYY-MM-DD'),
+                    is_out: true
+                },
+                include: [
+                    {
+                        model: db.Student,
+                        as: 'studentAttendance',
+                        attributes: [],
+                        where: search
+                            ? {
+                                full_name: {
+                                    [Op.like]: `%${search}%`
+                                }
+                            }
+                            : []
+                    }
+                ],
+                attributes: {
+                    include: [
+                        [
+                            Sequelize.literal(`(
+                    SELECT t2.full_name
+                    FROM tbl_student t2
+                    WHERE t2.id = StudentAttendance.student_id
+                )`),
+                            'student_name',
+                        ],
+                    ]
+                },
+                limit,
+                offset,
+                order: [['id', 'DESC']]
+            });
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "Attendance retrieved successfully",
+            total_attedance: attendance.count,
+            current_page: parseInt(page),
+            total_page: Math.ceil(attendance.count / limit),
+            data: attendance.rows
+
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const listStudentTeacher = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { shift_id, page, search } = req.query
+
+        if(!page){
+            return res.status(400).json({ status: 0, message: "page number is required" })
+        }
+
+        if (shift_id) {
+            const shift = await db.Shift.findAll({
+                where: { id: shift_id, school_id: req.user.school_id },
+            })
+            if (!shift) {
+                return res.status(404).json({ status: 0, message: "Shift not found" })
+            }
+        }
+
+        const student = await db.Student.findAndCountAll({
+            where: {
+                teacher_id: req.user.id,
+                request_status: 'accepted',
+                ...(search && {
+                    full_name: {
+                        [Op.like]: `%${search}%`
+                    }
+                }),
+                ...(shift_id && { shift_id: shift_id })
+            },
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                    SELECT t2.shift_name
+                    FROM tbl_shift t2
+                    WHERE t2.id = Student.shift_id
+                )`),
+                        'shift_name',
+                    ],
+
+                ]
+            }
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: "Student list retrieved successfully",
+            total_student: student.count,
+            current_page: parseInt(page),
+            total_page: Math.ceil(student.count / limit),
+            data: student.rows
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+
+const studentDetails = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id } = req.query
+
+        if (!student_id) {
+            return res.status(400).json({ status: 0, message: "student_id is required" })
+        }
+
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                teacher_id: req.user.id
+            },
+             attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                    SELECT t2.shift_name
+                    FROM tbl_shift t2
+                    WHERE t2.id = Student.shift_id
+                )`),
+                        'shift_name',
+                    ],
+
+                ]
+            },
+            include: [
+                {
+                    model: db.User,
+                    as: 'Teacher',
+                    attributes: ['id', 'full_name', 'gender', 'address', 'mobile_no', 'country_code', 'iso_code'],
+                }
+            ]
+        })
+
+        if(!student){
+            return res.status(404).json({ status: 0, message: "Student not found"})
+        }
+
+        return res.status(200).json({
+            status: 1,
+            messsage:"student retrieved successfully",
+            data: student
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const getStudentAttedance = async (req, res) => {   
+        if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id , page} = req.query
+        const limit = 10
+        const offset = (page - 1) * limit
+
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                teacher_id: req.user.id
+            },
+        })
+
+        if(!student){
+            return res.status(404).json({ status: 0, message: "Student not found"})
+        }
+
+        const attendance = await db.StudentAttendance.findAndCountAll({
+            where: {
+                student_id: student_id,
+                teacher_id: req.user.id
+            },
+            limit,
+            offset,
+            order: [['id', 'DESC']]
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: "Attendance retrieved successfully",
+            total_attedance: attendance.count,
+            current_page: parseInt(page),
+            total_page: Math.ceil(attendance.count / limit),
+            data: attendance.rows
+
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+
+}
+
+
+module.exports = {
+    studentAttendance,
+    submittedAttedance,
+    listStudentAttedance,
+
+    listStudentTeacher,
+    studentDetails,
+    getStudentAttedance,
+
+}
