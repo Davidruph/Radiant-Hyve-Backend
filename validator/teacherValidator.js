@@ -136,7 +136,7 @@ exports.studeneAttedanceValidation = () => {
         [
             check('student_id').not().isEmpty().withMessage('student_id is required'),
             check("attendance_status").not().isEmpty().withMessage("attendance_status is required")
-                .isIn(['old', 'present', 'absent']).withMessage("Invalid attendance_status, valid attendance_status are: 'old', 'present', 'absent'"),
+                .isIn(['out', 'present', 'absent']).withMessage("Invalid attendance_status, valid attendance_status are: 'out', 'present', 'absent'"),
 
         ],
         validation
@@ -149,7 +149,7 @@ exports.listAttedanceValidation = () => {
         [
             check('page').not().isEmpty().withMessage('page is required'),
             check("type").not().isEmpty().withMessage("type is required")
-                .isIn(['old', 'present', 'absent']).withMessage("Invalid type, valid type are: 'old', 'present', 'absent'"),
+                .isIn(['out', 'present', 'absent']).withMessage("Invalid type, valid type are: 'out', 'present', 'absent'"),
             check("date").optional()
                 .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
                 .withMessage("Invalid date format for dob"),

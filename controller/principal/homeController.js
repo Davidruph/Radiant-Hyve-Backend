@@ -74,7 +74,7 @@ const listAttendance = async (req, res) => {
         if (!page) {
             return res.status(400).json({ status: 0, message: "page is required" });
         }
-        const limit = 10;
+        const limit = 15;
         const offset = (page - 1) * limit;
 
         const lastAttendance = await db.Attendance.findOne({

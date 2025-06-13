@@ -1,6 +1,6 @@
 require('dotenv').config();
 const db = require('../../config/db')
-const { Op, Sequelize } = require('sequelize');
+const { Op, fn, col, where } = require('sequelize');
 const fs = require('fs').promises;
 const path = require("path");
 const { error } = require('console');
@@ -58,11 +58,11 @@ const listLeave = async (req, res) => {
         const andConditions = [];
 
         if (year) {
-            andConditions.push(where(fn('YEAR', col('event_date')), year));
+            andConditions.push(where(fn('YEAR', col('date')), year));
         }
 
         if (monthArray.length > 0) {
-            andConditions.push(where(fn('MONTH', col('event_date')), { [Op.in]: monthArray }));
+            andConditions.push(where(fn('MONTH', col('date')), { [Op.in]: monthArray }));
         }
 
         if (andConditions.length > 0) {

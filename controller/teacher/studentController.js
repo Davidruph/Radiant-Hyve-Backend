@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('../../config/db')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { Op, Sequelize } = require('sequelize');
+const { Op, Sequelize, where } = require('sequelize');
 const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
@@ -34,14 +34,14 @@ const studentAttendance = async (req, res) => {
         }
 
         let attendance = {}
-        attendance = await db.Attendance.findOne({
+        attendance = await db.StudentAttendance.findOne({
             where: {
                 student_id: student_id,
                 date: moment().format('YYYY-MM-DD')
             },
         });
 
-        if (attendance.is_submitted) {
+        if (attendance && attendance.is_submitted) {
             return res.status(400).json({ status: 0, message: "Attendance already submitted for today" });
         }
 
@@ -51,17 +51,17 @@ const studentAttendance = async (req, res) => {
 
         if (attendance && attendance_status == "out") {
             attendance.is_out = true;
-            attendance.out_time = moment().toDate();
+            await attendance.update({ out_time: moment().toDate() })
         }
 
         if (attendance && (attendance_status === 'present' || attendance_status === 'absent')) {
             attendance.attendance_status = attendance_status;
-            attendance.present_time = moment().toDate()
+            await attendance.update({ present_time: moment().toDate() })
         }
 
-        await attendance.save();
-        if (!attendance && attendance_status === 'out') {
-            attendance = await db.Attendance.create({
+        // await attendance.save();
+        if (!attendance && attendance_status != 'out') {
+            attendance = await db.StudentAttendance.create({
                 student_id: student_id,
                 date: moment().format('YYYY-MM-DD'),
                 attendance_status: attendance_status,
@@ -95,16 +95,18 @@ const submittedAttedance = async (req, res) => {
             },
             {
                 where: {
-                    student_id: student_id,
+                    teacher_id: req.user.id,
                     date: moment().format('YYYY-MM-DD')
                 }
             }
         );
+        if (attendance.is_submitted) {
+            return res.status(400).json({ status: 0, messsage: "Attendance allready submitted" })
+        }
 
         return res.status(200).json({
             status: 1,
             message: "Attendance submitted successfully",
-            data: attendance
         })
 
     } catch (error) {
@@ -126,8 +128,8 @@ const listStudentAttedance = async (req, res) => {
         if (type == "present" || type == "absent") {
             attendance = await db.StudentAttendance.findAndCountAll({
                 where: {
-                    student_id: student_id,
-                    date: date ? date : moment().format('YYYY-MM-DD'),
+                    teacher_id: req.user.id,
+                    ...(date ? { date } : { date: moment().format('YYYY-MM-DD') }),
                     attendance_status: type
                 },
                 include: [
@@ -148,10 +150,10 @@ const listStudentAttedance = async (req, res) => {
                     include: [
                         [
                             Sequelize.literal(`(
-                    SELECT t2.full_name
-                    FROM tbl_student t2
-                    WHERE t2.id = StudentAttendance.student_id
-                )`),
+                           SELECT t2.full_name
+                           FROM tbl_student t2
+                           WHERE t2.id = StudentAttendance.student_id
+                        )`),
                             'student_name',
                         ],
                     ]
@@ -163,8 +165,8 @@ const listStudentAttedance = async (req, res) => {
         } else if (type == "out") {
             attendance = await db.StudentAttendance.findAndCountAll({
                 where: {
-                    student_id: student_id,
-                    date: moment().format('YYYY-MM-DD'),
+                    teacher_id: req.user.id,
+                    ...(date ? { date } : { date: moment().format('YYYY-MM-DD') }),
                     is_out: true
                 },
                 include: [
@@ -185,10 +187,10 @@ const listStudentAttedance = async (req, res) => {
                     include: [
                         [
                             Sequelize.literal(`(
-                    SELECT t2.full_name
-                    FROM tbl_student t2
-                    WHERE t2.id = StudentAttendance.student_id
-                )`),
+                            SELECT t2.full_name
+                            FROM tbl_student t2
+                            WHERE t2.id = StudentAttendance.student_id
+                        )`),
                             'student_name',
                         ],
                     ]
@@ -222,10 +224,12 @@ const listStudentTeacher = async (req, res) => {
     try {
         const { shift_id, page, search } = req.query
 
-        if(!page){
+        if (!page) {
             return res.status(400).json({ status: 0, message: "page number is required" })
         }
 
+        const limit = 10
+        const offset = (parseInt(page) - 1) * limit
         if (shift_id) {
             const shift = await db.Shift.findAll({
                 where: { id: shift_id, school_id: req.user.school_id },
@@ -250,15 +254,17 @@ const listStudentTeacher = async (req, res) => {
                 include: [
                     [
                         Sequelize.literal(`(
-                    SELECT t2.shift_name
-                    FROM tbl_shift t2
-                    WHERE t2.id = Student.shift_id
-                )`),
+                        SELECT t2.shift_name
+                        FROM tbl_shift t2
+                        WHERE t2.id = Student.shift_id
+                    )`),
                         'shift_name',
                     ],
 
                 ]
-            }
+            },
+            limit,
+            offset
         })
 
         return res.status(200).json({
@@ -293,7 +299,7 @@ const studentDetails = async (req, res) => {
                 id: student_id,
                 teacher_id: req.user.id
             },
-             attributes: {
+            attributes: {
                 include: [
                     [
                         Sequelize.literal(`(
@@ -315,13 +321,13 @@ const studentDetails = async (req, res) => {
             ]
         })
 
-        if(!student){
-            return res.status(404).json({ status: 0, message: "Student not found"})
+        if (!student) {
+            return res.status(404).json({ status: 0, message: "Student not found" })
         }
 
         return res.status(200).json({
             status: 1,
-            messsage:"student retrieved successfully",
+            messsage: "student retrieved successfully",
             data: student
         })
 
@@ -331,12 +337,12 @@ const studentDetails = async (req, res) => {
     }
 }
 
-const getStudentAttedance = async (req, res) => {   
-        if (req.user.role != "teacher") {
+const getStudentAttedance = async (req, res) => {
+    if (req.user.role != "teacher") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { student_id , page} = req.query
+        const { student_id, page } = req.query
         const limit = 10
         const offset = (page - 1) * limit
 
@@ -347,8 +353,8 @@ const getStudentAttedance = async (req, res) => {
             },
         })
 
-        if(!student){
-            return res.status(404).json({ status: 0, message: "Student not found"})
+        if (!student) {
+            return res.status(404).json({ status: 0, message: "Student not found" })
         }
 
         const attendance = await db.StudentAttendance.findAndCountAll({
@@ -378,6 +384,61 @@ const getStudentAttedance = async (req, res) => {
 
 }
 
+const getStudent = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, search } = req.query
+        if(!page){
+            return res.status(400).json({ status: 0, message: "page number is required" })
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
+
+        const student = await db.Student.findAndCountAll({
+            attributes: ["id", "full_name"],
+            where: {
+                teacher_id: req.user.id,
+                ...(search
+                    ? {
+                        full_name: {
+                            [Op.like]: `%${search}%` 
+                        }
+                    }
+                    : {})
+            },
+            include: [
+                {
+                    model: db.StudentAttendance,
+                    as: 'Attendance',
+                    where: {
+                        teacher_id: req.user.id,
+                        date: moment().format('YYYY-MM-DD') 
+                    },
+                    required: false
+                }
+            ],
+            limit,
+            offset,
+            order: [['id', 'DESC']],
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: "student retrieved successfully",
+            total_student: student.count,
+            current_page: parseInt(page),
+            total_page: Math.ceil(student.count / limit),
+            data: student.rows
+
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
 
 module.exports = {
     studentAttendance,
@@ -387,5 +448,6 @@ module.exports = {
     listStudentTeacher,
     studentDetails,
     getStudentAttedance,
+    getStudent,
 
 }

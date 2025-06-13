@@ -33,9 +33,12 @@ router.post('/submitted_attedance',verifyToken, student.submittedAttedance)
 
 router.get('/list_student_attedance',verifyToken, teacherValidator.listAttedanceValidation(), student.listStudentAttedance);
 
-router.get('/list_student_teacher',verifyToken, teacherValidator.listAttedanceValidation(), student.listStudentTeacher);
+router.get('/list_student_teacher',verifyToken, student.listStudentTeacher);
 
 router.get('/student_details',verifyToken, student.studentDetails);
+
+router.get('/student_list',verifyToken, student.getStudent);
+
 
 router.get('/get_student_attedance',verifyToken, teacherValidator.getAttedanceValidation(), student.getStudentAttedance);
 
