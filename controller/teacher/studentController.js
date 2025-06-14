@@ -124,26 +124,57 @@ const listStudentAttedance = async (req, res) => {
         const limit = 10;
         const offset = (page - 1) * limit;
 
+        const whereCondition = {
+            teacher_id: req.user.id,
+            ...(date ? { date } : { date: moment().format('YYYY-MM-DD') }),
+            attendance_status: type
+        };
+
+        if (search) {
+            whereCondition[Op.or] = [
+                Sequelize.where(
+                    Sequelize.literal(`(
+        SELECT t2.full_name
+        FROM tbl_student t2
+        WHERE t2.id = StudentAttendance.student_id
+      )`),
+                    {
+                        [Op.like]: `%${search}%`
+                    }
+                )
+            ];
+        }
+
+        const outWhereCondition = {
+            teacher_id: req.user.id,
+            ...(date ? { date } : { date: moment().format('YYYY-MM-DD') }),
+            is_out: true
+        };
+
+        if (search) {
+            outWhereCondition[Op.or] = [
+                Sequelize.where(
+                    Sequelize.literal(`(
+        SELECT t2.full_name
+        FROM tbl_student t2
+        WHERE t2.id = StudentAttendance.student_id
+      )`),
+                    {
+                        [Op.like]: `%${search}%`
+                    }
+                )
+            ];
+        }
+
         let attendance = []
         if (type == "present" || type == "absent") {
             attendance = await db.StudentAttendance.findAndCountAll({
-                where: {
-                    teacher_id: req.user.id,
-                    ...(date ? { date } : { date: moment().format('YYYY-MM-DD') }),
-                    attendance_status: type
-                },
+                where: whereCondition,
                 include: [
                     {
                         model: db.Student,
                         as: 'studentAttendance',
                         attributes: [],
-                        where: search
-                            ? {
-                                full_name: {
-                                    [Op.like]: `%${search}%`
-                                }
-                            }
-                            : []
                     }
                 ],
                 attributes: {
@@ -164,23 +195,12 @@ const listStudentAttedance = async (req, res) => {
             });
         } else if (type == "out") {
             attendance = await db.StudentAttendance.findAndCountAll({
-                where: {
-                    teacher_id: req.user.id,
-                    ...(date ? { date } : { date: moment().format('YYYY-MM-DD') }),
-                    is_out: true
-                },
+                where: outWhereCondition,
                 include: [
                     {
                         model: db.Student,
                         as: 'studentAttendance',
                         attributes: [],
-                        where: search
-                            ? {
-                                full_name: {
-                                    [Op.like]: `%${search}%`
-                                }
-                            }
-                            : []
                     }
                 ],
                 attributes: {
@@ -227,6 +247,7 @@ const listStudentTeacher = async (req, res) => {
         if (!page) {
             return res.status(400).json({ status: 0, message: "page number is required" })
         }
+
 
         const limit = 10
         const offset = (parseInt(page) - 1) * limit
@@ -390,7 +411,7 @@ const getStudent = async (req, res) => {
     }
     try {
         const { page, search } = req.query
-        if(!page){
+        if (!page) {
             return res.status(400).json({ status: 0, message: "page number is required" })
         }
         const limit = 10
@@ -403,7 +424,7 @@ const getStudent = async (req, res) => {
                 ...(search
                     ? {
                         full_name: {
-                            [Op.like]: `%${search}%` 
+                            [Op.like]: `%${search}%`
                         }
                     }
                     : {})
@@ -414,7 +435,7 @@ const getStudent = async (req, res) => {
                     as: 'Attendance',
                     where: {
                         teacher_id: req.user.id,
-                        date: moment().format('YYYY-MM-DD') 
+                        date: moment().format('YYYY-MM-DD')
                     },
                     required: false
                 }
@@ -424,14 +445,28 @@ const getStudent = async (req, res) => {
             order: [['id', 'DESC']],
         })
 
+        const studentIds = student.rows.map((student) => student.id)
+
+        const existeAttedance = await db.StudentAttendance.findAll({
+            where: {
+                student_id: { [Op.in]: studentIds },
+                date: moment().format('YYYY-MM-DD')
+            }
+        })
+
+        let is_attedance = false
+        if (student.length === existeAttedance.length) {
+            is_attedance = true
+        }
+
         return res.status(200).json({
             status: 1,
             message: "student retrieved successfully",
+            is_attedance,
             total_student: student.count,
             current_page: parseInt(page),
             total_page: Math.ceil(student.count / limit),
             data: student.rows
-
         })
 
     } catch (error) {
@@ -439,6 +474,10 @@ const getStudent = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
 }
+
+
+
+
 
 module.exports = {
     studentAttendance,
