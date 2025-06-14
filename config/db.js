@@ -53,8 +53,8 @@ db.User.hasMany(db.Attendance, {foreignKey: 'school_id',as: 'schoolAttendance'})
 db.Attendance.belongsTo(db.User, {foreignKey: 'school_id', as: 'schoolAttendance'})
 
 
-db.User.hasMany(db.Certification, {foreignKey: 'admin_id',as: 'certificationAdmin'})
-db.Certification.belongsTo(db.User, {foreignKey: 'admin_id', as: 'certificats'})
+// db.User.hasMany(db.Certification, {foreignKey: 'admin_id',as: 'certificationAdmin'})
+// db.Certification.belongsTo(db.User, {foreignKey: 'admin_id', as: 'certificats'})
 
 db.User.hasMany(db.Certification, {foreignKey: 'school_id',as: 'schoolCertification'})
 db.Certification.belongsTo(db.User, {foreignKey: 'school_id', as: 'schoolCertificats'})
@@ -74,8 +74,8 @@ db.User.hasMany(db.Chat, {foreignKey: 'school_id',as: 'schoolChat'})
 db.Chat.belongsTo(db.User, {foreignKey: 'school_id', as: 'ChatSchool'})
 
 
-db.User.hasMany(db.Event, {foreignKey: "admin_id",as: "EventAdmin",});
-db.Event.belongsTo(db.User, {oreignKey: "admin_id",as: "AdminEvents",}); 
+// db.User.hasMany(db.Event, {foreignKey: "admin_id",as: "EventAdmin",});
+// db.Event.belongsTo(db.User, {oreignKey: "admin_id",as: "AdminEvents",}); 
 
 db.User.hasMany(db.Event, {foreignKey: 'school_id',as: 'schoolEvent'})
 db.Event.belongsTo(db.User, {foreignKey: 'school_id', as: 'Events'})
@@ -85,8 +85,8 @@ db.User.hasMany(db.Levave, {foreignKey: 'teacher_id',as: 'teachersLeave'})
 db.Levave.belongsTo(db.User, {foreignKey: 'teacher_id', as: 'LeaveTeacher'})
 
 
-db.User.hasMany(db.MedicationInfo, {foreignKey: "admin_id",as: "adminMedicalInfo",});
-db.MedicationInfo.belongsTo(db.User, {oreignKey: "admin_id",as: "adminMedicationInfo",}); 
+// db.User.hasMany(db.MedicationInfo, {foreignKey: "admin_id",as: "adminMedicalInfo",});
+// db.MedicationInfo.belongsTo(db.User, {oreignKey: "admin_id",as: "adminMedicationInfo",}); 
 
 db.User.hasMany(db.MedicationInfo, {foreignKey: 'school_id',as: 'schoolMedicationInfo'})
 db.MedicationInfo.belongsTo(db.User, {foreignKey: 'school_id', as: 'Medication'})
@@ -96,8 +96,8 @@ db.MedicationInfo.belongsTo(db.Student, {foreignKey: 'student_id', as: 'Medicati
 
 
 
-db.User.hasMany(db.Menu, {foreignKey: "admin_id",as: "adminMenu",});
-db.Menu.belongsTo(db.User, {oreignKey: "admin_id",as: "studentMenu",}); 
+// db.User.hasMany(db.Menu, {foreignKey: "admin_id",as: "adminMenu",});
+// db.Menu.belongsTo(db.User, {oreignKey: "admin_id",as: "studentMenu",}); 
 
 db.User.hasMany(db.Menu, {foreignKey: 'school_id',as: 'schoolMenu'})
 db.Menu.belongsTo(db.User, {foreignKey: 'school_id', as: 'Menu'})
@@ -108,15 +108,15 @@ db.MenuDay.belongsTo(db.Menu, {foreignKey: 'menu_id', as: 'dayMenu'})
 db.Student.hasMany(db.Menu, {foreignKey: 'student_id',as: 'StudentsMenu'})
 db.Menu.belongsTo(db.Student, {foreignKey: 'student_id', as: 'student'})
 
-db.User.hasMany(db.Shift, {foreignKey: "admin_id",as: "adminShift",});
-db.Shift.belongsTo(db.User, {oreignKey: "admin_id",as: "Shiftadmin",}); 
+// db.User.hasMany(db.Shift, {foreignKey: "admin_id",as: "adminShift",});
+// db.Shift.belongsTo(db.User, {oreignKey: "admin_id",as: "Shiftadmin",}); 
 
 
 db.Student.hasOne(db.SleepLoag, {foreignKey: "student_id",as: "SleepLoag",});
 db.SleepLoag.belongsTo(db.Student, {oreignKey: "student_id",as: "studentSleepLoag",}); 
 
-db.User.hasMany(db.SleepLoag, {foreignKey: 'parent_id',as: 'studentSleepLoag'})
-db.SleepLoag.belongsTo(db.User, {foreignKey: 'parent_id', as: 'SleepLoag'})
+// db.User.hasMany(db.SleepLoag, {foreignKey: 'parent_id',as: 'studentSleepLoag'})
+// db.SleepLoag.belongsTo(db.User, {foreignKey: 'parent_id', as: 'SleepLoag'})
 
 
 db.Student.hasMany(db.StudentAttendance, {foreignKey: "student_id",as: "Attendance",});
