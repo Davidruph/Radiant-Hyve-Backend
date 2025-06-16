@@ -39,6 +39,7 @@ router.get('/student_details',verifyToken, student.studentDetails);
 
 router.get('/student_list',verifyToken, student.getStudent);
 
+router.put('/edit_student_profile_pic',verifyToken,imageUpload, student.studentProfilePicEdit);
 
 router.get('/get_student_attedance',verifyToken, teacherValidator.getAttedanceValidation(), student.getStudentAttedance);
 

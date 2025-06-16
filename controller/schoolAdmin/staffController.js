@@ -349,12 +349,6 @@ const getStaff = async (req, res) => {
                     "total_student"
                 ],
             ],
-            include: [
-                {
-                    model: db.Attendance,
-                    as: "userAttend"
-                }
-            ]
         })
 
         if (!Staff) {

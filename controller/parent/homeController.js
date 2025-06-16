@@ -192,21 +192,37 @@ const studentDetails = async (req, res) => {
             return res.status(404).json({ status: 0, message: 'Student not found' })
         }
 
-        let details = []
+        let details 
         if (type = "menu") {
-            details = await db.StudentMenu.findAll({
-                where: {
-                    student_id: student.id
-                },
+            details =  await db.Menu.findAll({
+                where: {student_id},
+                include: [
+                    {
+                        model: db.MenuDay,
+                        as: 'MenuDay',
+                    },
+                    {
+                        model: db.Student,
+                        as: 'student',
+                        attributes: ["id", "full_name"]
+                    }
+                ],
+                order: [['id', 'DESC']],
+            })
+        } else if(type = "sleeplog"){
+            details = await db.SleepLoag.findOne({
+                where: {student_id},
+            })
+        } else if(type = "medication"){
+            details = await db.MedicationInfo.findAll({
+                where: {student_id},
             })
         }
 
-
-
         return res.status(200).json({
             status: 1,
-            message: "student retrieved successfully",
-            data: student
+            message: "student details retrieved successfully",
+            data: details
         })
 
     } catch (error) {
@@ -215,41 +231,6 @@ const studentDetails = async (req, res) => {
     }
 }
 
-const delteStudent = async (req, res) => {
-    if (req.user.role != "parent") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
-    }
-    try {
-        const { student_id } = req.query
-
-        if (student_id) {
-            return res.status(400).json({ status: 0, message: "student_id is required" })
-        }
-
-        const student = await db.Student.findOne({
-            where: {
-                parent_id: req.user.id,
-                request_status: {
-                    [Op.not]: 'inActive'
-                }
-            },
-        })
-
-        if (!student) {
-            return res.status(404).json({ status: 0, message: 'Student not found' })
-        }
-
-        await student.update({
-            request_status: 'inActive',
-        })
-
-        return res.status(200).json({ status: 1, message: 'Student deleted successfully' })
-    } catch (error) {
-        console.error('Error :', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
-    }
-
-}
 
 
 
@@ -261,6 +242,4 @@ module.exports = {
     getStudent,
     studentDetails,
     listActiveStudent,
-    delteStudent,
-
 }

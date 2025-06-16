@@ -303,7 +303,6 @@ const listStudentTeacher = async (req, res) => {
     }
 }
 
-
 const studentDetails = async (req, res) => {
     if (req.user.role != "teacher") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
@@ -330,13 +329,20 @@ const studentDetails = async (req, res) => {
                 )`),
                         'shift_name',
                     ],
-
+                    [
+                        Sequelize.literal(`(
+                    SELECT t2.full_name
+                    FROM tbl_user t2
+                    WHERE t2.id = Student.teacher_id
+                )`),
+                        'teacher_name',
+                    ],
                 ]
             },
             include: [
                 {
                     model: db.User,
-                    as: 'Teacher',
+                    as: 'StudentParent',
                     attributes: ['id', 'full_name', 'gender', 'address', 'mobile_no', 'country_code', 'iso_code'],
                 }
             ]
@@ -475,7 +481,51 @@ const getStudent = async (req, res) => {
     }
 }
 
+const studentProfilePicEdit = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id } = req.body
+        const profileImage = req.files?.profile_pic[0];
 
+        if (!student_id) {
+            return res.status(400).json({ status: 0, message: "student_id is required" })
+        }
+
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                teacher_id: req.user.id
+            },
+        })
+
+        if (!student) {
+            return res.status(404).json({ status: 0, message: "Student not found" })
+        }
+
+        if (profileImage && student.profile_pic) {
+            await deleteFromS3(student.profile_pic);
+        }
+        if (req.files && req.files.profile_pic) {
+            var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
+        }
+
+        await student.update({
+            profile_pic: newProfilePicPath
+        })
+
+        return res.status(200).json({
+            status: 1,
+            messsage: "student profile pic edit successfully",
+            data: student
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
 
 
 
@@ -488,5 +538,7 @@ module.exports = {
     studentDetails,
     getStudentAttedance,
     getStudent,
+
+    studentProfilePicEdit,
 
 }
