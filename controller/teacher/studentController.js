@@ -50,13 +50,11 @@ const studentAttendance = async (req, res) => {
         }
 
         if (attendance && attendance_status == "out") {
-            attendance.is_out = true;
-            await attendance.update({ out_time: moment().toDate() })
+            await attendance.update({ out_time: moment().toDate(), is_out : true })
         }
 
         if (attendance && (attendance_status === 'present' || attendance_status === 'absent')) {
-            attendance.attendance_status = attendance_status;
-            await attendance.update({ present_time: moment().toDate() })
+            await attendance.update({ present_time: moment().toDate(), attendance_status : attendance_status })
         }
 
         // await attendance.save();
