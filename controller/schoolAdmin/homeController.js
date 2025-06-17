@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('../../config/db')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { Op, Sequelize, where } = require('sequelize');
+const { Op, Sequelize, where, col, fn } = require('sequelize');
 const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
@@ -10,6 +10,7 @@ const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload");
 const { admin } = require('googleapis/build/src/apis/admin');
 const phoneUtil = PhoneNumberUtil.getInstance()
+const moment = require('moment')
 
 
 const desbordCount = async (req, res) => {
@@ -21,29 +22,34 @@ const desbordCount = async (req, res) => {
         const staff = await db.User.count({ where: { school_id: req.user.id, role: "teacher", is_deleted: false } })
         const parent = await db.User.count({ where: { school_id: req.user.id, role: "parent", is_deleted: false } })
         const student = await db.Student.count({ where: { school_id: req.user.id, request_status: 'accepted' } })
-        const today = new Date();
 
-        const nextWeek = new Date();
-        nextWeek.setDate(today.getDate() + 7);
+        const today = moment();
+        const nextMonth = moment().add(1, 'months');
 
+        const startMonth = today.format('MM');
+        const endMonth = nextMonth.format('MM');
+
+        // MySQL doesn't support TO_CHAR, so we use DATE_FORMAT
         const upcomingBirthday = await db.User.count({
             where: {
                 school_id: req.user.id,
                 is_deleted: false,
                 [Op.and]: [
                     where(
-                        fn('TO_CHAR', col('dob'), 'MM-DD'),
-                        {
-                            [Op.between]: [
-                                formatDateMMDD(today),
-                                formatDateMMDD(nextWeek)
-                            ]
-                        }
+                        fn('DATE_FORMAT', col('dob'), '%m'),
+                        startMonth < endMonth
+                            ? { [Op.between]: [startMonth, endMonth] }
+                            : {
+                                [Op.or]: [
+                                    { [Op.between]: [startMonth, '12'] },
+                                    { [Op.between]: ['01', endMonth] }
+                                ]
+                            }
                     )
-                ],
+                ]
             }
         });
-
+        
         return res.status(200).json({
             status: 1,
             message: "Desbord count successfully",
@@ -75,7 +81,7 @@ const getUpcomingBirthday = async (req, res) => {
             where: {
                 school_id: req.user.id,
                 is_deleted: false,
-                role: role || { [Op.in]: ['principal', 'parent', 'teacher'] }, 
+                role: role || { [Op.in]: ['principal', 'parent', 'teacher'] },
                 [Op.and]: [
                     Sequelize.where(
                         Sequelize.fn('TO_CHAR', Sequelize.col('dob'), 'MM-DD'),

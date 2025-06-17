@@ -50,11 +50,11 @@ const studentAttendance = async (req, res) => {
         }
 
         if (attendance && attendance_status == "out") {
-            await attendance.update({ out_time: moment().toDate(), is_out : true })
+            await attendance.update({ out_time: moment().toDate(), is_out: true })
         }
 
         if (attendance && (attendance_status === 'present' || attendance_status === 'absent')) {
-            await attendance.update({ present_time: moment().toDate(), attendance_status : attendance_status })
+            await attendance.update({ present_time: moment().toDate(), attendance_status: attendance_status, is_out: false, out_time: null })
         }
 
         // await attendance.save();
@@ -279,7 +279,6 @@ const listStudentTeacher = async (req, res) => {
                     )`),
                         'shift_name',
                     ],
-
                 ]
             },
             limit,
@@ -459,14 +458,18 @@ const getStudent = async (req, res) => {
         })
 
         let is_attedance = false
-        if (student.length === existeAttedance.length) {
+
+        if (student.count === existeAttedance.length) {
             is_attedance = true
         }
+
+        const isChecked = existeAttedance.every(item => item.is_submitted === true);
 
         return res.status(200).json({
             status: 1,
             message: "student retrieved successfully",
             is_attedance,
+            is_submitted: isChecked,
             total_student: student.count,
             current_page: parseInt(page),
             total_page: Math.ceil(student.count / limit),

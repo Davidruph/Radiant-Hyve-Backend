@@ -53,14 +53,14 @@ db.User.hasMany(db.Attendance, {foreignKey: 'school_id',as: 'schoolAttendance'})
 db.Attendance.belongsTo(db.User, {foreignKey: 'school_id', as: 'schoolAttendance'})
 
 
-// db.User.hasMany(db.Certification, {foreignKey: 'admin_id',as: 'certificationAdmin'})
-// db.Certification.belongsTo(db.User, {foreignKey: 'admin_id', as: 'certificats'})
+db.User.hasMany(db.Certification, {foreignKey: 'admin_id',as: 'certificationAdmin'})
+db.Certification.belongsTo(db.User, {foreignKey: 'admin_id', as: 'staffCertificats'})
 
 db.User.hasMany(db.Certification, {foreignKey: 'school_id',as: 'schoolCertification'})
 db.Certification.belongsTo(db.User, {foreignKey: 'school_id', as: 'schoolCertificats'})
 
 db.User.hasMany(db.Certification, {foreignKey: 'staff_id',as: 'staffCertification'})
-db.Certification.belongsTo(db.User, {foreignKey: 'staff_id', as: 'staffCertificats'})
+db.Certification.belongsTo(db.User, {foreignKey: 'staff_id', as: 'certificats'})
 
 
 

@@ -145,11 +145,11 @@ const editStaff = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { 
-                    mobile_no, 
-                    iso_code, 
+                where: {
+                    mobile_no,
+                    iso_code,
                     country_code,
-                    id: {[Op.not]: staff_id},
+                    id: { [Op.not]: staff_id },
                     is_deleted: false
                 }
             })
@@ -289,7 +289,29 @@ const listStaff = async (req, res) => {
 
         const Staff = await db.User.findAndCountAll({
             where: whereCondition,
-            attributes: ["id", "email", "full_name", "gender", "is_blocked", "is_deleted",],
+            attributes: ["id", "email", "full_name", "gender", "is_blocked", "is_deleted",
+                [
+                    Sequelize.literal(`(
+                          SELECT t2.clock_in_time
+                          FROM tbl_attendance t2
+                          WHERE t2.user_id = User.id
+                          ORDER BY t2.id DESC
+                          LIMIT 1
+                        )`),
+                    'clock_in_time'
+                ],
+                [
+                    Sequelize.literal(`(
+                          SELECT t2.clock_out_time
+                          FROM tbl_attendance t2
+                          WHERE t2.user_id = User.id
+                          ORDER BY t2.id DESC
+                          LIMIT 1
+                        )`),
+                    'clock_out_time'
+                ],
+
+            ],
             limit,
             offset,
             order: [['createdAt', 'DESC']],
@@ -339,7 +361,7 @@ const getStaff = async (req, res) => {
                 role: "teacher",
                 school_id
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "dob", "about_staff", "joining_date", "experience", "mobile_no", "country_code", "iso_code", "profile_pic","is_blocked", "is_deleted",
+            attributes: ["id", "email", "password", "full_name", "gender", "dob", "about_staff", "joining_date", "experience", "mobile_no", "country_code", "iso_code", "profile_pic", "is_blocked", "is_deleted",
                 [
                     Sequelize.literal(`(
                                 SELECT COUNT(*) 
@@ -479,7 +501,7 @@ const assignStudentList = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { staff_id, page, search } = req.query
+        const { staff_id, page, search, shift_id } = req.query
         const limit = 10
         const offset = (page - 1) * limit
         let school_id = null
@@ -505,8 +527,18 @@ const assignStudentList = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Staff not found" })
         }
 
+        if (shift_id) {
+            const shift = await db.Shift.findAll({
+                where: { id: shift_id, school_id },
+            })
+            if (!shift) {
+                return res.status(404).json({ status: 0, message: "Shift not found" })
+            }
+        }
+
         const whereClause = {
-            teacher_id: staff_id
+            teacher_id: staff_id,
+            ...(shift_id && { shift_id: shift_id })
         };
 
         if (search) {
@@ -518,6 +550,18 @@ const assignStudentList = async (req, res) => {
 
         const student = await db.Student.findAndCountAll({
             where: whereClause,
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                        SELECT t2.shift_name
+                        FROM tbl_shift t2
+                        WHERE t2.id = Student.shift_id
+                    )`),
+                        'shift_name',
+                    ],
+                ]
+            },
             limit,
             offset,
             order: [['createdAt', 'DESC']],
