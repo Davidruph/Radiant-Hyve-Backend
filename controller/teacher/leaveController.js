@@ -14,6 +14,7 @@ const applyLeave = async (req, res) => {
     try {
         const { reason, leave_type, date } = req.body;
 
+
         const leave = await db.Levave.create({
             reason: reason,
             leave_type: leave_type,
@@ -40,8 +41,12 @@ const listLeave = async (req, res) => {
     }
 
     try {
-        let { month, year } = req.query;
-
+        let { month, year, page } = req.query;
+        if (!page) {
+            return res.status(400).json({ status: 0, message: 'page is required' });
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
         let monthArray = [];
         if (month) {
             monthArray = Array.isArray(month)
@@ -69,15 +74,20 @@ const listLeave = async (req, res) => {
             whereClause[Op.and] = andConditions;
         }
 
-        const leaves = await db.Levave.findAll({
+        const leaves = await db.Levave.findAndCountAll({
             where: whereClause,
+            limit,
+            offset,
             order: [['createdAt', 'DESC']]
         });
 
-        return res.status(200).json({
+         return res.status(200).json({
             status: 1,
             message: "Leaves fetched successfully",
-            data: leaves
+            total_leave: leaves.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(leaves.count / limit),
+            data: leaves.rows
         });
 
     } catch (error) {

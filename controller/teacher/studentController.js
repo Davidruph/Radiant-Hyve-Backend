@@ -87,6 +87,10 @@ const submittedAttedance = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
+        const { date } = req.body
+        if (!date) {
+            return res.status(400).json({ status: 0, message: "date is required" })
+        }
         const attendance = await db.StudentAttendance.update(
             {
                 is_submitted: true
@@ -94,7 +98,7 @@ const submittedAttedance = async (req, res) => {
             {
                 where: {
                     teacher_id: req.user.id,
-                    date: moment().format('YYYY-MM-DD')
+                    date: date
                 }
             }
         );
@@ -219,12 +223,22 @@ const listStudentAttedance = async (req, res) => {
             });
         }
 
+        const existeAttedance = await db.StudentAttendance.findAll({
+            where: {
+                teacher_id: req.user.id,
+                date: date ? date : moment().format('YYYY-MM-DD')
+            }
+        })
+
+        const isChecked = existeAttedance.every(item => item.is_submitted === true);
+
         return res.status(200).json({
             status: 1,
             message: "Attendance retrieved successfully",
             total_attedance: attendance.count,
             current_page: parseInt(page),
             total_page: Math.ceil(attendance.count / limit),
+            is_submitted: isChecked,
             data: attendance.rows
 
         })
@@ -463,7 +477,10 @@ const getStudent = async (req, res) => {
             is_attedance = true
         }
 
-        const isChecked = existeAttedance.every(item => item.is_submitted === true);
+        let isChecked = false
+        if (existeAttedance.length > 0) {
+            isChecked = existeAttedance.every(item => item.is_submitted === true);
+        }
 
         return res.status(200).json({
             status: 1,
