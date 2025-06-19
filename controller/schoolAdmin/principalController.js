@@ -371,7 +371,7 @@ const blockPrincipal = async (req, res) => {
             is_blocked: newIsBlockedStatus,
         });
 
-        if (principal.is_deleted == true) {
+        if (principal.is_blocked == true) {
             await db.Token.destroy({ where: { user_id: principal_id } });
         }
 
@@ -424,10 +424,6 @@ const getAttedanceCount = async (req, res) => {
     try {
         const { user_id, year } = req.query;
 
-        if (!user_id || !year) {
-            return res.status(400).json({ status: 0, message: "user_id and year are required" });
-        }
-
         let school_id;
         if (req.user.role === "principal") {
             const principal = await db.User.findOne({
@@ -450,10 +446,12 @@ const getAttedanceCount = async (req, res) => {
             return res.status(404).json({ status: 0, message: "User not found" });
         }
 
+        // Count unique dates per month
         const attendanceData = await db.Attendance.findAll({
             attributes: [
                 [fn('MONTH', col('date')), 'month'],
-                [fn('COUNT', col('id')), 'count']
+                // [fn('COUNT', fn('DISTINCT', col('DATE(date)'))), 'count'] // Count unique days
+                [literal('COUNT(DISTINCT DATE(`date`))'), 'count'] // Use literal for DATE function
             ],
             where: {
                 user_id,
@@ -491,6 +489,7 @@ const getAttedanceCount = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
 };
+
 
 module.exports = {
     addPrincipal,

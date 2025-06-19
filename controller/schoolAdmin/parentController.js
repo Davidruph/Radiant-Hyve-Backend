@@ -418,7 +418,7 @@ const blockParent = async (req, res) => {
             is_blocked: newIsBlockedStatus,
         });
 
-        if (parent.is_deleted == true) {
+        if (parent.is_blocked == true) {
             await db.Token.destroy({ where: { user_id: parent_id } });
         }
 
