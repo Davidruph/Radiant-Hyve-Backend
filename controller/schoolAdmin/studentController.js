@@ -382,6 +382,119 @@ const listWaitingStudent = async (req, res) => {
     }
 }
 
+const studentAttendance = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, student_id } = req.query
+        if (!page || !student_id) {
+            return res.status(400).json({ status: 0, message: 'page or student_id is required' });
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const student = await db.Student.findOne({
+            where: {
+                school_id,
+                id: student_id
+            },
+        })
+
+        if (!student) {
+            return res.status(404).json({ status: 0, message: 'Student not found' })
+        }
+
+        const attedance = await db.StudentAttendance.findAndCountAll({
+            where: {
+                student_id: student_id
+            },
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']],
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: 'student attedance retrieved successfully',
+            total_student_attedance: attedance.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(attedance.count / limit),
+            data: attedance.rows
+        });
+
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error" });
+    }
+}
+
+const listParantStudent = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, parent_id } = req.query
+        if (!page || !parent_id) {
+            return res.status(400).json({ status: 0, message: 'page or parent_id is required' });
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const parent = await db.User.findOne({
+            where: {
+                school_id,
+                id: parent_id,
+                is_deleted: false,
+                role: "parent"
+            },
+        })
+
+        if (!parent) {
+            return res.status(404).json({ status: 0, message: 'parent not found' })
+        }
+
+        const Student = await db.Student.findAndCountAll({
+            where: {
+                parent_id: parent_id
+            },
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']],
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: 'student retrieved successfully',
+            total_student: Student.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(Student.count / limit),
+            data: Student.rows
+        });
+
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error" });
+    }
+}
 
 
 module.exports = {
@@ -393,4 +506,6 @@ module.exports = {
     listTeacher,
     getShift,
     listWaitingStudent,
+    studentAttendance,
+    listParantStudent
 }

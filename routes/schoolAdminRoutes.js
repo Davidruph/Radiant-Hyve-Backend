@@ -62,6 +62,10 @@ router.patch('/edit_student_status',verifyToken, student.editStatus);
 router.patch('/student_assign_teacher',verifyToken,schoolvalidator.assignStudentValidation(), student.studentAssignTeacher);
 router.get('/list_teacher',verifyToken, student.listTeacher);
 router.get('/get_shift',verifyToken, student.getShift);
+router.get('/get_all_student_attedance',verifyToken, student.studentAttendance);
+router.get('/get_parent_student',verifyToken, student.listParantStudent);
+
+
 
 
 
