@@ -371,7 +371,7 @@ const blockPrincipal = async (req, res) => {
             is_blocked: newIsBlockedStatus,
         });
 
-        if (newIsBlockedStatus) {
+        if (principal.is_deleted == true) {
             await db.Token.destroy({ where: { user_id: principal_id } });
         }
 

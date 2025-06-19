@@ -17,7 +17,7 @@ const addparent = async (req, res) => {
     }
     try {
         const { email, password, full_name, gender, mobile_no, country_code, iso_code, address } = req.body
-        const profileImage = req.files.profile_pic[0];
+        const profileImage = req.files?.profile_pic;
 
         const existingUser = await db.User.findOne({ where: { email } })
         if (existingUser) {
@@ -25,7 +25,7 @@ const addparent = async (req, res) => {
         }
 
         if (req.files && req.files?.profile_pic) {
-            var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
+            var newProfilePicPath = await upload_file(profileImage[0], 'profile_pic/')
         }
         let school_id = null
         if (req.user.role == "principal") {
@@ -75,7 +75,7 @@ const addparent = async (req, res) => {
             mobile_no,
             country_code,
             iso_code,
-            profile_pic: newProfilePicPath,
+            profile_pic: newProfilePicPath || null,
             address,
             role: 'parent',
             school_id: school_id
@@ -418,7 +418,7 @@ const blockParent = async (req, res) => {
             is_blocked: newIsBlockedStatus,
         });
 
-        if (newIsBlockedStatus) {
+        if (parent.is_deleted == true) {
             await db.Token.destroy({ where: { user_id: parent_id } });
         }
 

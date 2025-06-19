@@ -290,6 +290,50 @@ const listOtherAttedance = async (req, res) => {
     }
 }
 
+const todayAttedance = async (req, res) => {
+       if (req.user.role != "teacher" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page } = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, message: "page is required" });
+        }
+        const limit = 15;
+        const offset = (page - 1) * limit;
+
+        const lastAttendance = await db.Attendance.findOne({
+            where: {
+                user_id: req.user.id,
+            },
+            order: [['id', 'DESC']],
+        });
+
+        const attendance = await db.Attendance.findAndCountAll({
+            where: {
+                user_id: req.user.id,
+                date: moment().toDate()
+            },
+            order: [['id', 'DESC']],
+            limit: limit,
+            offset: offset,
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Attendance retrieved successfully',
+            is_clock_in: lastAttendance ? lastAttendance.is_clock_in : false,
+            total_attendance: attendance.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(attendance.count / limit),
+            data: attendance.rows
+        });
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
 
 
 module.exports = {
@@ -299,4 +343,5 @@ module.exports = {
     getAttendance,
 
     listOtherAttedance,
+    todayAttedance
 };

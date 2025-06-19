@@ -232,7 +232,6 @@ const studentDetails = async (req, res) => {
 
 
 
-
 module.exports = {
     listStudent,
     getStudent,

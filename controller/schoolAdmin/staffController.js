@@ -480,7 +480,7 @@ const blockStaff = async (req, res) => {
             is_blocked: newIsBlockedStatus,
         });
 
-        if (newIsBlockedStatus) {
+        if (Staff.is_deleted == true) {
             await db.Token.destroy({ where: { user_id: staff_id } });
         }
 

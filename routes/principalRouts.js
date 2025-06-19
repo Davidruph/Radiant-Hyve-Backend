@@ -20,6 +20,9 @@ router.get('/get_attendance', verifyToken, principal.getAttendance);
 
 router.get('/get_other_attendance', verifyToken, principal.listOtherAttedance);
 
+router.get('/get_today_attendance', verifyToken, principal.todayAttedance);
+
+
 
 
 module.exports = router;
