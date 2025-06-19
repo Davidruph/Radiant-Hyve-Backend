@@ -1,12 +1,11 @@
 require('dotenv').config()
 const db = require("../../config/db");
-const { getIO } = require('../config/socketSetup');
+const { getIO } = require('../../config/socketSetup');
 const fs = require('fs');
 const path = require('path');
-const { send_notification } = require('../helper/notification')
+const { send_notification } = require('../../helpers/notification')
 const { Op, Sequelize, where } = require('sequelize');
-const { emitToSockets } = require(`../config/socketConfig`);
-const messsage = require('../model/messsage');
+const { emitToSockets } = require(`../../config/socketConfig`);
 
 const uploadMediaInChat = async (media, thumbnails, mediaType, mediaText, documentText, messageText) => {
     const uploadedMedia = [];
@@ -436,7 +435,6 @@ const sendMessage = async (req, res) => {
                     console.log(`NEW MESSAGE EMIT NOT SENT`, error);
                 }
 
-
                 if (clientsInRoom && clientsInRoom < 2) {
                     let chatDetails = await getChatDetails(data);
                     try {
@@ -455,15 +453,11 @@ const sendMessage = async (req, res) => {
                         chat_id: data.chat_id,
                         other_id: data.message_to,
                         user_id: data.message_by,
-                        firstname: data.sendermessage.first_name,
-                        lastname: data.sendermessage.last_name,
+                        fullname: data.sendermessage.full_name,
                         profile_image: data.sendermessage.profile_pic,
                         notiType: notiType,
-                        username: data.sendermessage.username,
-                        company_name: data.sendermessage.company_name,
-                        company_description: data.sendermessage.company_description,
-                        company_profile_pic: data.sendermessage.company_profile_pic,
-                        subscription_plan: data.sendermessage.subscription_plan,
+                        role:data.sendermessage.role,
+                    
                     };
                     await send_notification(messageData.message_to, message, notiType, Data);
                 }
@@ -663,7 +657,53 @@ const deletePersonalChatMessage = async (req, res) => {
     }
 }
 
+const chatUserList = async (req, res) => {
+    try {
+        const { page, search } = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, messsage: "page is required" })
+        }
 
+        const limit = 10
+        const offset = (page - 1) * limit
+
+        const whereCondition = {
+            school_id: req.user.school_id,
+            role: { [Op.ne]: "school" }
+        };
+
+        if (search) {
+            whereCondition[Op.or] = [
+                { full_name: { [Op.like]: `%${search}%` } },
+                { role: { [Op.like]: `%${search}%` } }
+            ];
+        }
+
+        const user = await db.User.findAndCountAll({
+            where: whereCondition,
+            attributes: ["id", "full_name", "profile_pic", "role"],
+            limit,
+            offset
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: 'user retrieved successfully',
+            total_user: user.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(user.count / limit),
+            data: user.rows
+        });
+
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({
+            status: 0,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+}
 
 
 module.exports = {
@@ -674,6 +714,7 @@ module.exports = {
     deleteChat,
     editPersonalChatMessage,
     deletePersonalChatMessage,
+    chatUserList,
 }
 
 

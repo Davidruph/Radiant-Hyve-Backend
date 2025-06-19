@@ -457,7 +457,7 @@ exports.addparentlValidation = () => {
                     const files = req.files?.profile_pic;
 
                     if (!files || !Array.isArray(files) || files.length === 0) {
-                        throw new Error("profile_pic required!");
+                        return true;
                     }
 
                     if (files.length > maxFiles) {

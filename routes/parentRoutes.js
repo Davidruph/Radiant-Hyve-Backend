@@ -11,8 +11,17 @@ const imageUpload = upload.fields([
 
 const parent = require("../controller/parent/homeController")
 const student = require("../controller/parent/studentController")
+const validation = require("../validator/parentValidator")
 
-router.post('/add_student',verifyToken, student.createStudent);
-router.put('/edit_student',verifyToken, student.editStudent);
+router.post('/add_student',verifyToken, validation.addStudentlValidation(), student.createStudent);
+router.put('/edit_student',verifyToken,validation.editStudentlValidation(),  student.editStudent);
 router.delete('/delete_student',verifyToken, student.delteStudent);
 
+router.get('/list_active_student',verifyToken, parent.listActiveStudent);
+router.get('/students_details',verifyToken,validation.studentDetailsValidation(), parent.studentDetails);
+router.get('/student_get',verifyToken, parent.getStudent);
+router.get('/students_list',verifyToken, parent.listStudent);
+
+
+
+module.exports = router; 

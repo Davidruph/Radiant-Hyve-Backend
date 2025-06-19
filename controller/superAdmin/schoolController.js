@@ -214,23 +214,27 @@ const getSchoolById = async (req, res) => {
             where: {
                 school_id: id,
                 role: 'teacher',
+                is_deleted: false
             },
         });
         const principalCount = await db.User.count({
             where: {
                 school_id: id,
                 role: 'principal',
+                is_deleted: false
             },
         });
         const parentCount = await db.User.count({
             where: {
                 school_id: id,
                 role: 'parent',
+                is_deleted: false
             },
         });
         const studentCount = await db.Student.count({
             where: {
                 school_id: id,
+                request_status: "accepted"
             },
         });
 

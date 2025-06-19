@@ -24,7 +24,7 @@ const addparent = async (req, res) => {
             return res.status(400).json({ message: "Email already exists" })
         }
 
-        if (req.files && req.files.profile_pic) {
+        if (req.files && req.files?.profile_pic) {
             var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
         }
         let school_id = null

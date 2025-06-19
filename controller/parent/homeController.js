@@ -71,7 +71,7 @@ const getStudent = async (req, res) => {
     try {
         const { student_id } = req.query
 
-        if (student_id) {
+        if (!student_id) {
             return res.status(400).json({ status: 0, message: "student_id is required" })
         }
 
@@ -176,10 +176,6 @@ const studentDetails = async (req, res) => {
     }
     try {
         const { student_id, type } = req.query
-
-        if (student_id) {
-            return res.status(400).json({ status: 0, message: "student_id is required" })
-        }
 
         const student = await db.Student.findOne({
             where: {

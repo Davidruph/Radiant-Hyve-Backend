@@ -38,6 +38,12 @@ db.User.hasMany(db.Student, {foreignKey: 'teacher_id',as: 'Student'})
 db.Student.belongsTo(db.User, {foreignKey: 'teacher_id', as: 'Teacher'})
 
 
+db.User.hasMany(db.Chat, { foreignKey: "chat_by",as: "ChatsByUser",});
+db.Chat.belongsTo(db.User, {foreignKey: "chat_by",as: "Sender",});
+
+db.User.hasMany(db.Chat, {foreignKey: "chat_to",as: "ChatsToUser",});
+db.Chat.belongsTo(db.User, {oreignKey: "chat_to",as: "Receiver",});
+
 
 db.User.hasMany(db.AddRole, {foreignKey: 'add_to',as: 'AddToRole'})
 db.AddRole.belongsTo(db.User, {foreignKey: 'add_to', as: 'AddRole'})
@@ -73,6 +79,14 @@ db.Chat.belongsTo(db.User, {oreignKey: "chat_to",as: "Receiver",});
 db.User.hasMany(db.Chat, {foreignKey: 'school_id',as: 'schoolChat'})
 db.Chat.belongsTo(db.User, {foreignKey: 'school_id', as: 'ChatSchool'})
 
+db.Chat.hasMany(db.Message, {foreignKey: "chat_id",as: "Messages"})
+db.Message.belongsTo(db.Chat, {foreignKey: "chat_id", as: "ChatMessages"})
+
+db.User.hasMany(db.Message, {foreignKey: "message_by",as: "sentMessages"});
+db.Message.belongsTo(db.User, {foreignKey: "message_by",as: "sendermessage"});
+
+db.User.hasMany(db.Message, {foreignKey: "message_to",as: "receivedMessages"});
+db.Message.belongsTo(db.User, {foreignKey: "message_to",as: "receivermessage"});
 
 // db.User.hasMany(db.Event, {foreignKey: "admin_id",as: "EventAdmin",});
 // db.Event.belongsTo(db.User, {oreignKey: "admin_id",as: "AdminEvents",}); 
