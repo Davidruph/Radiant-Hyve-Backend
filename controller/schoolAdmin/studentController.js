@@ -254,8 +254,8 @@ const studentAssignTeacher = async (req, res) => {
         }
 
         await student.update({
-            teacher_id,
-            request_status
+            teacher_id: teacher_id || student.teacher_id,
+            request_status: request_status || student.request_status
         })
         return res.status(200).json({
             status: 1,
@@ -476,6 +476,18 @@ const listParantStudent = async (req, res) => {
             where: {
                 parent_id: parent_id
             },
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.shift_name
+                           FROM tbl_shift t2
+                           WHERE t2.id = Student.shift_id
+                        )`),
+                        'shift_name',
+                    ],
+                ]
+            },
             limit,
             offset,
             order: [['createdAt', 'DESC']],
@@ -496,6 +508,92 @@ const listParantStudent = async (req, res) => {
     }
 }
 
+const listTeacherStudent = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, shift_id, search, teacher_id } = req.query;
+        if (!page) {
+            return res.status(400).json({ status: 0, message: 'page is required' });
+        }
+
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        let school_id = null;
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            });
+            school_id = principal.school_id;
+        } else {
+            school_id = req.user.id;
+        }
+
+        const user = await db.User.findOne({
+            where: { id: teacher_id, is_deleted: false },
+        })
+
+        if (!user) {
+            return res.status(404).json({ status: 0, message: 'Teacher not found' })
+        }
+        const whereClause = {
+            school_id,
+            request_status: 'accepted',
+            teacher_id
+        };
+
+        if (shift_id && parseInt(shift_id) !== 0) {
+            const shift = await db.Shift.findOne({ where: { school_id } });
+            if (!shift) {
+                return res.status(404).json({ status: 0, message: 'shift not found' });
+            }
+            whereClause.shift_id = shift_id;
+        }
+
+        if (search) {
+            whereClause[Op.or] = [
+                { full_name: { [Op.like]: `%${search}%` } },
+                { parent_name: { [Op.like]: `%${search}%` } },
+            ];
+        }
+
+        const student = await db.Student.findAndCountAll({
+            where: whereClause,
+             attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.shift_name
+                           FROM tbl_shift t2
+                           WHERE t2.id = Student.shift_id
+                        )`),
+                        'shift_name',
+                    ],
+                ]
+            },
+            limit,
+            offset,
+            order: [['createdAt', 'DESC']], 
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'student request retrieved successfully',
+            total_student: student.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(student.count / limit),
+            data: student.rows
+        });
+
+    } catch (error) {
+        console.error('Error get student:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+
+}
+
 
 module.exports = {
     getNewStudent,
@@ -507,5 +605,6 @@ module.exports = {
     getShift,
     listWaitingStudent,
     studentAttendance,
-    listParantStudent
+    listParantStudent,
+    listTeacherStudent
 }

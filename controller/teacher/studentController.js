@@ -438,6 +438,7 @@ const getStudent = async (req, res) => {
             attributes: ["id", "full_name"],
             where: {
                 teacher_id: req.user.id,
+                request_status: 'accepted',
                 ...(search
                     ? {
                         full_name: {

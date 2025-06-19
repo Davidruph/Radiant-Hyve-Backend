@@ -185,7 +185,7 @@ const forgotePasswor = async (req, res) => {
         const user = await db.User.findOne({ where: { email, role, is_deleted: false } });
 
         if (!user) {
-            return res.status(404).json({ status: 0, message: 'user not found.' });
+            return res.status(404).json({ status: 0, message: 'Email not registered.' });
         }
 
         const otp = Math.floor(1000 + Math.random() * 9000);

@@ -64,6 +64,8 @@ router.get('/list_teacher',verifyToken, student.listTeacher);
 router.get('/get_shift',verifyToken, student.getShift);
 router.get('/get_all_student_attedance',verifyToken, student.studentAttendance);
 router.get('/get_parent_student',verifyToken, student.listParantStudent);
+router.get('/get_teacher_student',verifyToken, student.listTeacherStudent);
+
 
 
 
@@ -92,6 +94,8 @@ router.get('/get_medification',verifyToken, medification.getMedication);
 router.get('/list_medification',verifyToken, medification.listMedication);
 router.delete('/delete_medification',verifyToken, medification.deleteMedication);
 router.get('/list_students',verifyToken, medification.listStudent);
+router.get('/list_students',verifyToken, medification.listStudent);
+
 
 
 router.post('/add_event',verifyToken,schoolvalidator.addEventValidation(), event.createEvent);
