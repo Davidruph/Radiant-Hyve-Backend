@@ -336,6 +336,12 @@ const deletePrincipal = async (req, res) => {
             is_deleted: true
         })
 
+        await db.Token.destroy({
+            where: {
+                user_id: principal_id
+            }
+        })
+
         return res.status(200).json({
             status: 1,
             message: 'principal deleted successfully',

@@ -428,6 +428,12 @@ const deleteStaff = async (req, res) => {
             is_deleted: true
         })
 
+        await db.Token.destroy({
+            where: {
+                user_id: staff_id
+            }
+        })
+
         return res.status(200).json({
             status: 1,
             message: 'Staff deleted successfully',
@@ -560,7 +566,7 @@ const assignStudentList = async (req, res) => {
                     )`),
                         'shift_name',
                     ],
-                     [
+                    [
                         Sequelize.literal(`(
                         SELECT t2.full_name
                         FROM tbl_user t2

@@ -17,8 +17,9 @@ router.post('/verify_otp', authValidator.forgoteVerifyValidation(), auth.verifyF
 router.post('/reset_password', authValidator.resetPasswordValidation(), auth.resetPassword);
 router.patch('/change_password',verifyToken, authValidator.changePasswordValidation(), auth.changePassword);
 router.post('/logout',verifyToken, auth.logout);
-router.get('/refresh_token',verifyToken, auth.refreshToken);
+router.get('/create_token', auth.refreshToken);
 router.get('/get_profile',verifyToken, auth.getProfile);
+router.post('/refresh_token_web', auth.refreshTokenWeb);
 
 
 
