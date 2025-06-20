@@ -19,7 +19,7 @@ const verifyToken = (req, res, next) => {
                     .json({ status: 0, message: "Token is not valid!" });
             }
             console.log("Middleware token:-", token, decodedToken)
-            let User = await db.User.findOne({ where: { id: decodedToken.id } });
+            let User = await db.User.findOne({ where: { id: decodedToken.user_id } });
             if (!User) {
                 return res.status(401).json({ status: 0, message: "You are not authenticated!" });
             }

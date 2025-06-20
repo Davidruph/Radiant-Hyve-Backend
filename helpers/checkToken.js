@@ -22,7 +22,7 @@ exports.checkToken = async (data, user_id) => {
     console.log("userid", user_id);
 
     var jwtToken = jwt.sign({
-        id: user_id,
+        user_id: user_id,
         token_id: token.id
     }, `${process.env.JWT_SECRET_KEY}`, { expiresIn: '1d' });
 
