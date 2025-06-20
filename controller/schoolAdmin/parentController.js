@@ -39,7 +39,7 @@ const addparent = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { mobile_no, iso_code, country_code , is_deleted: false}
+                where: { mobile_no, iso_code, country_code, is_deleted: false }
             })
 
             if (existMobile) {
@@ -63,7 +63,6 @@ const addparent = async (req, res) => {
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
             if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
-
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
@@ -86,6 +85,12 @@ const addparent = async (req, res) => {
             add_to: parent.id,
             add_by: req.user.id,
             add_role: "parent"
+        })
+
+        await db.Chat.create({
+            chat_by: school_id,
+            chat_to: parent.id,
+            school_id: school_id
         })
 
         return res.status(200).json({
@@ -141,11 +146,11 @@ const editParent = async (req, res) => {
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
-                where: { 
-                    mobile_no, 
-                    iso_code, 
+                where: {
+                    mobile_no,
+                    iso_code,
                     country_code,
-                    id: {[Op.not]: parent_id},
+                    id: { [Op.not]: parent_id },
                     is_deleted: false
                 }
             })
@@ -229,7 +234,7 @@ const listParent = async (req, res) => {
 
         const parent = await db.User.findAndCountAll({
             where: whereCondition,
-            attributes: ["id", "email", "password", "mobile_no", "country_code", "iso_code", "profile_pic", "address","full_name", "is_blocked", "is_deleted",
+            attributes: ["id", "email", "password", "mobile_no", "country_code", "iso_code", "profile_pic", "address", "full_name", "is_blocked", "is_deleted",
                 [
                     Sequelize.literal(`(
                                 SELECT COUNT(*) 
@@ -289,7 +294,7 @@ const parentDetails = async (req, res) => {
                 role: "parent",
                 school_id
             },
-            attributes: ["id", "email", "password", "full_name", "gender", "mobile_no", "country_code", "iso_code", "profile_pic","is_blocked", "is_deleted","address",
+            attributes: ["id", "email", "password", "full_name", "gender", "mobile_no", "country_code", "iso_code", "profile_pic", "is_blocked", "is_deleted", "address",
                 [
                     Sequelize.literal(`(
                                     SELECT COUNT(*) 
@@ -467,6 +472,13 @@ const deletedParent = async (req, res) => {
         if (!parent) {
             return res.status(404).json({ status: 0, message: "parent not found" })
         }
+        await db.Chat.destroy({
+            where: {
+                chat_by:school_id,
+                chat_to: parent_id,
+                school_id
+            }
+        })
 
         await parent.update({
             is_deleted: true,

@@ -63,7 +63,6 @@ const addStaff = async (req, res) => {
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
             if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
-
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
@@ -89,6 +88,12 @@ const addStaff = async (req, res) => {
             add_to: Staff.id,
             add_by: req.user.id,
             add_role: "teacher"
+        })
+
+        await db.Chat.create({
+            chat_by: school_id,
+            chat_to: Staff.id,
+            school_id: school_id
         })
 
         return res.status(200).json({
@@ -423,6 +428,14 @@ const deleteStaff = async (req, res) => {
         if (!Staff) {
             return res.status(404).json({ status: 0, message: "Staff not found" })
         }
+        
+        await db.Chat.destroy({
+            where: {
+                chat_by:school_id,
+                chat_to:staff_id,
+                school_id
+            }
+        })
 
         await Staff.update({
             is_deleted: true

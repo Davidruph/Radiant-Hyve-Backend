@@ -6,6 +6,8 @@ const path = require('path');
 const { send_notification } = require('../../helpers/notification')
 const { Op, Sequelize, where } = require('sequelize');
 const { emitToSockets } = require(`../../config/socketConfig`);
+const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
+
 
 const uploadMediaInChat = async (media, thumbnails, mediaType, mediaText, documentText, messageText) => {
     const uploadedMedia = [];
@@ -26,17 +28,29 @@ const uploadMediaInChat = async (media, thumbnails, mediaType, mediaText, docume
             uploadedMedia.push(object);
         } else {
             for (const [index, element] of media.entries()) {
-                const imageUrl = `uploads/media/${element.filename}`;;
-                const object = {
-                    image: imageUrl,
-                    thumbnail: null,
-                    media_text: null,
-                    file_name: null,
-                    message_type: types[index]
-                };
+                let object = {}
+                if (types[index] == 'Video' || types[index] == 'Video/Text') {
+                    const imageUrl = await uploadVideo(element, 'chat_media');;
+                    object = {
+                        image: imageUrl,
+                        thumbnail: null,
+                        media_text: null,
+                        file_name: null,
+                        message_type: types[index]
+                    };
+                } else {
+                    const imageUrl = await upload_file(element, 'chat_media');;
+                    object = {
+                        image: imageUrl,
+                        thumbnail: null,
+                        media_text: null,
+                        file_name: null,
+                        message_type: types[index]
+                    };
+                }
                 if (types[index] == 'Video' || types[index] == 'Video/Text') {
                     if (thumbnails && thumbnails[thumbnailIndex]) {
-                        const thumbnailUrl = `uploads/media/${thumbnails[thumbnailIndex].filename}`;
+                        const thumbnailUrl = await upload_file(thumbnails[thumbnailIndex], 'thumbnail/');
                         object.thumbnail = thumbnailUrl;
                         thumbnailIndex++;
                     }
@@ -63,6 +77,7 @@ const uploadMediaInChat = async (media, thumbnails, mediaType, mediaText, docume
     }
 };
 
+
 const createPersnolChat = async (req, res) => {
     const { chat_to } = req.body;
     const chat_by = req.user.id;
@@ -78,8 +93,8 @@ const createPersnolChat = async (req, res) => {
             }
         });
 
-        if (!sender || !receiver) {
-            return res.status(404).json({ status: 0, messsage: 'Sender or Receiver user not found.' });
+        if (!receiver) {
+            return res.status(404).json({ status: 0, messsage: 'chat_to user not found.' });
         }
 
         if (parseInt(chat_to) === parseInt(chat_by)) {
@@ -125,7 +140,7 @@ const getPersonalChats = async (req, res) => {
     try {
         const totalChatsCount = await db.Chat.count({
             where: {
-                group_id: null,
+                school_id: null,
                 [db.Sequelize.Op.or]: [{ chat_by: userId }, { chat_to: userId }],
             },
             group: ["Chat.id"],
@@ -136,6 +151,7 @@ const getPersonalChats = async (req, res) => {
         });
         const personalChats = await db.Chat.findAndCountAll({
             where: {
+                school_id: null,
                 [db.Sequelize.Op.or]: [
                     { chat_by: userId },
                     { chat_to: userId }
@@ -456,8 +472,8 @@ const sendMessage = async (req, res) => {
                         fullname: data.sendermessage.full_name,
                         profile_image: data.sendermessage.profile_pic,
                         notiType: notiType,
-                        role:data.sendermessage.role,
-                    
+                        role: data.sendermessage.role,
+
                     };
                     await send_notification(messageData.message_to, message, notiType, Data);
                 }

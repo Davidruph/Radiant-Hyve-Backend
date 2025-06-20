@@ -33,6 +33,15 @@ const addSchool = async (req, res) => {
             role: 'school',
         });
 
+        await db.Chat.create({
+            chat_by: user.id,
+            chat_to : user.id,
+            school_id: user.id
+        })
+        await user.update({
+            school_id: user.id
+        })
+
         return res.status(201).json({ status: 1, message: 'School added successfully', data: user });
 
     } catch (error) {

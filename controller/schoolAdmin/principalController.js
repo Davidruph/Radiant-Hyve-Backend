@@ -77,6 +77,20 @@ const addPrincipal = async (req, res) => {
             school_id: req.user.id
         })
 
+        await db.AddRole.create({
+            school_id,
+            add_to: principal.id,
+            add_by: req.user.id,
+            add_role: "principal"
+        })
+
+
+        await db.Chat.create({
+            chat_by: req.user.id,
+            chat_to: principal.id,
+            school_id: req.user.id
+        })
+
         return res.status(200).json({
             status: 1,
             message: "Principal Added Successfully",
@@ -331,6 +345,14 @@ const deletePrincipal = async (req, res) => {
         if (!principal) {
             return res.status(404).json({ status: 0, message: "Principal not found" })
         }
+        
+        await db.Chat.destroy({
+            where: {
+                chat_by: req.user.id,
+                chat_to: principal_id,
+                school_id: req.user.id
+            }
+        })
 
         await principal.update({
             is_deleted: true

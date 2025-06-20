@@ -343,7 +343,7 @@ const refreshTokenWeb = async (req, res) => {
             if (storedToken) await db.Token.destroy({ where: { refresh_token } });
             return res.status(403).json({ status: 0, message: "Invalid or expired refresh token, please log in again" });
         }
-        const user = await db.User.findByPk(storedToken.id);
+        const user = await db.User.findByPk(storedToken.user_id);
         if (!user) return res.status(400).json({ status: 0, message: "User not found" });
         const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
         return res.status(200).json({
@@ -358,7 +358,7 @@ const refreshTokenWeb = async (req, res) => {
 };
 
 const refreshToken = async (req, res) => {
-  const { refresh_token } = req.query;
+  const { refresh_token } = req.body;
   if (!refresh_token) return res.status(400).json({ status: 0, message: "Refresh Token is required" })
  
   try {
@@ -367,7 +367,7 @@ const refreshToken = async (req, res) => {
       if (storedToken) await db.Token.destroy({ where: { refresh_token } });
       return res.status(403).json({ status: 0, message: "Invalid or expired refresh token, please log in again" });
     }
-    const user = await db.User.findByPk(storedToken.id);
+    const user = await db.User.findByPk(storedToken.user_id);
     if (!user) return res.status(400).json({ status: 0, message: "User not found" });
     const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
     return res.status(200).json({
