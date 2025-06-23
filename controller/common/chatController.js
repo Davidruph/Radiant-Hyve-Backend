@@ -80,6 +80,10 @@ const uploadMediaInChat = async (media, thumbnails, mediaType, mediaText, docume
 
 const createPersnolChat = async (req, res) => {
     const { chat_to } = req.body;
+
+    if (!chat_to) {
+        return res.status(400).json({ message: 'chat_to is required' });
+    }
     const chat_by = req.user.id;
 
     try {
@@ -106,7 +110,8 @@ const createPersnolChat = async (req, res) => {
                 [db.Sequelize.Op.or]: [
                     { chat_by: chat_by, chat_to: chat_to },
                     { chat_by: chat_to, chat_to: chat_by }
-                ]
+                ],
+                school_id: null
             }
         });
 
@@ -117,6 +122,7 @@ const createPersnolChat = async (req, res) => {
         const chat = await db.Chat.create({
             chat_by: chat_by,
             chat_to: parseInt(chat_to),
+            school_id: null
         });
         return res.status(201).json({
             status: 1,
@@ -133,7 +139,10 @@ const createPersnolChat = async (req, res) => {
 };
 
 const getPersonalChats = async (req, res) => {
-    const { page = 1 } = req.query;
+    const { page } = req.query;
+    if (!page) {
+        return res.status(400).json({ status: 0, messsage: 'pag is required.' })
+    }
     const userId = req.user.id;
     const limit = 10;
     const offset = (page - 1) * limit;
@@ -149,10 +158,10 @@ const getPersonalChats = async (req, res) => {
                 WHERE tbl_message.chat_id = Chat.id
             ) > 0`),
         });
-        const personalChats = await db.Chat.findAndCountAll({
+        const personalChats = await db.Chat.findAll({
             where: {
                 school_id: null,
-                [db.Sequelize.Op.or]: [
+                [Op.or]: [
                     { chat_by: userId },
                     { chat_to: userId }
                 ]
@@ -220,7 +229,7 @@ const getPersonalChats = async (req, res) => {
                 },
             ],
             order: [[Sequelize.col("latestMessageCreatedAt"), "DESC"]],
-            group: ["Chat.id"],
+            // group: ["Chat.id"],
             having: Sequelize.literal(`(
                 SELECT COUNT(*) FROM tbl_message 
                 WHERE tbl_message.chat_id = Chat.id
@@ -229,13 +238,22 @@ const getPersonalChats = async (req, res) => {
             offset: offset,
         });
 
+        const lessonChat = await db.Chat.findOne({
+            where: {
+                chat_by: req.user.school_id,
+                chat_to: req.user.id,
+                school_id: req.user.school_id
+            }
+        })
+
         return res.status(200).json({
             status: 1,
             message: "Chats retrieved successfully",
+            lesson_chat_id: lessonChat.id || null,
             totalChats: totalChatsCount,
             totalPages: Math.ceil(totalChatsCount / limit),
             currentPage: parseInt(page),
-            chats: personalChats.rows,
+            chats: personalChats,
         });
     } catch (error) {
         console.error('Error fetching personal chats:', error);
@@ -262,7 +280,8 @@ const deleteChat = async (req, res) => {
                 [db.Sequelize.Op.or]: [
                     { chat_by: userId },
                     { chat_to: userId }
-                ]
+                ],
+                school_id: null
             }
         });
 
@@ -270,9 +289,6 @@ const deleteChat = async (req, res) => {
             return res.status(404).json({ status: 0, message: 'Chat not found' });
         }
 
-        if (chat.chat_by !== userId && chat.chat_to !== userId) {
-            return res.status(401).json({ status: 0, message: 'Unauthorized to delete this chat.' });
-        }
         await chat.destroy();
 
         return res.status(200).json({
@@ -292,7 +308,10 @@ const deleteChat = async (req, res) => {
 
 const getChatMessages = async (req, res) => {
     try {
-        const { chat_id, page = 1 } = req.query;
+        const { chat_id, page } = req.query;
+        if (!chat_id || !page) {
+            return res.status(400).json({ status: 0, message: 'chat_id and page is required' })
+        }
         let user_id = req.user.id;
         const limit = 10;
         const offset = (page - 1) * limit;
@@ -304,7 +323,8 @@ const getChatMessages = async (req, res) => {
                 [Op.or]: [
                     { chat_by: req.user.id },
                     { chat_by: req.user.id }
-                ]
+                ],
+                school_id: null
             },
         });
         console.log('chat', chat)
@@ -370,7 +390,8 @@ const sendMessage = async (req, res) => {
             [Op.or]: [
                 { chat_by: message_by, chat_to: other_id },
                 { chat_by: other_id, chat_to: message_by }
-            ]
+            ],
+            school_id: null
         }
     });
 
@@ -382,7 +403,7 @@ const sendMessage = async (req, res) => {
     }
     const sender = await db.User.findByPk(message_by);
     const receiver = await db.User.findByPk(other_id);
-    if (!sender || !receiver) {
+    if (!receiver) {
         return res.status(404).json({ status: 0, message: "User not found" });
     }
     const allowedMessageTypes = ["Text", "Image", "Video", "Document", "Audio", "Video/Text", "Image/Text"];
@@ -562,117 +583,6 @@ async function getChatDetails(messageData) {
     });
 }
 
-const editPersonalChatMessage = async (req, res) => {
-    const { id, message } = req.body;
-
-    const userId = req.user.id;
-    try {
-        if (!id) {
-            return res.status(400).json({ message: "id is required" });
-        }
-        if (!message) {
-            return res.status(400).json({ status: 0, message: "message is require." })
-        }
-
-        const msg = await db.Message.findOne({
-            where: {
-                id,
-                message_by: userId,
-                message_type: "Text",
-                group_id: null
-            }
-        })
-
-        if (!msg) {
-            return res.status(404).json({ status: 0, message: "Message not found." })
-        }
-
-        await msg.update({
-            message_text: message,
-            is_edited: true
-        })
-        try {
-            await emitToSockets(msg.message_to, "edit_message", { id, message_text: message, is_edited: true });
-            await emitToSockets(msg.message_by, "edit_message", { id, message_text: message, is_edited: true });
-            console.log(`EDIT MESSAGE EMIT: ${JSON.stringify(msg)}`);
-        } catch (error) {
-            console.log(`EDIT MESSAGE EMIT NOT SENT`, error);
-        }
-
-        return res.status(200).json({
-            status: 1,
-            message: "Message edited successfully.",
-            msg
-        })
-    } catch (error) {
-        console.error("Error edit message:", error);
-        return res.status(500).json({
-            status: 0,
-            message: "Internal server error",
-            error: error.message,
-        });
-    }
-}
-
-const deletePersonalChatMessage = async (req, res) => {
-    try {
-        const { id } = req.query;
-        const userId = req.user.id;
-
-        if (!id) {
-            return res.status(400).json({ message: "id is required" });
-        }
-        const message = await db.Message.findOne({
-            where: {
-                id,
-                message_by: userId,
-                group_id: null
-            }
-        })
-
-        if (!message) {
-            return res.status(404).json({ status: 0, message: "Message not found." })
-        }
-
-        if (message.message_text && message.message_type != "Text") {
-            const filePath = path.resolve(message.message_text);
-            fs.unlink(filePath, (err) => {
-                if (err) console.error(`Failed to delete message file: ${filePath}`, err);
-            });
-            if (message.thumbnail) {
-                const filePath = path.resolve(message.thumbnail);
-                fs.unlink(filePath, (err) => {
-                    if (err) console.error(`Failed to delete message file: ${filePath}`, err);
-                });
-            }
-
-        }
-
-        try {
-            await emitToSockets(message.message_to, "delete_message", { id });
-            await emitToSockets(message.message_by, "delete_message", { id });
-            console.log(`EDIT MESSAGE EMIT: ${JSON.stringify(msg)}`);
-        } catch (error) {
-            console.log(`EDIT MESSAGE EMIT NOT SENT`, error);
-        }
-
-        await message.destroy()
-
-        return res.status(200).json({
-            status: 1,
-            message: "Message deleted successfully.",
-        })
-
-    } catch (error) {
-        console.error("Error delete message:", error);
-        return res.status(500).json({
-            status: 0,
-            message: "Internal server error",
-            error: error.message,
-        });
-    }
-}
-
 const chatUserList = async (req, res) => {
     try {
         const { page, search } = req.query
@@ -685,8 +595,10 @@ const chatUserList = async (req, res) => {
 
         const whereCondition = {
             school_id: req.user.school_id,
-            role: { [Op.ne]: "school" }
-        };
+            role: { [Op.ne]: "school" },
+            is_blocked: false,
+            is_deleted: false
+        }
 
         if (search) {
             whereCondition[Op.or] = [
@@ -722,14 +634,125 @@ const chatUserList = async (req, res) => {
 }
 
 
+// const editPersonalChatMessage = async (req, res) => {
+//     const { id, message } = req.body;
+
+//     const userId = req.user.id;
+//     try {
+//         if (!id) {
+//             return res.status(400).json({ message: "id is required" });
+//         }
+//         if (!message) {
+//             return res.status(400).json({ status: 0, message: "message is require." })
+//         }
+
+//         const msg = await db.Message.findOne({
+//             where: {
+//                 id,
+//                 message_by: userId,
+//                 message_type: "Text",
+//                 group_id: null
+//             }
+//         })
+
+//         if (!msg) {
+//             return res.status(404).json({ status: 0, message: "Message not found." })
+//         }
+
+//         await msg.update({
+//             message_text: message,
+//             is_edited: true
+//         })
+//         try {
+//             await emitToSockets(msg.message_to, "edit_message", { id, message_text: message, is_edited: true });
+//             await emitToSockets(msg.message_by, "edit_message", { id, message_text: message, is_edited: true });
+//             console.log(`EDIT MESSAGE EMIT: ${JSON.stringify(msg)}`);
+//         } catch (error) {
+//             console.log(`EDIT MESSAGE EMIT NOT SENT`, error);
+//         }
+
+//         return res.status(200).json({
+//             status: 1,
+//             message: "Message edited successfully.",
+//             msg
+//         })
+//     } catch (error) {
+//         console.error("Error edit message:", error);
+//         return res.status(500).json({
+//             status: 0,
+//             message: "Internal server error",
+//             error: error.message,
+//         });
+//     }
+// }
+
+// const deletePersonalChatMessage = async (req, res) => {
+//     try {
+//         const { id } = req.query;
+//         const userId = req.user.id;
+
+//         if (!id) {
+//             return res.status(400).json({ message: "id is required" });
+//         }
+//         const message = await db.Message.findOne({
+//             where: {
+//                 id,
+//                 message_by: userId,
+//                 group_id: null
+//             }
+//         })
+
+//         if (!message) {
+//             return res.status(404).json({ status: 0, message: "Message not found." })
+//         }
+
+//         if (message.message_text && message.message_type != "Text") {
+//             const filePath = path.resolve(message.message_text);
+//             fs.unlink(filePath, (err) => {
+//                 if (err) console.error(`Failed to delete message file: ${filePath}`, err);
+//             });
+//             if (message.thumbnail) {
+//                 const filePath = path.resolve(message.thumbnail);
+//                 fs.unlink(filePath, (err) => {
+//                     if (err) console.error(`Failed to delete message file: ${filePath}`, err);
+//                 });
+//             }
+
+//         }
+
+//         try {
+//             await emitToSockets(message.message_to, "delete_message", { id });
+//             await emitToSockets(message.message_by, "delete_message", { id });
+//             console.log(`EDIT MESSAGE EMIT: ${JSON.stringify(msg)}`);
+//         } catch (error) {
+//             console.log(`EDIT MESSAGE EMIT NOT SENT`, error);
+//         }
+
+//         await message.destroy()
+
+//         return res.status(200).json({
+//             status: 1,
+//             message: "Message deleted successfully.",
+//         })
+
+//     } catch (error) {
+//         console.error("Error delete message:", error);
+//         return res.status(500).json({
+//             status: 0,
+//             message: "Internal server error",
+//             error: error.message,
+//         });
+//     }
+// }
+
 module.exports = {
     sendMessage,
     getChatMessages,
     createPersnolChat,
     getPersonalChats,
     deleteChat,
-    editPersonalChatMessage,
-    deletePersonalChatMessage,
+    // editPersonalChatMessage,
+    // deletePersonalChatMessage,
     chatUserList,
 }
 

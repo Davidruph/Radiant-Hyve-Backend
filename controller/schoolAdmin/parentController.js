@@ -472,13 +472,6 @@ const deletedParent = async (req, res) => {
         if (!parent) {
             return res.status(404).json({ status: 0, message: "parent not found" })
         }
-        await db.Chat.destroy({
-            where: {
-                chat_by:school_id,
-                chat_to: parent_id,
-                school_id
-            }
-        })
 
         await parent.update({
             is_deleted: true,
@@ -494,7 +487,6 @@ const deletedParent = async (req, res) => {
         console.error("Error processing :", error);
         return res.status(500).json({ status: 0, message: "Internal Server Error" });
     }
-
 }
 
 

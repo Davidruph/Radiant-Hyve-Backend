@@ -90,12 +90,6 @@ const addStaff = async (req, res) => {
             add_role: "teacher"
         })
 
-        await db.Chat.create({
-            chat_by: school_id,
-            chat_to: Staff.id,
-            school_id: school_id
-        })
-
         return res.status(200).json({
             status: 1,
             message: "Staff Added Successfully",

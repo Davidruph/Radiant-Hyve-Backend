@@ -44,6 +44,18 @@ db.AddRole.belongsTo(db.User, {foreignKey: 'add_to', as: 'AddRole'})
 db.User.hasMany(db.AddRole, {foreignKey: 'add_by',as: 'AddByRole'})
 db.AddRole.belongsTo(db.User, {foreignKey: 'add_by', as: 'AddedRole'})
 
+db.User.hasMany(db.MessageStatus, {foreignKey: "message_by",as: "MessageStatuse"})
+db.MessageStatus.belongsTo(db.User, { foreignKey: "message_by", as: "Users"})
+
+db.User.hasMany(db.MessageStatus, {foreignKey: "message_to", as: "MessageStatus"})
+db.MessageStatus.belongsTo(db.User, {  foreignKey: "message_to", as: "User"})
+
+db.Chat.hasMany(db.MessageStatus, { foreignKey: "chat_id",as: "ChatMessageStatus"})
+db.MessageStatus.belongsTo(db.Chat, { foreignKey: "chat_id", as: "Chat"})
+
+db.Message.hasMany(db.MessageStatus, { foreignKey: "message_id",as: "MessageStatus"})
+db.MessageStatus.belongsTo(db.Message, { foreignKey: "message_id", as: "Message"})
+
 
 db.User.hasMany(db.Attendance, {foreignKey: 'user_id',as: 'userAttend'})
 db.Attendance.belongsTo(db.User, {foreignKey: 'user_id', as: 'userAttendance'})

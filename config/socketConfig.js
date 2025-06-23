@@ -97,9 +97,9 @@ function socketConfig(io) {
         socket.on("join_group", async function (data) {
             console.log("join group called", data);
             let user_id = data.user_id;
-            let chatroomId = parseInt(data.group_id);
+            let chatroomId = parseInt(data.school_id);
             socket.user_id = user_id;
-            socket.join(`group_${chatroomId}`);
+            socket.join(`lesson_chat_${chatroomId}`);
             try {
               await commonService.emitToSockets(data.user_id, "join_group", {Message: "Successful",info: data});
             } catch (error) {
@@ -109,8 +109,8 @@ function socketConfig(io) {
       
           socket.on("left_group", async function (data) {
               console.log("left_group", data);
-            let chatroomId = parseInt(data.group_id);
-            socket.leave(`group_${chatroomId}`);
+            let chatroomId = parseInt(data.school_id);
+            socket.leave(`lesson_chat_${chatroomId}`);
             try {
               await commonService.emitToSockets(data.user_id, "left_group", {Message: "Successful",info: data,});
             } catch (error) {

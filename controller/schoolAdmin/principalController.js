@@ -84,13 +84,6 @@ const addPrincipal = async (req, res) => {
             add_role: "principal"
         })
 
-
-        await db.Chat.create({
-            chat_by: req.user.id,
-            chat_to: principal.id,
-            school_id: req.user.id
-        })
-
         return res.status(200).json({
             status: 1,
             message: "Principal Added Successfully",
