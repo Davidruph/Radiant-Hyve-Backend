@@ -111,6 +111,14 @@ const getAllStudent = async (req, res) => {
                            WHERE t2.id = Student.shift_id
                         )`),
                         'shift_name',
+                    ],
+                     [
+                        Sequelize.literal(`(
+                           SELECT t2.full_name
+                           FROM tbl_user t2
+                           WHERE t2.id = Student.teacher_id
+                        )`),
+                        'teacher_name',
                     ]
                 ]
             },

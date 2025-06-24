@@ -13,8 +13,8 @@ const parent = require("../controller/parent/homeController")
 const student = require("../controller/parent/studentController")
 const validation = require("../validator/parentValidator")
 
-router.post('/add_student',verifyToken, validation.addStudentlValidation(), student.createStudent);
-router.put('/edit_student',verifyToken,validation.editStudentlValidation(),  student.editStudent);
+router.post('/add_student',verifyToken,imageUpload, validation.addStudentlValidation(), student.createStudent);
+router.put('/edit_student',verifyToken, imageUpload, validation.editStudentlValidation(),  student.editStudent);
 router.delete('/delete_student',verifyToken, student.delteStudent);
 
 router.get('/list_active_student',verifyToken, parent.listActiveStudent);

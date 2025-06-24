@@ -16,7 +16,7 @@ db.StudentAttendance = require('../model/studentAttendance')(sequelize, Sequeliz
 db.SleepLoag = require('../model/sleepLoag')(sequelize, Sequelize, Model)
 db.Chat = require('../model/chat')(sequelize, Sequelize, Model)
 db.Event = require('../model/event')(sequelize, Sequelize, Model)
-db.Levave = require('../model/leave')(sequelize, Sequelize, Model)
+db.Leave = require('../model/leave')(sequelize, Sequelize, Model)
 db.Message = require('../model/messsage')(sequelize, Sequelize, Model)
 db.MessageStatus = require('../model/messageStatus')(sequelize, Sequelize, Model)
 db.MenuDay = require('../model/menuDay')(sequelize, Sequelize, Model)
@@ -100,8 +100,8 @@ db.User.hasMany(db.Event, {foreignKey: 'school_id',as: 'schoolEvent'})
 db.Event.belongsTo(db.User, {foreignKey: 'school_id', as: 'Events'})
 
 
-db.User.hasMany(db.Levave, {foreignKey: 'teacher_id',as: 'teachersLeave'})
-db.Levave.belongsTo(db.User, {foreignKey: 'teacher_id', as: 'LeaveTeacher'})
+db.User.hasMany(db.Leave, {foreignKey: 'teacher_id',as: 'teachersLeave'})
+db.Leave.belongsTo(db.User, {foreignKey: 'teacher_id', as: 'LeaveTeacher'})
 
 
 db.User.hasMany(db.MedicationInfo, {foreignKey: "admin_id",as: "adminMedicalInfo",});

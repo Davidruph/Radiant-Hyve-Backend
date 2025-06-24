@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-    const Levave = sequelize.define(
-        'Levave',
+    const Leave = sequelize.define(
+        'Leave',
         {
             leave_type: {
                 type: DataTypes.TEXT('long'),
@@ -28,12 +28,21 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 onDelete: 'CASCADE',
             },
+            school_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+                references: {
+                    model: 'tbl_user',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+            },
         },
         {
-            tableName: "tbl_levave",
+            tableName: "tbl_leave",
             timestamps: true
         }
     )
-    return Levave;
+    return Leave;
 };
 

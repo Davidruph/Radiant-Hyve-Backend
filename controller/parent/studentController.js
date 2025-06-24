@@ -65,16 +65,16 @@ const createStudent = async (req, res) => {
 }
 
 const editStudent = async (req, res) => {
-    if (req.user.role != "parent") {
+    if (req.user.role != "parent" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { student_id, shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code, email } = req.body
+        const { student_id, shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code, email, teacher_id } = req.body
 
         const student = await db.Student.findOne({
             where: {
                 id: student_id,
-                parent_id: req.user.id
+                school_id: req.user.school_id
             }
         })
 
@@ -94,7 +94,20 @@ const editStudent = async (req, res) => {
             }
         }
 
-        if (req.files && req.files.profile_pic && req.files.profile_pic.length > 0) {
+        if (teacher_id) {
+            const teacher = await db.User.findOne({
+                where: {
+                    id: teacher_id,
+                    school_id: req.user.school_id,
+                    role: "teacher"
+                }
+            })
+            if (!teacher) {
+                return res.status(404).json({ status: 0, message: "Teacher not found" })
+            }
+        }
+
+        if (req.files && req.files?.profile_pic && req.files.profile_pic.length > 0) {
             profileImage = req.files.profile_pic[0];
             var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
         }
@@ -115,7 +128,8 @@ const editStudent = async (req, res) => {
             address: address || student.address,
             medical_insurance_no: madical_insuarance_no || student.medical_insurance_no,
             relation_to_child: relation_to_child || student.relation_to_child,
-            shift_id: shift_id || student.shift_id
+            shift_id: shift_id || student.shift_id,
+            teacher_id: teacher_id || student.teacher_id,
         })
 
         return res.status(200).json({
@@ -131,7 +145,7 @@ const editStudent = async (req, res) => {
 }
 
 const delteStudent = async (req, res) => {
-    if (req.user.role != "parent") {
+    if (req.user.role != "parent" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -143,7 +157,7 @@ const delteStudent = async (req, res) => {
 
         const student = await db.Student.findOne({
             where: {
-                parent_id: req.user.id,
+                school_id: req.user.school_id,
                 request_status: {
                     [Op.not]: 'inActive'
                 }

@@ -15,12 +15,13 @@ const applyLeave = async (req, res) => {
         const { reason, leave_type, date } = req.body;
 
 
-        const leave = await db.Levave.create({
+        const leave = await db.Leave.create({
             reason: reason,
             leave_type: leave_type,
             date: date,
             teacher_id: req.user.id,
-            leave_request_status: 'pending'
+            leave_request_status: 'pending',
+            school_id: req.user.school_id
         });
 
         return res.status(200).json({
@@ -74,7 +75,7 @@ const listLeave = async (req, res) => {
             whereClause[Op.and] = andConditions;
         }
 
-        const leaves = await db.Levave.findAndCountAll({
+        const leaves = await db.Leave.findAndCountAll({
             where: whereClause,
             limit,
             offset,
