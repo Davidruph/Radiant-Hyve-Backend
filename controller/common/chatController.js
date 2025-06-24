@@ -249,7 +249,7 @@ const getPersonalChats = async (req, res) => {
         return res.status(200).json({
             status: 1,
             message: "Chats retrieved successfully",
-            lesson_chat_id: lessonChat.id || null,
+            lesson_chat_id: lessonChat ? lessonChat.id : null,
             totalChats: totalChatsCount,
             totalPages: Math.ceil(totalChatsCount / limit),
             currentPage: parseInt(page),
@@ -322,7 +322,7 @@ const getChatMessages = async (req, res) => {
                 id: chat_id,
                 [Op.or]: [
                     { chat_by: req.user.id },
-                    { chat_by: req.user.id }
+                    { chat_to: req.user.id }
                 ],
                 school_id: null
             },

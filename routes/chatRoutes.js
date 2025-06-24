@@ -5,7 +5,8 @@ const {verifyToken} = require('../middleware/verifyToken');
 const {upload} = require("../helpers/storage")
 
 const imageUpload = upload.fields([
-  { name: 'profile_pic' },
+  { name: 'media' },
+  { name: 'thumbnail' }
 ]);
 
 

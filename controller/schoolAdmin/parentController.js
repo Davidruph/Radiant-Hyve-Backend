@@ -308,7 +308,19 @@ const parentDetails = async (req, res) => {
                 {
                     model: db.Student,
                     as: "Students",
-                    required: false
+                    required: false,
+                    attributes:{
+                        include:[
+                            [
+                              Sequelize.literal(`(
+                           SELECT t2.shift_name
+                           FROM tbl_shift t2
+                           WHERE t2.id = Students.shift_id
+                        )`),
+                        'shift_name',  
+                            ]
+                        ]
+                    }
                 }
             ]
         })

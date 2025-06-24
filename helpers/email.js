@@ -1,6 +1,6 @@
 require('dotenv').config()
 const nodemailer = require("nodemailer");
-const { sendOTPToEmail, profileVerificationRejectedHtml, profileVerificationAcceptedHtml } = require('./templetes')
+const { sendOTPToEmail, addSchoolEmail, updateSchoolEmail, addroleEmail, updateRoleEmail } = require('./templetes')
 let mailTrapHost = process.env.MAILTRAPHOST
 let mailTrapPass = process.env.MAILTRAPPASS
 let projectName = process.env.PROJECT_NAME
@@ -35,15 +35,14 @@ let htmlContent = sendOTPToEmail(otp);
     }
   });
 };
-// sendOTPVerificationEmail({ email_id: "smith21.cubes@gmail.com", otp: "8765" })
 
-const sendProfileVerificationAcceptedEmail = async (data) => {
-  let htmlContent = profileVerificationAcceptedHtml(data);
+const addNewSchoolEmail = async (school_name, email, password) => {
+  let htmlContent = addSchoolEmail(school_name, email, password);
 
   let mail_option = {
-    from: `${projectName} <${smtpUser}>`,
-    to: data.email_id,
-    subject: "Complete Your Training to Start Providing Services",
+      from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    to: email,
+    subject: "Your School Account Crete Successfully.",
     html: htmlContent,
   };
 
@@ -56,23 +55,61 @@ const sendProfileVerificationAcceptedEmail = async (data) => {
   });
 };
 
-const sendProfileVerificationRejectedEmail = async (data) => {
-  let htmlContent = profileVerificationRejectedHtml(data);
+const updateSchoolPasswordEmail = async (school_name, email, password) => {
+  let htmlContent = updateSchoolEmail(school_name, email, password);
 
   let mail_option = {
-    from: `${projectName} <${smtpUser}>`,
-    to: data.email_id,
-    subject: "Profile Verification Rejected",
+      from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    to: email,
+    subject: "Your School Account Password Change By Admin.",
     html: htmlContent,
   };
 
   return transporter.sendMail(mail_option, function (error, info) {
     if (error) {
-      console.log("Error in send Profile Verification Rejected Email ", error);
+      console.log("Error in send updateSchoolPasswordEmail Email ", error);
     } else {
-      console.log('Profile Verification Rejected Email sent: ' + info.response);
+      console.log('updateSchoolPasswordEmail Email sent: ' + info.response);
     }
   });
 };
 
-module.exports = { sendOTPVerificationEmail, sendProfileVerificationAcceptedEmail, sendProfileVerificationRejectedEmail }
+const AddRoleEmail = async (school_name, email, password) => {
+  let htmlContent = addroleEmail(school_name, email, password, role);
+
+  let mail_option = {
+      from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    to: email,
+    subject: `Your ${role} Account Crete Successfully.`,
+    html: htmlContent,
+  };
+
+  return transporter.sendMail(mail_option, function (error, info) {
+    if (error) {
+      console.log("Error in send updateSchoolPasswordEmail Email ", error);
+    } else {
+      console.log('updateSchoolPasswordEmail Email sent: ' + info.response);
+    }
+  });
+};
+
+const updateRolePasswordEmail = async (school_name, email, password) => {
+  let htmlContent = updateRoleEmail(school_name, email, password, role);
+
+  let mail_option = {
+      from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    to: email,
+    subject: `Your School Account Password Change By Admin.`,
+    html: htmlContent,
+  };
+
+  return transporter.sendMail(mail_option, function (error, info) {
+    if (error) {
+      console.log("Error in send updateSchoolPasswordEmail Email ", error);
+    } else {
+      console.log('updateSchoolPasswordEmail Email sent: ' + info.response);
+    }
+  });
+};
+
+module.exports = { sendOTPVerificationEmail, addNewSchoolEmail, updateSchoolPasswordEmail, AddRoleEmail }

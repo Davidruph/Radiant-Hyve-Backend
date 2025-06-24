@@ -7,7 +7,7 @@ const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const phoneUtil = PhoneNumberUtil.getInstance()
-// const { sendOtpEmail } = require('../../utils/email');
+const {  addSchoolEmail, updateSchoolEmail, addroleEmail, updateRoleEmail } = require('../../helpers/email');
 const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
 

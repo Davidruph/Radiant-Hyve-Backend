@@ -58,7 +58,6 @@ const addPrincipal = async (req, res) => {
 
         }
 
-
         const hashedPassword = await bcrypt.hash(password, 10)
         const principal = await db.User.create({
             email: email,
@@ -78,7 +77,7 @@ const addPrincipal = async (req, res) => {
         })
 
         await db.AddRole.create({
-            school_id,
+            school_id: req.user.id,
             add_to: principal.id,
             add_by: req.user.id,
             add_role: "principal"
