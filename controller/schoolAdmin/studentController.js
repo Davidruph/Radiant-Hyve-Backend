@@ -102,6 +102,18 @@ const getAllStudent = async (req, res) => {
 
         const student = await db.Student.findAndCountAll({
             where: whereClause,
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.shift_name
+                           FROM tbl_shift t2
+                           WHERE t2.id = Student.shift_id
+                        )`),
+                        'shift_name',
+                    ]
+                ]
+            },
             limit,
             offset,
             order: [['createdAt', 'DESC']],
@@ -245,16 +257,20 @@ const studentAssignTeacher = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Student not found" })
         };
 
-        const teacher = await db.User.findOne({
-            where: { id: teacher_id, role: "teacher", school_id },
-        })
+        if (teacher_id) {
+            const teacher = await db.User.findOne({
+                where: { id: teacher_id, role: "teacher", school_id },
+            })
 
-        if (!teacher) {
-            return res.status(404).json({ status: 0, message: "Teacher not found" })
+            if (!teacher) {
+                return res.status(404).json({ status: 0, message: "Teacher not found" })
+            }
+            await student.update({
+                teacher_id: teacher_id || student.teacher_id,
+            })
         }
 
         await student.update({
-            teacher_id: teacher_id || student.teacher_id,
             request_status: request_status || student.request_status
         })
         return res.status(200).json({
@@ -561,7 +577,7 @@ const listTeacherStudent = async (req, res) => {
 
         const student = await db.Student.findAndCountAll({
             where: whereClause,
-             attributes: {
+            attributes: {
                 include: [
                     [
                         Sequelize.literal(`(
@@ -575,7 +591,7 @@ const listTeacherStudent = async (req, res) => {
             },
             limit,
             offset,
-            order: [['createdAt', 'DESC']], 
+            order: [['createdAt', 'DESC']],
         });
 
         return res.status(200).json({

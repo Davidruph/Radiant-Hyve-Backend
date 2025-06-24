@@ -74,7 +74,14 @@ module.exports = (sequelize, DataTypes) => {
                 type:DataTypes.TEXT('long'),
                 defaultValue: null,
             },
-
+            is_delete_to: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
+            is_delete_by: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
         }, {
         tableName: 'tbl_message',
         timestamps: true

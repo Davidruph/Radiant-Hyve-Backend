@@ -28,4 +28,7 @@ router.post('/create_lesson_chat', verifyToken,  lessonChat.createLessonChat);
 router.post('/send_lesson_chat_message', verifyToken, imageUpload, lessonChat.sendGroupMessage);
 router.get('/get_lesson_chat_message',verifyToken, lessonChat.getLessonChatMessages)
 
+router.delete('/clear_chat',verifyToken, chat.clearChat)
+
+
 module.exports = router

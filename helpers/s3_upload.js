@@ -18,7 +18,7 @@ const s3Client = new S3({
     secretAccessKey: process.env.DO_SPACES_SECRET,
   },
 });
-ffmpeg.setFfmpegPath('C:/ffmpeg/bin/ffmpeg.exe');
+// ffmpeg.setFfmpegPath('C:/ffmpeg/bin/ffmpeg.exe');
 
 const upload_file = async (file, folder_Name, res) => {
   console.log("upload_file", file);
@@ -39,7 +39,7 @@ const upload_file = async (file, folder_Name, res) => {
     // console.log("url", https://${process.env.DO_SPACES_NAME}.nyc3.cdn.digitaloceanspaces.com/${uploadParameters.Key})
     // console.log("s3Client.config.endpoint", s3Client.config.endpoint)
     // console.log("Successfully uploaded object: " + uploadParameters.Key, data);
-    return `https://${process.env.DO_SPACES_NAME}.nyc3.digitaloceanspaces.com/${uploadParameters.Key}`;
+    return `https://${process.env.DO_SPACES_NAME}.${process.env.DO_SPACES_REGION}.digitaloceanspaces.com/${uploadParameters.Key}`;
   } catch (err) {
     console.log("err", err);
     // return res.status(400).json({ status: 0, message: "error occuring while uploading image" });

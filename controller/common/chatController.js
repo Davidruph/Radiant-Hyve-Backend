@@ -147,17 +147,23 @@ const getPersonalChats = async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
     try {
-        const totalChatsCount = await db.Chat.count({
-            where: {
-                school_id: null,
-                [db.Sequelize.Op.or]: [{ chat_by: userId }, { chat_to: userId }],
-            },
-            group: ["Chat.id"],
-            having: Sequelize.literal(`(
-                SELECT COUNT(*) FROM tbl_message 
-                WHERE tbl_message.chat_id = Chat.id
-            ) > 0`),
-        });
+        // const totalChatsCount = await db.Chat.count({
+        //     where: {
+        //         school_id: null,
+        //         [db.Sequelize.Op.or]: [{ chat_by: userId }, { chat_to: userId }],
+        //     },
+        //     // group: ["Chat.id"],
+        //     //             having: Sequelize.literal(`(
+        //     //     SELECT COUNT(*) FROM tbl_message t1
+        //     //     WHERE t1.chat_id =  Chat.id
+        //     //     AND (
+        //     //         (Chat.chat_by = ${userId} AND t1.is_delete_by = false)
+        //     //         OR
+        //     //         (Chat.chat_to = ${userId} AND t1.is_delete_to = false)
+        //     //     )
+        //     // ) > 0`)
+        // });
+
         const personalChats = await db.Chat.findAll({
             where: {
                 school_id: null,
@@ -233,6 +239,11 @@ const getPersonalChats = async (req, res) => {
             having: Sequelize.literal(`(
                 SELECT COUNT(*) FROM tbl_message 
                 WHERE tbl_message.chat_id = Chat.id
+                 AND (
+        (Chat.chat_by = ${userId} AND tbl_message.is_delete_by = false)
+                OR
+         (Chat.chat_to = ${userId} AND tbl_message.is_delete_to = false)
+     )
             ) > 0`),
             limit: limit,
             offset: offset,
@@ -265,46 +276,46 @@ const getPersonalChats = async (req, res) => {
     }
 };
 
-const deleteChat = async (req, res) => {
-    const { chatId } = req.query;
-    const userId = req.user.id;
+// const deleteChat = async (req, res) => {
+//     const { chatId } = req.query;
+//     const userId = req.user.id;
 
-    if (!chatId) {
-        return res.status(400).json({ status: 0, message: 'Chat ID is required.' });
-    }
+//     if (!chatId) {
+//         return res.status(400).json({ status: 0, message: 'Chat ID is required.' });
+//     }
 
-    try {
-        const chat = await db.Chat.findOne({
-            where: {
-                id: chatId,
-                [db.Sequelize.Op.or]: [
-                    { chat_by: userId },
-                    { chat_to: userId }
-                ],
-                school_id: null
-            }
-        });
+//     try {
+//         const chat = await db.Chat.findOne({
+//             where: {
+//                 id: chatId,
+//                 [db.Sequelize.Op.or]: [
+//                     { chat_by: userId },
+//                     { chat_to: userId }
+//                 ],
+//                 school_id: null
+//             }
+//         });
 
-        if (!chat) {
-            return res.status(404).json({ status: 0, message: 'Chat not found' });
-        }
+//         if (!chat) {
+//             return res.status(404).json({ status: 0, message: 'Chat not found' });
+//         }
 
-        await chat.destroy();
+//         await chat.destroy();
 
-        return res.status(200).json({
-            status: 1,
-            message: 'Chat deleted successfully.',
-            chatId,
-        });
-    } catch (error) {
-        console.error('Error deleting chat:', error);
-        return res.status(500).json({
-            status: 0,
-            message: 'Internal server error',
-            details: error.message,
-        });
-    }
-};
+//         return res.status(200).json({
+//             status: 1,
+//             message: 'Chat deleted successfully.',
+//             chatId,
+//         });
+//     } catch (error) {
+//         console.error('Error deleting chat:', error);
+//         return res.status(500).json({
+//             status: 0,
+//             message: 'Internal server error',
+//             details: error.message,
+//         });
+//     }
+// };
 
 const getChatMessages = async (req, res) => {
     try {
@@ -342,8 +353,25 @@ const getChatMessages = async (req, res) => {
             }
         );
 
+        let whereCondition = {}
+
+        if (chat.chat_by == user_id) {
+            whereCondition = {
+                chat_id,
+                is_delete_by: false,
+                school_id: null,
+            }
+        }
+        else if (chat.chat_to == user_id) {
+            whereCondition = {
+                chat_id,
+                is_delete_to: false,
+                school_id: null,
+            }
+        }
+
         const messages = await db.Message.findAndCountAll({
-            where: { chat_id },
+            where: whereCondition,
             include: [
                 {
                     model: db.User,
@@ -596,6 +624,7 @@ const chatUserList = async (req, res) => {
         const whereCondition = {
             school_id: req.user.school_id,
             role: { [Op.ne]: "school" },
+            id: { [Op.ne]: req.user.id },
             is_blocked: false,
             is_deleted: false
         }
@@ -633,6 +662,78 @@ const chatUserList = async (req, res) => {
     }
 }
 
+const clearChat = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { chat_id } = req.query;
+
+        if (!chat_id) {
+            return res.status(400).json({
+                status: 0,
+                message: "chat_id is required"
+            });
+        }
+        const chat = await db.Chat.findOne({
+            where: {
+                id: chat_id,
+                [Op.or]: [
+                    { chat_by: req.user.id },
+                    { chat_to: req.user.id }
+                ],
+                school_id: null
+            },
+        });
+
+        if (!chat) {
+            return res.status(404).json({
+                status: 0,
+                message: "Chat not found"
+            });
+        }
+        if (chat.chat_by == userId) {
+            await db.Message.update(
+                { is_delete_by: true },
+                {
+                    where: {
+                        chat_id,
+                        [Op.or]: [
+                            { message_to: req.user.id },
+                            { message_by: req.user.id }
+                        ],
+                        school_id: null
+                    }
+                }
+            );
+        } else if (chat.chat_to == userId) {
+            await db.Message.update(
+                { is_delete_to: true },
+                {
+                    where: {
+                        chat_id,
+                        [Op.or]: [
+                            { message_to: req.user.id },
+                            { message_by: req.user.id }
+                        ],
+                        school_id: null
+                    }
+                }
+            );
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "Chat cleared successfully"
+        });
+
+    } catch (error) {
+        console.error("Error clearing chat:", error);
+        return res.status(500).json({
+            status: 0,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
 
 // const editPersonalChatMessage = async (req, res) => {
 //     const { id, message } = req.body;
@@ -750,7 +851,7 @@ module.exports = {
     getChatMessages,
     createPersnolChat,
     getPersonalChats,
-    deleteChat,
+    clearChat,
     // editPersonalChatMessage,
     // deletePersonalChatMessage,
     chatUserList,
