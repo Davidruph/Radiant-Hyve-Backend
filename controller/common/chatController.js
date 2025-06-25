@@ -187,6 +187,11 @@ const getPersonalChats = async (req, res) => {
                               SELECT MAX(chat_messages.createdAt)
                               FROM tbl_message AS chat_messages
                               WHERE chat_messages.chat_id = Chat.id
+                                AND (
+                            (Chat.chat_by = ${userId} AND chat_messages.is_delete_by = false)
+                             OR
+                            (Chat.chat_to = ${userId} AND chat_messages.is_delete_to = false)
+                            )
                           )`),
                         "latestMessageCreatedAt",
                     ],
@@ -257,12 +262,20 @@ const getPersonalChats = async (req, res) => {
             }
         })
 
+        const unreadCount = await db.MessageStatus.count({
+            where: {
+                message_to: userId,
+                message_status: "Unread",
+            }
+        })
+
         return res.status(200).json({
             status: 1,
             message: "Chats retrieved successfully",
+            lesson_chat_unread_count: unreadCount,
             lesson_chat_id: lessonChat ? lessonChat.id : null,
-            totalChats: totalChatsCount,
-            totalPages: Math.ceil(totalChatsCount / limit),
+            // totalChats: totalChatsCount,
+            // totalPages: Math.ceil(totalChatsCount / limit),
             currentPage: parseInt(page),
             chats: personalChats,
         });

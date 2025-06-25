@@ -127,3 +127,26 @@ exports.attendanceValidation = () => {
         validation
     ];
 }
+
+exports.getLeaveValidation = () => {
+    return [
+        [
+            check('page').not().isEmpty().withMessage('page is required'),
+            check("date")
+                .custom(value => moment(value, "YYYY-MM-DD", true).isValid())
+                .withMessage("Invalid date format for dob"),
+        ],
+        validation
+    ];
+}
+
+exports.updateLeaveValidation = () => {
+    return [
+        [
+            check('leave_id').not().isEmpty().withMessage('leave_id is required'),
+            check("leave_request_status").not().isEmpty().withMessage("leave_request_status is required")
+                .isIn(['accepted', 'rejected']).withMessage("Invalid leave_request_status, valid leave_request_status are: 'accepted', 'rejected'"),
+        ],
+        validation
+    ];
+}

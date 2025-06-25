@@ -9,6 +9,7 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
+const { AddRoleEmail, updateRolePasswordEmail, } = require('../../helpers/email');
 
 
 
@@ -75,6 +76,8 @@ const addPrincipal = async (req, res) => {
             role: 'principal',
             school_id: req.user.id
         })
+
+        await AddRoleEmail(req.user.school_name, email, password)
 
         await db.AddRole.create({
             school_id: req.user.id,
@@ -208,6 +211,8 @@ const changePrincipalPassword = async (req, res) => {
             password: hashedPassword
         })
 
+        await updateRolePasswordEmail(req.user.school_name, principal.email, password, "Principal")
+
         await db.Token.destroy({
             where: {
                 user_id: principal_id,
@@ -337,7 +342,7 @@ const deletePrincipal = async (req, res) => {
         if (!principal) {
             return res.status(404).json({ status: 0, message: "Principal not found" })
         }
-        
+
         await db.Chat.destroy({
             where: {
                 chat_by: req.user.id,

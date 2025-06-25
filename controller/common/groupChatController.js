@@ -8,7 +8,7 @@ const { Op, Sequelize, where } = require('sequelize');
 const { emitToSockets } = require(`../../config/socketConfig`);
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
 
-const uploadMediaInChat = async (media, thumbnails, mediaType, mediaText, documentText, messageText) => {
+const uploadMediaInChat = async (media, thumbnails, mediaType, mediaText, documentText,  messageText) => {
     const uploadedMedia = [];
     try {
         const types = mediaType;
@@ -200,7 +200,7 @@ const sendGroupMessage = async (req, res) => {
                         {
                             model: db.User,
                             as: "sendermessage",
-                            attributes: ['id', 'full_name', 'role', 'profile_pic',],
+                            attributes: ['id', 'full_name', 'role', 'profile_pic', 'school_name'],
                         },
                     ],
                 });
@@ -345,7 +345,7 @@ const getLessonChatMessages = async (req, res) => {
                 {
                     model: db.User,
                     as: "sendermessage",
-                    attributes: ['id', 'full_name', 'profile_pic', 'role',],
+                    attributes: ['id', 'full_name', 'profile_pic', 'role', 'school_name'],
                 },
                 {
                     model: db.MessageStatus,
@@ -368,6 +368,15 @@ const getLessonChatMessages = async (req, res) => {
                 }
             }
         });
+
+        await db.MessageStatus.update(
+            {message_status: 'read' },
+            {
+                where: {
+                    message_to: user_id,
+                }
+            }
+        );
 
         const total_member = parseInt(total_user) + 1
 

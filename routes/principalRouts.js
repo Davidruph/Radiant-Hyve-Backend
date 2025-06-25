@@ -22,6 +22,13 @@ router.get('/get_other_attendance', verifyToken, principal.listOtherAttedance);
 
 router.get('/get_today_attendance', verifyToken, principal.todayAttedance);
 
+router.get('/list_leave_requets', verifyToken, principal.listLeave);
+router.get('/list_leaves', verifyToken,  principalValidator.getLeaveValidation(), principal.getLeave);
+router.put('/update_leave_status', verifyToken,  principalValidator.updateLeaveValidation(), principal.updateLeaveStatus);
+
+
+
+
 
 
 

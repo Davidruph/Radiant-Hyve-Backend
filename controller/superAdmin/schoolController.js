@@ -7,21 +7,20 @@ const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const phoneUtil = PhoneNumberUtil.getInstance()
-const {  addSchoolEmail, updateSchoolEmail, addroleEmail, updateRoleEmail } = require('../../helpers/email');
 const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
-
+const { addNewSchoolEmail, updateSchoolPasswordEmail } = require('../../helpers/email');
 
 const addSchool = async (req, res) => {
-    if(req.user.role != "super_admin"){
-        return res.status(401).json({message: "Unauthorized"})
+    if (req.user.role != "super_admin") {
+        return res.status(401).json({ message: "Unauthorized" })
     }
     const { name, email, password, address } = req.body;
 
     try {
-        const existingUser = await db.User.findOne({where: {email}})
-        if(existingUser){
-            return res.status(400).json({message: "Email already exists"})
+        const existingUser = await db.User.findOne({ where: { email } })
+        if (existingUser) {
+            return res.status(400).json({ message: "Email already exists" })
         }
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -33,9 +32,10 @@ const addSchool = async (req, res) => {
             role: 'school',
         });
 
+        await addNewSchoolEmail(name, email, password);
         await db.Chat.create({
             chat_by: user.id,
-            chat_to : user.id,
+            chat_to: user.id,
             school_id: user.id
         })
         await user.update({
@@ -51,8 +51,8 @@ const addSchool = async (req, res) => {
 };
 
 const listSchool = async (req, res) => {
-    if(req.user.role != "super_admin"){
-        return res.status(401).json({message: "Unauthorized"})
+    if (req.user.role != "super_admin") {
+        return res.status(401).json({ message: "Unauthorized" })
     }
     try {
         const { page } = req.query
@@ -88,8 +88,8 @@ const listSchool = async (req, res) => {
 }
 
 const editSchool = async (req, res) => {
-    if(req.user.role != "super_admin"){
-        return res.status(401).json({message: "Unauthorized"})
+    if (req.user.role != "super_admin") {
+        return res.status(401).json({ message: "Unauthorized" })
     }
     const { name, address, id } = req.body;
 
@@ -120,8 +120,8 @@ const editSchool = async (req, res) => {
 };
 
 const changeSchoolPassword = async (req, res) => {
-    if(req.user.role != "super_admin"){
-        return res.status(401).json({message: "Unauthorized"})
+    if (req.user.role != "super_admin") {
+        return res.status(401).json({ message: "Unauthorized" })
     }
     const { password, id } = req.body;
     try {
@@ -138,6 +138,8 @@ const changeSchoolPassword = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         school.password = hashedPassword;
         await school.save();
+        await updateSchoolPasswordEmail(school.school_name, school.email, password);
+
         await db.Token.destroy({
             where: {
                 user_id: id,
@@ -153,8 +155,8 @@ const changeSchoolPassword = async (req, res) => {
 }
 
 const deleteSchool = async (req, res) => {
-    if(req.user.role != "super_admin"){
-        return res.status(401).json({message: "Unauthorized"})
+    if (req.user.role != "super_admin") {
+        return res.status(401).json({ message: "Unauthorized" })
     }
     const { id } = req.query;
 
@@ -189,8 +191,8 @@ const deleteSchool = async (req, res) => {
 };
 
 const getSchoolById = async (req, res) => {
-    if(req.user.role != "super_admin"){
-        return res.status(401).json({message: "Unauthorized"})
+    if (req.user.role != "super_admin") {
+        return res.status(401).json({ message: "Unauthorized" })
     }
     const { id } = req.query;
 
@@ -205,7 +207,7 @@ const getSchoolById = async (req, res) => {
                 role: 'school',
                 is_deleted: false
             },
-        }); 
+        });
         if (!school) {
             return res.status(404).json({ status: 0, message: 'School not found' });
         }

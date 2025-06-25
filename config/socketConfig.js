@@ -102,6 +102,7 @@ function socketConfig(io) {
             socket.join(`lesson_chat_${chatroomId}`);
             try {
               await commonService.emitToSockets(data.user_id, "join_group", {Message: "Successful",info: data});
+              console.log(`join_group emit send to user ${data.user_id}`);
             } catch (error) {
               console.log("join_group emit not send");
             }
@@ -112,7 +113,8 @@ function socketConfig(io) {
             let chatroomId = parseInt(data.school_id);
             socket.leave(`lesson_chat_${chatroomId}`);
             try {
-              await commonService.emitToSockets(data.user_id, "left_group", {Message: "Successful",info: data,});
+              await commonService.emitToSockets(data.user_id, "left_group", {Message: "group left Successful",info: data,});
+                console.log(`left_group emit send to user ${data.user_id}`);
             } catch (error) {
               console.log("left_group emit not send");
             }

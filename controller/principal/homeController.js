@@ -9,7 +9,8 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
-const moment = require('moment')
+const moment = require('moment');
+const { ObjectAttributes } = require('@aws-sdk/client-s3');
 
 const Attendance = async (req, res) => {
     if (req.user.role != "teacher" && req.user.role != "principal") {
@@ -259,8 +260,8 @@ const listOtherAttedance = async (req, res) => {
             },
         })
 
-        if(!user){
-            return res.status(404).json({ status: 0, message: "User not found"})
+        if (!user) {
+            return res.status(404).json({ status: 0, message: "User not found" })
         }
 
         const attendance = await db.Attendance.findAndCountAll({
@@ -291,7 +292,7 @@ const listOtherAttedance = async (req, res) => {
 }
 
 const todayAttedance = async (req, res) => {
-       if (req.user.role != "teacher" && req.user.role != "principal") {
+    if (req.user.role != "teacher" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -334,6 +335,164 @@ const todayAttedance = async (req, res) => {
     }
 }
 
+const listLeave = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page } = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, message: "page is required" });
+        }
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        let school_id = null
+        if (req.user.role != "school") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const leave = await db.Leave.findAndCountAll({
+            where: {
+                school_id,
+                leave_request_status: "pending"
+            },
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.full_name
+                           FROM tbl_user t2
+                           WHERE t2.id = Leave.teacher_id
+                        )`),
+                        'teacher_name',
+                    ]
+                ]
+            },
+            order: [['id', 'DESC']],
+            limit: limit,
+            offset: offset,
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'leave retrieved successfully',
+            total_leave: leave.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(leave.count / limit),
+            data: leave.rows
+        });
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const getLeave = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, date } = req.query
+
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        let school_id = null
+        if (req.user.role != "school") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const leave = await db.Leave.findAndCountAll({
+            where: {
+                school_id,
+                date: date
+            },
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.full_name
+                           FROM tbl_user t2
+                           WHERE t2.id = Leave.teacher_id
+                        )`),
+                        'teacher_name',
+                    ]
+                ]
+            },
+            order: [['id', 'DESC']],
+            limit: limit,
+            offset: offset,
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: 'leave retrieved successfully',
+            total_leave: leave.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(leave.count / limit),
+            data: leave.rows
+        });
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const updateLeaveStatus = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { leave_id, leave_request_status } = req.body
+
+        let school_id = null
+        if (req.user.role != "school") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const leave = await db.Leave.findOne({
+            where: {
+                id: leave_id,
+                school_id,
+                leave_request_status:"pending"
+            },
+        });
+
+        if (!leave) {
+            return res.status(404).json({ status: 0, message: 'Leave not found' });
+        }
+
+        await leave.update({
+            leave_request_status
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Leave updated successfully',
+            data: leave
+        });
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error", error: error.message });
+    }
+}
+
 
 
 module.exports = {
@@ -343,5 +502,9 @@ module.exports = {
     getAttendance,
 
     listOtherAttedance,
-    todayAttedance
+    todayAttedance,
+
+    listLeave,
+    getLeave,
+    updateLeaveStatus
 };

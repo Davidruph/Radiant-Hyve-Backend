@@ -8,6 +8,7 @@ const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
+const { studentRequestEmail } = require('../../helpers/email');
 const phoneUtil = PhoneNumberUtil.getInstance()
 
 
@@ -51,6 +52,9 @@ const createStudent = async (req, res) => {
             parent_name: req.user.full_name,
             school_id: req.user.school_id,
         })
+        const school = await db.User.findByPk(req.user.school_id)
+
+        await studentRequestEmail(full_name, email, school.school_name, req.user.full_name);
 
         return res.status(200).json({
             status: 1,

@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 const path = require("path");
 const { error } = require('console');
 const { upload } = require('../../helpers/storage');
+const { studentRequestAccesseptEmail, studentRequestRejectEmail } = require('../../helpers/email')
 
 
 const getNewStudent = async (req, res) => {
@@ -112,7 +113,7 @@ const getAllStudent = async (req, res) => {
                         )`),
                         'shift_name',
                     ],
-                     [
+                    [
                         Sequelize.literal(`(
                            SELECT t2.full_name
                            FROM tbl_user t2
@@ -228,6 +229,17 @@ const editStatus = async (req, res) => {
         await student.update({
             request_status: status
         })
+
+        if (request_status === 'accepted') {
+            const parent = await db.User.findByPk(student.parent_id)
+            const school = await db.User.findByPk(school_id)
+            await studentRequestAccesseptEmail(student.full_name, parent.email, school.school_name, student.parent_name);
+        } else if (request_status === 'rejected') {
+            const parent = await db.User.findByPk(student.parent_id)
+            const school = await db.User.findByPk(school_id)
+            await studentRequestRejectEmail(student.full_name, parent.email, school.school_name, student.parent_name);
+        }
+
         return res.status(200).json({
             status: 1,
             message: 'Student status updated successfully',
@@ -281,6 +293,18 @@ const studentAssignTeacher = async (req, res) => {
         await student.update({
             request_status: request_status || student.request_status
         })
+
+
+        if (request_status === 'accepted') {
+            const parent = await db.User.findByPk(student.parent_id)
+            const school = await db.User.findByPk(school_id)
+            await studentRequestAccesseptEmail(student.full_name, parent.email, school.school_name, student.parent_name);
+        } else if (request_status === 'rejected') {
+            const parent = await db.User.findByPk(student.parent_id)
+            const school = await db.User.findByPk(school_id)
+            await studentRequestRejectEmail(student.full_name, parent.email, school.school_name, student.parent_name);
+        }
+
         return res.status(200).json({
             status: 1,
             message: 'Student assign teacher successfully',

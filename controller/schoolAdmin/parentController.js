@@ -9,6 +9,7 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
+const { AddRoleEmail, updateRolePasswordEmail, } = require('../../helpers/email');
 
 
 const addparent = async (req, res) => {
@@ -80,17 +81,14 @@ const addparent = async (req, res) => {
             school_id: school_id
         })
 
+        const school = await db.User.findByPk(school_id)
+        await AddRoleEmail(school.school_name, email, password)
+
         await db.AddRole.create({
             school_id,
             add_to: parent.id,
             add_by: req.user.id,
             add_role: "parent"
-        })
-
-        await db.Chat.create({
-            chat_by: school_id,
-            chat_to: parent.id,
-            school_id: school_id
         })
 
         return res.status(200).json({
@@ -309,15 +307,15 @@ const parentDetails = async (req, res) => {
                     model: db.Student,
                     as: "Students",
                     required: false,
-                    attributes:{
-                        include:[
+                    attributes: {
+                        include: [
                             [
-                              Sequelize.literal(`(
+                                Sequelize.literal(`(
                            SELECT t2.shift_name
                            FROM tbl_shift t2
                            WHERE t2.id = Students.shift_id
                         )`),
-                        'shift_name',  
+                                'shift_name',
                             ]
                         ]
                     }
@@ -376,6 +374,10 @@ const editparentPassword = async (req, res) => {
         await parent.update({
             password: hashedPassword
         })
+
+        const school = await db.User.findByPk(school_id)
+        await updateRolePasswordEmail(school.school_name, parent.email, password, "Parent")
+
 
         await db.Token.destroy({
             where: {

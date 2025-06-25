@@ -9,7 +9,7 @@ const { upload } = require('../../helpers/storage');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const phoneUtil = PhoneNumberUtil.getInstance()
-
+const { AddRoleEmail, updateRolePasswordEmail, } = require('../../helpers/email');
 
 
 const addStaff = async (req, res) => {
@@ -82,6 +82,9 @@ const addStaff = async (req, res) => {
             role: 'teacher',
             school_id: school_id
         })
+
+        const school = await db.User.findByPk(school_id)
+        await AddRoleEmail(school.school_name, email, password)
 
         await db.AddRole.create({
             school_id,
@@ -233,6 +236,9 @@ const changeStaffPassword = async (req, res) => {
         await staff.update({
             password: hashedPassword
         })
+
+        const school = await db.User.findByPk(school_id)
+        await updateRolePasswordEmail(school.school_name, staff.email, password, "Teacher")
 
         await db.Token.destroy({
             where: {
@@ -422,11 +428,11 @@ const deleteStaff = async (req, res) => {
         if (!Staff) {
             return res.status(404).json({ status: 0, message: "Staff not found" })
         }
-        
+
         await db.Chat.destroy({
             where: {
-                chat_by:school_id,
-                chat_to:staff_id,
+                chat_by: school_id,
+                chat_to: staff_id,
                 school_id
             }
         })
