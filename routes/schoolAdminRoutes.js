@@ -46,6 +46,7 @@ router.get('/get_staff',verifyToken, staff.getStaff);
 router.get('/list_staff',verifyToken, staff.listStaff);
 router.post('/block_staff',verifyToken, staff.blockStaff);
 router.get('/get_assign_student',verifyToken, schoolvalidator.getAsingnStudentValidation(), staff.assignStudentList);
+router.get('/list_all_leave',verifyToken, staff.allLeave);
 
 
 router.post('/add_shift',verifyToken,schoolvalidator.addShiftValidation(), shift.addShift);

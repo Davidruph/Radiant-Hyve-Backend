@@ -634,6 +634,55 @@ const assignStudentList = async (req, res) => {
     }
 }
 
+const allLeave = async (req, res) => {
+    if (req.user.role != "school") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, type } = req.query
+
+        if (!page) {
+            return res.status(400).json({ status: 0, message: 'page is required' });
+        }
+        const limit = 10;
+        const offset = (parseInt(page) - 1) * limit;
+        const whereClause = { school_id: req.user.id }
+        if (type) {
+            whereClause.leave_request_status = type
+        }
+
+        const leave = await db.Leave.findAndCountAll({
+            where: whereClause,
+             attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.full_name
+                           FROM tbl_user t2
+                           WHERE t2.id = Leave.teacher_id
+                        )`),
+                        'teacher_name',
+                    ]
+                ]
+            },
+            order: [['createdAt', 'DESC']],
+            limit,
+            offset
+        });
+        return res.status(200).json({
+            status: 1,
+            message: 'Leave retrieved successfully',
+            total_leave: leave.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(leave.count / limit),
+            data: leave.rows
+        });
+
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error" });
+    }
+}
 
 
 
@@ -646,4 +695,5 @@ module.exports = {
     deleteStaff,
     blockStaff,
     assignStudentList,
+    allLeave
 }

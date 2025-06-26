@@ -403,7 +403,7 @@ const blockPrincipal = async (req, res) => {
             await db.Token.destroy({ where: { user_id: principal_id } });
             const reason = block_reason || "No reason admin";
             await blockEmail(principal.full_name, req.user.school_name, principal.email, "Principal", reason)
-        }else {
+        } else {
             await unblockEmail(principal.full_name, req.user.school_name, principal.email, "Principal")
         }
 
@@ -487,8 +487,7 @@ const getAttedanceCount = async (req, res) => {
         const attendanceData = await db.Attendance.findAll({
             attributes: [
                 [fn('MONTH', col('date')), 'month'],
-                // [fn('COUNT', fn('DISTINCT', col('DATE(date)'))), 'count'] // Count unique days
-                [literal('COUNT(DISTINCT DATE(`date`))'), 'count'] // Use literal for DATE function
+                [literal('COUNT(DISTINCT DATE(`date`))'), 'count']
             ],
             where: {
                 user_id,
