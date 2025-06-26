@@ -9,7 +9,7 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const phoneUtil = PhoneNumberUtil.getInstance()
 const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
-const { addNewSchoolEmail, updateSchoolPasswordEmail } = require('../../helpers/email');
+const { addNewSchoolEmail, updateSchoolPasswordEmail , delteSchoolEmails} = require('../../helpers/email');
 
 const addSchool = async (req, res) => {
     if (req.user.role != "super_admin") {
@@ -158,7 +158,7 @@ const deleteSchool = async (req, res) => {
     if (req.user.role != "super_admin") {
         return res.status(401).json({ message: "Unauthorized" })
     }
-    const { id } = req.query;
+    const { id , delete_reason} = req.query;
 
     if (!id) {
         return res.status(400).json({ status: 0, message: 'id is required' });
@@ -183,6 +183,10 @@ const deleteSchool = async (req, res) => {
         await school.update({
             is_deleted: true
         });
+
+        const reason = delete_reason || "No reason admin";
+        await delteSchoolEmails(school.school_name, school.email, reason);
+
         return res.status(200).json({ status: 1, message: 'School deleted successfully' });
     } catch (error) {
         console.error('Error deleting school:', error);

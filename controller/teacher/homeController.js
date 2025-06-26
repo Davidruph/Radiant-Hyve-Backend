@@ -192,6 +192,18 @@ const listSleepLog = async (req, res) => {
 
         const sleepLogs = await db.Student.findAndCountAll({
             where: whereClause,
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.email
+                           FROM tbl_user t2
+                           WHERE t2.id = Student.parent_id
+                        )`),
+                        'email',
+                    ],
+                ]
+            },
             include: [
                 {
                     model: db.SleepLoag,
@@ -287,7 +299,7 @@ const listMedication = async (req, res) => {
                 {
                     model: db.Student,
                     as: 'MedicationInfoStudent',
-                    attributes: [], 
+                    attributes: [],
                 },
             ],
             limit,
@@ -314,11 +326,11 @@ const listStudetMenu = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const {search} = req.query;
+        const { search } = req.query;
         const whereClause = {
             teacher_id: req.user.id,
             request_status: 'accepted',
-            };
+        };
         if (search) {
             whereClause[Op.or] = [
                 { full_name: { [Op.like]: `%${search}%` } },

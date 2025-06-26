@@ -354,7 +354,20 @@ const studentDetails = async (req, res) => {
                 {
                     model: db.User,
                     as: 'StudentParent',
-                    attributes: ['id', 'full_name', 'gender', 'address', 'mobile_no', 'country_code', 'iso_code'],
+                    attributes: ['id', 'full_name', 'gender', 'address', 'mobile_no', 'country_code', 'iso_code', 'profile_pic',
+                        [
+                            Sequelize.literal(`(
+                        SELECT t2.id
+                        FROM tbl_chat t2
+                        WHERE (
+                        (t2.chat_by = StudentParent.id AND t2.chat_to = ${req.user.id}) OR
+                         (t2.chat_by = ${req.user.id} AND t2.chat_to = StudentParent.id)
+                       )
+                    )`),
+                            'chat_id',
+                        ],
+
+                    ],
                 }
             ]
         })

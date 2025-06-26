@@ -17,7 +17,7 @@ const createStudent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code, email } = req.body
+        const { shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code} = req.body
         const profileImage = req.files?.profile_pic[0];
 
         const shift = await db.Shift.findOne({
@@ -46,7 +46,6 @@ const createStudent = async (req, res) => {
             mobile_no: mobile_no,
             country_code: country_code,
             iso_code: iso_code,
-            email: email,
             profile_pic: newProfilePicPath || null,
             parent_id: req.user.id,
             parent_name: req.user.full_name,
@@ -54,7 +53,9 @@ const createStudent = async (req, res) => {
         })
         const school = await db.User.findByPk(req.user.school_id)
 
-        await studentRequestEmail(full_name, email, school.school_name, req.user.full_name);
+        console.log("full_name, req.user.email, school.school_name, req.user.full_name", full_name, req.user.email, school.school_name, req.user.full_name);
+        
+        await studentRequestEmail(full_name, req.user.email, school.school_name, req.user.full_name);
 
         return res.status(200).json({
             status: 1,
@@ -128,7 +129,6 @@ const editStudent = async (req, res) => {
             iso_code: iso_code || student.iso_code,
             dob: dob || student.dob,
             profile_pic: newProfilePicPath || student.profile_pic,
-            email: email || student.email,
             address: address || student.address,
             medical_insurance_no: madical_insuarance_no || student.medical_insurance_no,
             relation_to_child: relation_to_child || student.relation_to_child,

@@ -397,9 +397,38 @@ const getLessonChatMessages = async (req, res) => {
     }
 };
 
+const unreadCount = async (req, res) => {
+    if (req.user.role != "principal" && req.user.role != "teacher" && req.user.role != "school") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const user_id = req.user.id;
+
+        const unreadCount = await db.MessageStatus.count({
+            where: {
+                message_to: user_id,
+                message_status: 'unread',
+            }
+        });
+
+        return res.status(200).json({
+            status: 1,
+            message: "Unread count retrieved successfully",
+            unreadCount
+        });
+    } catch (error) {
+        console.error("Error retrieving unread count:", error);
+        return res.status(500).json({
+            status: 0,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
 
 module.exports = {
     getLessonChatMessages,
     createLessonChat,
-    sendGroupMessage
+    sendGroupMessage,
+    unreadCount
 }

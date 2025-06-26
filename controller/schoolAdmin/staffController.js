@@ -9,7 +9,7 @@ const { upload } = require('../../helpers/storage');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const phoneUtil = PhoneNumberUtil.getInstance()
-const { AddRoleEmail, updateRolePasswordEmail, } = require('../../helpers/email');
+const { AddRoleEmail, updateRolePasswordEmail, deleteEmail, blockEmail, unblockEmail } = require('../../helpers/email');
 
 
 const addStaff = async (req, res) => {
@@ -84,7 +84,7 @@ const addStaff = async (req, res) => {
         })
 
         const school = await db.User.findByPk(school_id)
-        await AddRoleEmail(school.school_name, email, password)
+        await AddRoleEmail(school.school_name, email, password, "Teacher")
 
         await db.AddRole.create({
             school_id,
@@ -375,6 +375,17 @@ const getStaff = async (req, res) => {
                             )`),
                     "total_student"
                 ],
+                [
+                    Sequelize.literal(`(
+                        SELECT t2.id
+                        FROM tbl_chat t2
+                        WHERE (
+                        (t2.chat_by = User.id AND t2.chat_to = ${req.user.id}) OR
+                         (t2.chat_by = ${req.user.id} AND t2.chat_to = User.id)
+                       )
+                    )`),
+                    'chat_id',
+                ],
             ],
         })
 
@@ -400,7 +411,7 @@ const deleteStaff = async (req, res) => {
     }
 
     try {
-        const { staff_id } = req.query
+        const { staff_id, delete_reason } = req.query
 
         if (!staff_id) {
             return res.status(400).json({ status: 0, message: 'staff_id is requried' })
@@ -441,6 +452,10 @@ const deleteStaff = async (req, res) => {
             is_deleted: true
         })
 
+        const school = await db.User.findByPk(school_id);
+        const reason = delete_reason || "No reason admin";
+        await deleteEmail(school.school_name, Staff.email, reason, "Teacher", Staff.full_name);
+
         await db.Token.destroy({
             where: {
                 user_id: staff_id
@@ -463,7 +478,7 @@ const blockStaff = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { staff_id } = req.body
+        const { staff_id, block_reason } = req.body
 
         if (!staff_id) {
             return res.status(400).json({ status: 0, message: 'staff_id is requried' })
@@ -497,10 +512,16 @@ const blockStaff = async (req, res) => {
 
         await Staff.update({
             is_blocked: newIsBlockedStatus,
+            block_reason: block_reason || null
         });
 
+        const school = await db.User.findByPk(school_id);
         if (Staff.is_blocked == true) {
             await db.Token.destroy({ where: { user_id: staff_id } });
+            const reason = block_reason || "No reason admin";
+            await blockEmail(Staff.full_name, school.school_name, Staff.email, "Teacher", reason)
+        } else {
+            await unblockEmail(Staff.full_name, school.school_name, Staff.email, "Teacher")
         }
 
         return res.status(200).json({
@@ -508,6 +529,11 @@ const blockStaff = async (req, res) => {
             message: newIsBlockedStatus
                 ? "Staff blocked successfully"
                 : "Staff unblocked successfully",
+            data: {
+                id: Staff.id,
+                is_blocked: Staff.is_blocked,
+                block_reason: Staff.block_reason
+            }
         });
     } catch (error) {
         console.error("Error processing block/unblock request:", error);

@@ -110,6 +110,10 @@ module.exports = (sequelize, DataTypes) => {
             is_deleted:{
                 type: DataTypes.BOOLEAN,
                 defaultValue: false,
+            },
+            block_reason:{
+                type: DataTypes.TEXT('long'),
+                allowNull: true,
             }
         },
         {

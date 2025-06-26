@@ -9,7 +9,7 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
-const { AddRoleEmail, updateRolePasswordEmail, } = require('../../helpers/email');
+const { AddRoleEmail, updateRolePasswordEmail, deleteEmail, blockEmail, unblockEmail } = require('../../helpers/email');
 
 
 
@@ -77,7 +77,7 @@ const addPrincipal = async (req, res) => {
             school_id: req.user.id
         })
 
-        await AddRoleEmail(req.user.school_name, email, password)
+        await AddRoleEmail(req.user.school_name, email, password, "Principal")
 
         await db.AddRole.create({
             school_id: req.user.id,
@@ -326,7 +326,7 @@ const deletePrincipal = async (req, res) => {
         return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
     }
     try {
-        const { principal_id } = req.query
+        const { principal_id, delete_reason } = req.query
         if (!principal_id) {
             return res.status(400).json({ status: 0, message: "principal_id is required." })
         }
@@ -360,6 +360,8 @@ const deletePrincipal = async (req, res) => {
                 user_id: principal_id
             }
         })
+        const reason = delete_reason || "No reason admin";
+        await deleteEmail(req.user.school_name, principal.email, reason, "Principal", principal.full_name);
 
         return res.status(200).json({
             status: 1,
@@ -377,7 +379,7 @@ const blockPrincipal = async (req, res) => {
         return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
     }
     try {
-        const { principal_id } = req.body
+        const { principal_id, block_reason } = req.body
         if (!principal_id) {
             return res.status(400).json({ status: 0, message: "principal_id is required." })
         }
@@ -394,10 +396,15 @@ const blockPrincipal = async (req, res) => {
 
         await principal.update({
             is_blocked: newIsBlockedStatus,
+            block_reason: block_reason || null
         });
 
         if (principal.is_blocked == true) {
             await db.Token.destroy({ where: { user_id: principal_id } });
+            const reason = block_reason || "No reason admin";
+            await blockEmail(principal.full_name, req.user.school_name, principal.email, "Principal", reason)
+        }else {
+            await unblockEmail(principal.full_name, req.user.school_name, principal.email, "Principal")
         }
 
         return res.status(200).json({
@@ -405,6 +412,11 @@ const blockPrincipal = async (req, res) => {
             message: newIsBlockedStatus
                 ? "principal blocked successfully"
                 : "principal unblocked successfully",
+            data: {
+                id: principal.id,
+                is_blocked: principal.is_blocked,
+                block_reason: principal.block_reason
+            }
         });
     } catch (error) {
         console.error("Error processing block/unblock request:", error);

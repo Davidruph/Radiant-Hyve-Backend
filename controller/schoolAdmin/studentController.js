@@ -230,11 +230,11 @@ const editStatus = async (req, res) => {
             request_status: status
         })
 
-        if (request_status === 'accepted') {
+        if (status === 'accepted') {
             const parent = await db.User.findByPk(student.parent_id)
             const school = await db.User.findByPk(school_id)
             await studentRequestAccesseptEmail(student.full_name, parent.email, school.school_name, student.parent_name);
-        } else if (request_status === 'rejected') {
+        } else if (status === 'rejected') {
             const parent = await db.User.findByPk(student.parent_id)
             const school = await db.User.findByPk(school_id)
             await studentRequestRejectEmail(student.full_name, parent.email, school.school_name, student.parent_name);
@@ -349,12 +349,12 @@ const listTeacher = async (req, res) => {
 }
 
 const getShift = async (req, res) => {
-    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher") {
+    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher" &&  req.user.role != "parent") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
         let school_id = null
-        if (req.user.role == "principal" || req.user.role == "teacher") {
+        if (req.user.role != "school" ) {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })

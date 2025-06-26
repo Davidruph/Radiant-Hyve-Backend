@@ -47,7 +47,6 @@ exports.addStudentlValidation = () => {
     return [
         [
             check('full_name').not().isEmpty().withMessage('full_name is required'),
-            check('email').not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
             check('iso_code').not().isEmpty().withMessage('iso_code is required'),
             check('address').not().isEmpty().withMessage('address is required'),
             check('country_code').not().isEmpty().withMessage('country_code is required'),
@@ -120,7 +119,6 @@ exports.editStudentlValidation = () => {
     return [
         [
             check('full_name').optional().not().isEmpty().withMessage('full_name is required'),
-            check('email').optional().not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
             check('iso_code').optional().not().isEmpty().withMessage('iso_code is required'),
             check('address').optional().not().isEmpty().withMessage('address is required'),
             check('country_code').optional().not().isEmpty().withMessage('country_code is required'),

@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 const path = require("path");
 const { error } = require('console');
 const { upload } = require('../../helpers/storage');
+const { ObjectAttributes } = require('@aws-sdk/client-s3');
 
 
 const addSleepLog = async (req, res) => {
@@ -36,10 +37,10 @@ const addSleepLog = async (req, res) => {
             return res.status(404).json({ message: 'Student not found' });
         }
         const existSleppLog = await db.SleepLoag.findOne({
-            where: {student_id: student_id }
+            where: { student_id: student_id }
         })
 
-        if(existSleppLog){
+        if (existSleppLog) {
             return res.status(400).json({ message: 'Sleep log already exist' });
         }
 
@@ -131,6 +132,18 @@ const listSleepLog = async (req, res) => {
 
         const sleepLogs = await db.Student.findAndCountAll({
             where: whereClause,
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.email
+                           FROM tbl_user t2
+                           WHERE t2.id = Student.parent_id
+                        )`),
+                        'email',
+                    ],
+                ]
+            },
             include: [
                 {
                     model: db.SleepLoag,
@@ -189,7 +202,7 @@ const getSleepLog = async (req, res) => {
 }
 
 
-module.exports ={
+module.exports = {
     addSleepLog,
     editSleepLog,
     listSleepLog,

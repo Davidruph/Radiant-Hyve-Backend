@@ -30,5 +30,6 @@ router.get('/get_lesson_chat_message',verifyToken, lessonChat.getLessonChatMessa
 
 router.delete('/clear_chat',verifyToken, chat.clearChat)
 
+router.get('/get_unread_count',verifyToken, lessonChat.unreadCount)
 
 module.exports = router

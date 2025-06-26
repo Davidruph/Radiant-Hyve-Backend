@@ -9,7 +9,7 @@ const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
 const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const phoneUtil = PhoneNumberUtil.getInstance()
-const { AddRoleEmail, updateRolePasswordEmail, } = require('../../helpers/email');
+const { AddRoleEmail, updateRolePasswordEmail, deleteEmail, blockEmail, unblockEmail } = require('../../helpers/email');
 
 
 const addparent = async (req, res) => {
@@ -82,7 +82,7 @@ const addparent = async (req, res) => {
         })
 
         const school = await db.User.findByPk(school_id)
-        await AddRoleEmail(school.school_name, email, password)
+        await AddRoleEmail(school.school_name, email, password, "Parent")
 
         await db.AddRole.create({
             school_id,
@@ -301,6 +301,17 @@ const parentDetails = async (req, res) => {
                                 )`),
                     "total_student"
                 ],
+                [
+                    Sequelize.literal(`(
+                        SELECT t2.id
+                        FROM tbl_chat t2
+                        WHERE (
+                        (t2.chat_by = User.id AND t2.chat_to = ${req.user.id}) OR
+                         (t2.chat_by = ${req.user.id} AND t2.chat_to = User.id)
+                       )
+                    )`),
+                    'chat_id',
+                ],
             ],
             include: [
                 {
@@ -375,6 +386,7 @@ const editparentPassword = async (req, res) => {
             password: hashedPassword
         })
 
+
         const school = await db.User.findByPk(school_id)
         await updateRolePasswordEmail(school.school_name, parent.email, password, "Parent")
 
@@ -401,7 +413,7 @@ const blockParent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { parent_id } = req.body
+        const { parent_id, block_reason } = req.body
 
         if (!parent_id) {
             return res.status(400).json({ status: 0, message: 'parent_id is requried' })
@@ -435,17 +447,29 @@ const blockParent = async (req, res) => {
 
         await parent.update({
             is_blocked: newIsBlockedStatus,
+            block_reason: block_reason || null
         });
 
+        const school = await db.User.findByPk(school_id);
         if (parent.is_blocked == true) {
             await db.Token.destroy({ where: { user_id: parent_id } });
+            const reason = block_reason || "No reason admin";
+            await blockEmail(parent.full_name, school.school_name, parent.email, "Parent", reason)
+        } else {
+            await unblockEmail(parent.full_name, school.school_name, parent.email, "Parent")
         }
+
 
         return res.status(200).json({
             status: 1,
             message: newIsBlockedStatus
                 ? "parent blocked successfully"
                 : "parent unblocked successfully",
+            data: {
+                id: parent.id,
+                is_blocked: parent.is_blocked,
+                block_reason: parent.block_reason
+            }
         });
     } catch (error) {
         console.error("Error processing block/unblock request:", error);
@@ -458,7 +482,7 @@ const deletedParent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { parent_id } = req.query
+        const { parent_id, delete_reason } = req.query
 
         if (!parent_id) {
             return res.status(400).json({ status: 0, message: 'parent_id is requried' })
@@ -490,6 +514,10 @@ const deletedParent = async (req, res) => {
         await parent.update({
             is_deleted: true,
         });
+
+        const school = await db.User.findByPk(school_id);
+        const reason = delete_reason || "No reason admin";
+        await deleteEmail(school.school_name, parent.email, reason, "Parent", parent.full_name);
 
         await db.Token.destroy({ where: { user_id: parent_id } });
 
