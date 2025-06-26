@@ -1169,9 +1169,6 @@ const deleteSchoolEmail = (school_name, email, delete_reason) => `
          <p><strong>Reason:</strong> ${delete_reason}</p>
       </div>
 
-      <div class="button-wrapper">
-        <a href="http://138.197.38.184/school_admin/login" class="button">Back to Admin Panel</a>
-      </div>
     </div>
     <div class="footer">
       &copy; 2025 Radiant Hyve. All rights reserved.

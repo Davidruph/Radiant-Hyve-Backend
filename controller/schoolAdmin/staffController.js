@@ -662,6 +662,14 @@ const allLeave = async (req, res) => {
                            WHERE t2.id = Leave.teacher_id
                         )`),
                         'teacher_name',
+                    ],
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.profile_pic
+                           FROM tbl_user t2
+                           WHERE t2.id = Leave.teacher_id
+                        )`),
+                        'profile_pic',
                     ]
                 ]
             },
