@@ -364,8 +364,9 @@ const getLessonChatMessages = async (req, res) => {
             where: {
                 school_id,
                 role: {
-                    [Op.in]: ["teacher", "principal"]
-                }
+                    [Op.in]: ["teacher", "principal", "parent"]
+                },
+                is_deleted: false
             }
         });
 
