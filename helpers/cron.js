@@ -27,3 +27,26 @@ cron.schedule('0 */12 * * *', async () => {
         console.error('Error in badge assignment cron:', error);
     }
 });
+
+cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("Runs daily at midnight");
+        const today = moment().startOf('day').toDate();
+        await db.Leave.update(
+            {
+                leave_request_status: "rejected",
+            },
+            {
+                where: {
+                    date: { [Op.lt]: today } ,
+                    leave_request_status: "pending"
+                }
+            }
+        );
+
+        console.log("Leave status updated for past dates");
+
+    } catch (error) {
+        console.error('Error in leave rejection cron:', error);
+    }
+});
