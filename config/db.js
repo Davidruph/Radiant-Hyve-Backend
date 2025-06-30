@@ -24,6 +24,13 @@ db.MedicationInfo = require('../model/medicationInfo')(sequelize, Sequelize, Mod
 db.Certification = require('../model/certification')(sequelize, Sequelize, Model)
 db.Attendance = require('../model/attendance')(sequelize, Sequelize, Model)
 db.AddRole = require('../model/addRole')(sequelize, Sequelize, Model)
+db.Notification = require('../model/notification')(sequelize, Sequelize, Model)
+
+db.User.hasMany(db.Notification, {foreignKey: "notification_by",as: "Notification"})
+db.Notification.belongsTo(db.User, {foreignKey: "notification_by",as: "notificationby"})
+
+db.User.hasMany(db.Notification, {foreignKey: "notification_to",as: "Notifications"})
+db.Notification.belongsTo(db.User, {foreignKey: "notification_to",as: "notificationto"})
 
 db.User.hasMany(db.AddRole, {foreignKey: 'school_id',as: 'School'})
 db.AddRole.belongsTo(db.User, {foreignKey: 'school_id', as: 'addSchool'})

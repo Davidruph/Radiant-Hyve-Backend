@@ -1,3 +1,6 @@
+const moment = require('moment');
+
+const currentYear = moment().year();
 
 const sendOTPToEmail = (otp) =>
   `<html>
@@ -224,7 +227,7 @@ const addSchoolEmail = (school_name, email, password) =>
 </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -352,7 +355,7 @@ const updateSchoolEmail = (school_name, email, password) =>
       </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -476,7 +479,7 @@ const addroleEmail = (school_name, email, password, role) => `
       </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -601,7 +604,7 @@ const updateRoleEmail = (school_name, email, password, role) => `
 
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -681,7 +684,7 @@ const studentRequistAccessept = (full_name, school_name, parent_name) => `
       </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -724,7 +727,7 @@ const studentRequistRejected = (full_name, school_name, parent_name) => `
       </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -768,7 +771,7 @@ const studentRequistPending = (full_name, school_name, parent_name) => `
       </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -876,7 +879,7 @@ const blockroleEmail = (full_name, school_name, email, role,  block_reason) => `
       </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -1025,7 +1028,7 @@ const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => 
       </div>
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -1171,7 +1174,7 @@ const deleteSchoolEmail = (school_name, email, delete_reason) => `
 
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>
@@ -1296,7 +1299,7 @@ const unblockroleEmail = (full_name, school_name, email, role) => `
 
     </div>
     <div class="footer">
-      &copy; 2025 Radiant Hyve. All rights reserved.
+      &copy; ${currentYear} Radiant Hyve. All rights reserved.
     </div>
   </div>
 </body>

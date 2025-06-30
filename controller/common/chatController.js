@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { send_notification } = require('../../helpers/notification')
 const { Op, Sequelize, where } = require('sequelize');
-const { emitToSockets } = require(`../../config/socketConfig`);
+const { emitToSockets, getUniqueJoinUserIdsByChatId, emitToSocketById } = require(`../../config/socketConfig`);
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
 
 
@@ -289,47 +289,6 @@ const getPersonalChats = async (req, res) => {
     }
 };
 
-// const deleteChat = async (req, res) => {
-//     const { chatId } = req.query;
-//     const userId = req.user.id;
-
-//     if (!chatId) {
-//         return res.status(400).json({ status: 0, message: 'Chat ID is required.' });
-//     }
-
-//     try {
-//         const chat = await db.Chat.findOne({
-//             where: {
-//                 id: chatId,
-//                 [db.Sequelize.Op.or]: [
-//                     { chat_by: userId },
-//                     { chat_to: userId }
-//                 ],
-//                 school_id: null
-//             }
-//         });
-
-//         if (!chat) {
-//             return res.status(404).json({ status: 0, message: 'Chat not found' });
-//         }
-
-//         await chat.destroy();
-
-//         return res.status(200).json({
-//             status: 1,
-//             message: 'Chat deleted successfully.',
-//             chatId,
-//         });
-//     } catch (error) {
-//         console.error('Error deleting chat:', error);
-//         return res.status(500).json({
-//             status: 0,
-//             message: 'Internal server error',
-//             details: error.message,
-//         });
-//     }
-// };
-
 const getChatMessages = async (req, res) => {
     try {
         const { chat_id, page } = req.query;
@@ -414,6 +373,7 @@ const getChatMessages = async (req, res) => {
     }
 };
 
+
 const sendMessage = async (req, res) => {
     const { chat_id, message_type, other_id, file_name, media_text, message_text } = req.body;
     const message_by = req.user.id;
@@ -459,10 +419,12 @@ const sendMessage = async (req, res) => {
     }
 
     try {
-        let clientsInRoom;
+        let clientsInRoom = 0
 
+        let { uniqueJoinUserIds, enrichedSenderTokens, enrichedReceiverTokens, allSocketsWithTokens } = await getUniqueJoinUserIdsByChatId(chat_id, message_by);
         try {
             const room = getIO().sockets.adapter.rooms.get(parseInt(chat_id));
+            // console.log("uniqueJoinUserIds, enrichedSenderTokens, enrichedReceiverTokens, allSocketsWithTokens", uniqueJoinUserIds, enrichedSenderTokens, enrichedReceiverTokens, allSocketsWithTokens)
             if (room) {
                 clientsInRoom = room.size;
                 console.log("clientsInRoom in sendMessage", clientsInRoom);
@@ -472,6 +434,8 @@ const sendMessage = async (req, res) => {
         } catch (error) {
             console.log("Error checking socket room", error);
         }
+
+
 
         const mediaTextArray = Array.isArray(media_text) ? media_text : media_text ? JSON.parse(media_text) : [];
         const fileNameArray = Array.isArray(file_name) ? file_name : file_name ? JSON.parse(file_name) : [];
@@ -488,7 +452,7 @@ const sendMessage = async (req, res) => {
                     chat_id,
                     message_type: media.message_type,
                     message_to: other_id,
-                    message_status: clientsInRoom && clientsInRoom == 2 ? "Read" : "Unread",
+                    message_status: uniqueJoinUserIds && uniqueJoinUserIds.length == 2 ? "Read" : "Unread",
                     message_text: media.image,
                     thumbnail: media.thumbnail,
                     media_text: media.media_text,
@@ -513,31 +477,52 @@ const sendMessage = async (req, res) => {
                     console.log(`NEW MESSAGE EMIT NOT SENT`, error);
                 }
 
-                if (clientsInRoom && clientsInRoom < 2) {
+                if (enrichedReceiverTokens.length > 0) {
                     let chatDetails = await getChatDetails(data);
-                    try {
-                        await emitToSockets(data.message_to, "count_update", chatDetails);
-                        console.log(`count_update: ${JSON.stringify(chatDetails)}`);
-                    } catch (error) {
-                        console.log("COUNT UPDATE EMIT NOT SENT : error", error);
-                    }
-                    const text = media.message_type == 'Text' ? (media.image.length > 50 ? `${media.image.substring(0, 50)}...` : media.image) : `sent you an attachment 📎`;
-                    const notiType = "chat";
-                    const message = {
-                        title: "New Message Received",
-                        body: `💬 ${req.user.subscription_plan === "gold" ? data.sendermessage.company_name : data.sendermessage.username}: ${text} (Tap to reply).`,
-                    };
-                    const Data = {
-                        chat_id: data.chat_id,
-                        other_id: data.message_to,
-                        user_id: data.message_by,
-                        fullname: data.sendermessage.full_name,
-                        profile_image: data.sendermessage.profile_pic,
-                        notiType: notiType,
-                        role: data.sendermessage.role,
+                    // let unreadCount = await unreadChatCount(data.message_to);
+                    enrichedReceiverTokens.map(async (token) => {
+                        if (token.is_join_room == false) {
+                            try {
+                                await emitToSocketById(token.socket_id, "count_update", chatDetails);
+                                // await emitToSocketById(token.socket_id, "unread_chat_count", unreadCount);
+                                console.log(`count_update receiver: ${JSON.stringify(chatDetails)}`);
+                            } catch (error) {
+                                console.log("COUNT UPDATE EMIT NOT SENT FOR RECEIVER : error", error);
+                            }
+                        }
+                        if (token.is_join_room == false || token.socket_id == null) {
+                            const text = media.message_type == 'Text' ? (media.image.length > 50 ? `${media.image.substring(0, 50)}...` : media.image) : `sent you an attachment 📎`;
+                            const notiType = "chat";
+                            const message = {
+                                title: "New Message Received",
+                                body: `💬 ${req.user.subscription_plan === "gold" ? data.sendermessage.company_name : data.sendermessage.username}: ${text} (Tap to reply).`,
+                            };
+                            const Data = {
+                                chat_id: data.chat_id,
+                                other_id: data.message_to,
+                                user_id: data.message_by,
+                                fullname: data.sendermessage.full_name,
+                                profile_image: data.sendermessage.profile_pic,
+                                notiType: notiType,
+                                role: data.sendermessage.role,
 
-                    };
-                    await send_notification(messageData.message_to, message, notiType, Data);
+                            };
+                            // await send_notification(messageData.message_to, message, notiType, Data);
+                        }
+                    })
+                }
+                if (enrichedSenderTokens.length > 0) {
+                    let chatDetails = await getChatDetails(data);
+                    enrichedSenderTokens.map(async (token) => {
+                        if (token.is_join_room == false && token.socket_id != null) {
+                            try {
+                                await emitToSocketById(token.socket_id, "count_update", chatDetails);
+                                console.log(`count_update sender: ${JSON.stringify(chatDetails)}`);
+                            } catch (error) {
+                                console.log("COUNT UPDATE EMIT NOT SENT TO SENDER: error", error);
+                            }
+                        }
+                    })
                 }
             })
         }
@@ -748,116 +733,6 @@ const clearChat = async (req, res) => {
     }
 };
 
-// const editPersonalChatMessage = async (req, res) => {
-//     const { id, message } = req.body;
-
-//     const userId = req.user.id;
-//     try {
-//         if (!id) {
-//             return res.status(400).json({ message: "id is required" });
-//         }
-//         if (!message) {
-//             return res.status(400).json({ status: 0, message: "message is require." })
-//         }
-
-//         const msg = await db.Message.findOne({
-//             where: {
-//                 id,
-//                 message_by: userId,
-//                 message_type: "Text",
-//                 group_id: null
-//             }
-//         })
-
-//         if (!msg) {
-//             return res.status(404).json({ status: 0, message: "Message not found." })
-//         }
-
-//         await msg.update({
-//             message_text: message,
-//             is_edited: true
-//         })
-//         try {
-//             await emitToSockets(msg.message_to, "edit_message", { id, message_text: message, is_edited: true });
-//             await emitToSockets(msg.message_by, "edit_message", { id, message_text: message, is_edited: true });
-//             console.log(`EDIT MESSAGE EMIT: ${JSON.stringify(msg)}`);
-//         } catch (error) {
-//             console.log(`EDIT MESSAGE EMIT NOT SENT`, error);
-//         }
-
-//         return res.status(200).json({
-//             status: 1,
-//             message: "Message edited successfully.",
-//             msg
-//         })
-//     } catch (error) {
-//         console.error("Error edit message:", error);
-//         return res.status(500).json({
-//             status: 0,
-//             message: "Internal server error",
-//             error: error.message,
-//         });
-//     }
-// }
-
-// const deletePersonalChatMessage = async (req, res) => {
-//     try {
-//         const { id } = req.query;
-//         const userId = req.user.id;
-
-//         if (!id) {
-//             return res.status(400).json({ message: "id is required" });
-//         }
-//         const message = await db.Message.findOne({
-//             where: {
-//                 id,
-//                 message_by: userId,
-//                 group_id: null
-//             }
-//         })
-
-//         if (!message) {
-//             return res.status(404).json({ status: 0, message: "Message not found." })
-//         }
-
-//         if (message.message_text && message.message_type != "Text") {
-//             const filePath = path.resolve(message.message_text);
-//             fs.unlink(filePath, (err) => {
-//                 if (err) console.error(`Failed to delete message file: ${filePath}`, err);
-//             });
-//             if (message.thumbnail) {
-//                 const filePath = path.resolve(message.thumbnail);
-//                 fs.unlink(filePath, (err) => {
-//                     if (err) console.error(`Failed to delete message file: ${filePath}`, err);
-//                 });
-//             }
-
-//         }
-
-//         try {
-//             await emitToSockets(message.message_to, "delete_message", { id });
-//             await emitToSockets(message.message_by, "delete_message", { id });
-//             console.log(`EDIT MESSAGE EMIT: ${JSON.stringify(msg)}`);
-//         } catch (error) {
-//             console.log(`EDIT MESSAGE EMIT NOT SENT`, error);
-//         }
-
-//         await message.destroy()
-
-//         return res.status(200).json({
-//             status: 1,
-//             message: "Message deleted successfully.",
-//         })
-
-//     } catch (error) {
-//         console.error("Error delete message:", error);
-//         return res.status(500).json({
-//             status: 0,
-//             message: "Internal server error",
-//             error: error.message,
-//         });
-//     }
-// }
 
 module.exports = {
     sendMessage,
@@ -865,8 +740,6 @@ module.exports = {
     createPersnolChat,
     getPersonalChats,
     clearChat,
-    // editPersonalChatMessage,
-    // deletePersonalChatMessage,
     chatUserList,
 }
 

@@ -32,13 +32,13 @@ const addSchool = async (req, res) => {
             role: 'school',
         });
 
+        await user.update({
+            school_id: user.id
+        })
         await addNewSchoolEmail(name, email, password);
         await db.Chat.create({
             chat_by: user.id,
             chat_to: user.id,
-            school_id: user.id
-        })
-        await user.update({
             school_id: user.id
         })
 

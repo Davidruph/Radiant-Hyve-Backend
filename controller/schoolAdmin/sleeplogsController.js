@@ -44,6 +44,10 @@ const addSleepLog = async (req, res) => {
             return res.status(400).json({ message: 'Sleep log already exist' });
         }
 
+        if (start_time >= end_time) {
+            return res.status(400).json({ status: 0, message: "End time must be greater than start time" });
+        }
+
         const sleep_log = await db.SleepLoag.create({
             start_time,
             end_time,
@@ -76,6 +80,13 @@ const editSleepLog = async (req, res) => {
         const sleep_log = await db.SleepLoag.findByPk(id);
         if (!sleep_log) {
             return res.status(404).json({ message: 'Sleep log not found' });
+        }
+
+        const newStart = start_time ? start_time : sleep_log.start_time;
+        const newEnd = end_time ? end_time : sleep_log.end_time;
+
+        if (newStart >= newEnd) {
+            return res.status(400).json({ status: 0, message: "End time must be greater than start time" });
         }
 
         await sleep_log.update({

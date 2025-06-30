@@ -1,5 +1,5 @@
 
-const { db } = require("../config/db");
+const  db  = require("../config/db");
 
 const axios = require("axios");
 const { JWT } = require("google-auth-library");

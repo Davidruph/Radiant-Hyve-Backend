@@ -4,7 +4,6 @@ const { sendOTPToEmail, addSchoolEmail, updateSchoolEmail, addroleEmail, updateR
 let mailTrapHost = process.env.MAILTRAPHOST
 let mailTrapPass = process.env.MAILTRAPPASS
 let projectName = process.env.PROJECT_NAME
-const momment = require('moment');
 
 var transporter = nodemailer.createTransport({
   host: mailTrapHost,
