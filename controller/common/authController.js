@@ -11,7 +11,7 @@ const phoneUtil = PhoneNumberUtil.getInstance()
 const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
 const { checkToken } = require('../../helpers/checkToken')
-const {sendOTPVerificationEmail} = require('../../helpers/email')
+const { sendOTPVerificationEmail } = require('../../helpers/email')
 
 const singup = async (req, res) => {
     try {
@@ -55,7 +55,7 @@ const login = async (req, res) => {
     console.log(req.body);
 
     try {
-        const user = await db.User.findOne({ where: { email, role , is_deleted: false} });
+        const user = await db.User.findOne({ where: { email, role, is_deleted: false } });
 
         if (!user) {
             return res.status(404).json({ status: 0, message: 'User not found.' });
@@ -96,7 +96,7 @@ const login = async (req, res) => {
         // );
 
         const token = await checkToken({ device_token, device_id, device_type }, user.id);
-        
+
         return res.status(200).json({
             status: 1,
             message: 'Login successful.',
@@ -191,7 +191,7 @@ const forgotePasswor = async (req, res) => {
         const otp = Math.floor(1000 + Math.random() * 9000);
         await user.update({ otp, otp_created_at: new Date(), is_otp_Verify: false });
 
-        await sendOTPVerificationEmail({email, otp});
+        await sendOTPVerificationEmail({ email, otp });
 
         return res.status(200).json({
             status: 1,
@@ -212,7 +212,7 @@ const verifyForgotePasswordOtp = async (req, res) => {
     const { otp, email, role } = req.body;
 
     try {
-        const user = await db.User.findOne({ where: { email, role ,  is_deleted: false} });
+        const user = await db.User.findOne({ where: { email, role, is_deleted: false } });
 
         if (!user) {
             return res.status(404).json({ status: 0, message: 'User not found.' });
@@ -358,29 +358,80 @@ const refreshTokenWeb = async (req, res) => {
 };
 
 const refreshToken = async (req, res) => {
-  const { refresh_token } = req.body;
-  if (!refresh_token) return res.status(400).json({ status: 0, message: "Refresh Token is required" })
- 
-  try {
-    const storedToken = await db.Token.findOne({ where: { refresh_token } });
-    if (!storedToken || storedToken.token_expire_at < new Date()) {
-      if (storedToken) await db.Token.destroy({ where: { refresh_token } });
-      return res.status(403).json({ status: 0, message: "Invalid or expired refresh token, please log in again" });
+    const { refresh_token } = req.body;
+    if (!refresh_token) return res.status(400).json({ status: 0, message: "Refresh Token is required" })
+
+    try {
+        const storedToken = await db.Token.findOne({ where: { refresh_token } });
+        if (!storedToken || storedToken.token_expire_at < new Date()) {
+            if (storedToken) await db.Token.destroy({ where: { refresh_token } });
+            return res.status(403).json({ status: 0, message: "Invalid or expired refresh token, please log in again" });
+        }
+        const user = await db.User.findByPk(storedToken.user_id);
+        if (!user) return res.status(400).json({ status: 0, message: "User not found" });
+        const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
+        return res.status(200).json({
+            status: 1,
+            message: "Token refreshed successfully",
+            access_token: token,
+        });
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        return res.status(500).json({ status: 0, message: 'Internal server error' });
     }
-    const user = await db.User.findByPk(storedToken.user_id);
-    if (!user) return res.status(400).json({ status: 0, message: "User not found" });
-    const token = jwt.sign({ user_id: user.id, token_id: storedToken.id }, process.env.JWT_SECRET_KEY, { expiresIn: '1d' });
-    return res.status(200).json({
-      status: 1,
-      message: "Token refreshed successfully",
-      access_token: token,
-    });
-  } catch (error) {
-    console.error("Error refreshing token:", error);
-    return res.status(500).json({ status: 0, message: 'Internal server error' });
-  }
 };
- 
+
+const listNotification = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+        const {page} = req.query;
+        if (!page) {
+            return res.status(400).json({ status: 0, message: "page is required" });
+        }
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        const { count, rows: Notification } = await db.Notification.findAndCountAll({
+            where: {
+                notification_to: user_id
+            },
+            include: [
+                {
+                    model: db.User,
+                    as: "notificationby",
+                    attributes: ['id', 'email', 'full_name', 'profile_pic', 'role', 'school_name']
+                }
+            ],
+            order: [['id', 'DESC']],
+            limit,
+            offset
+        });
+
+        await db.Notification.update(
+            {notification_status: 'Read'},
+            {
+                where: {
+                    notification_to: user_id,
+                    notification_status: 'Unread'
+                }
+            }
+        )
+
+        return res.status(200).json({
+            message: "list Notification successfully",
+            total: count,
+            page: page,
+            limit: limit,
+            totalPages: Math.ceil(count / limit),
+            data: Notification
+        });
+
+    } catch (error) {
+        console.error('Error during list notification:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error.', error: error.message });
+    }
+}
+
 
 
 module.exports = {
@@ -396,5 +447,7 @@ module.exports = {
     logout,
     refreshToken,
     getProfile,
-    refreshTokenWeb
+    refreshTokenWeb,
+
+    listNotification
 }

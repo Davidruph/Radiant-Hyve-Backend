@@ -21,6 +21,7 @@ router.get('/create_token', auth.refreshToken);
 router.get('/get_profile',verifyToken, auth.getProfile);
 router.post('/refresh_token_web', auth.refreshTokenWeb);
 
+router.get('/list_notification',verifyToken, auth.listNotification);
 
 
 module.exports = router;
