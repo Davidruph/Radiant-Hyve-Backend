@@ -18,7 +18,7 @@ const addSchool = async (req, res) => {
     const { name, email, password, address } = req.body;
 
     try {
-        const existingUser = await db.User.findOne({ where: { email } })
+        const existingUser = await db.User.findOne({ where: { email, is_deleted: false, } })
         if (existingUser) {
             return res.status(400).json({ message: "Email already exists" })
         }

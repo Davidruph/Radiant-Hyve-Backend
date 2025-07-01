@@ -26,6 +26,8 @@ router.get('/teacher_all_student',verifyToken, teacher.listStudetMenu);
 
 router.post('/staff_apply_leave',verifyToken, teacherValidator.applyLeaveValidation(), leave.applyLeave)
 router.get('/list_leave_teacher',verifyToken, leave.listLeave);
+router.post('/cancel_leave',verifyToken, leave.cancelLeave);
+
 
 router.post('/student_attedance',verifyToken, teacherValidator.studeneAttedanceValidation(), student.studentAttendance)
 

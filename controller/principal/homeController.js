@@ -11,6 +11,8 @@ const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upl
 const phoneUtil = PhoneNumberUtil.getInstance()
 const moment = require('moment');
 const { ObjectAttributes } = require('@aws-sdk/client-s3');
+const { send_notification } = require('../../helpers/notification')
+
 
 const Attendance = async (req, res) => {
     if (req.user.role != "teacher" && req.user.role != "principal") {
@@ -202,7 +204,7 @@ const editPrincipal = async (req, res) => {
             if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
         }
         await principal.update({
@@ -470,7 +472,7 @@ const updateLeaveStatus = async (req, res) => {
             where: {
                 id: leave_id,
                 school_id,
-                leave_request_status:"pending"
+                leave_request_status: "pending"
             },
         });
 
@@ -481,6 +483,23 @@ const updateLeaveStatus = async (req, res) => {
         await leave.update({
             leave_request_status
         })
+
+        const formattedStartDate = moment.utc(leave.date).format("DD MMMM YYYY");
+        const notiType = `leave_status`;
+        const message = {
+            title: `Leave application Status.`,
+            body: `💬 Leave request for ${leave.leave_type} on ${formattedStartDate} has been ${leave_request_status} by the principal.`,
+        };
+        const Data = {
+            notification_by: req.user.id,
+            notification_to: leave.teacher_id,
+            notification_type: notiType,
+            body: message.body,
+            title: message.title,
+            school_id: school_id,
+        };
+        await send_notification(Data.message_to, message, notiType, Data);
+        await db.Notification.create(Data);
 
         return res.status(200).json({
             status: 1,

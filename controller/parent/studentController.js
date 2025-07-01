@@ -10,6 +10,7 @@ const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload")
 const { studentRequestEmail } = require('../../helpers/email');
 const phoneUtil = PhoneNumberUtil.getInstance()
+const { send_notification } = require('../../helpers/notification')
 
 
 const createStudent = async (req, res) => {
@@ -17,7 +18,7 @@ const createStudent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code} = req.body
+        const { shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code } = req.body
         const profileImage = req.files?.profile_pic[0];
 
         const shift = await db.Shift.findOne({
@@ -54,9 +55,37 @@ const createStudent = async (req, res) => {
         const school = await db.User.findByPk(req.user.school_id)
 
         console.log("full_name, req.user.email, school.school_name, req.user.full_name", full_name, req.user.email, school.school_name, req.user.full_name);
-        
+
         await studentRequestEmail(full_name, req.user.email, school.school_name, req.user.full_name);
 
+        const user = await db.User.findAll({
+            where: {
+                school_id: req.user.school_id,
+                role: {
+                    [Op.in]: ['school', 'principal']
+                },
+                is_deleted: false,
+                is_blocked: false
+            }
+        });
+
+        for (const data of user) {
+            const notiType = "student_request";
+            const message = {
+                title: "New Student request Received",
+                body: `👤 ${req.user.full_name} has submitted a request for student admission: ${student.full_name}.`,
+            };
+            const Data = {
+                notification_by: req.user.id,
+                notification_to: data.id,
+                notification_type: notiType,
+                body: message.body,
+                title: message.title,
+                school_id: req.user.school_id,
+            };
+            await send_notification(data.message_to, message, notiType, Data);
+            await db.Notification.create(Data);
+        }
         return res.status(200).json({
             status: 1,
             message: "Student created successfully",

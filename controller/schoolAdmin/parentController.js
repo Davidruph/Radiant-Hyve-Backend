@@ -20,7 +20,7 @@ const addparent = async (req, res) => {
         const { email, password, full_name, gender, mobile_no, country_code, iso_code, address } = req.body
         const profileImage = req.files?.profile_pic;
 
-        const existingUser = await db.User.findOne({ where: { email } })
+        const existingUser = await db.User.findOne({ where: { email, is_deleted: false, } })
         if (existingUser) {
             return res.status(400).json({ message: "Email already exists" })
         }
@@ -63,7 +63,7 @@ const addparent = async (req, res) => {
             if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
@@ -173,7 +173,7 @@ const editParent = async (req, res) => {
             if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
         }
 

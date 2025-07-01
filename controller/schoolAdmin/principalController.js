@@ -21,7 +21,7 @@ const addPrincipal = async (req, res) => {
         const { email, password, full_name, gender, dob, qualification, designation, experience, mobile_no, country_code, iso_code } = req.body
         const profileImage = req.files.profile_pic[0];
 
-        const existingUser = await db.User.findOne({ where: { email } })
+        const existingUser = await db.User.findOne({ where: { email, is_deleted: false, } })
         if (existingUser) {
             return res.status(400).json({ message: "Email already exists" })
         }
@@ -55,7 +55,7 @@ const addPrincipal = async (req, res) => {
             if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
         }
 
@@ -163,7 +163,7 @@ const editPrincipal = async (req, res) => {
             if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
         }
         await principal.update({

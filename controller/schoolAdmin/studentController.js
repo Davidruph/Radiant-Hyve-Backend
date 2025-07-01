@@ -6,6 +6,7 @@ const path = require("path");
 const { error } = require('console');
 const { upload } = require('../../helpers/storage');
 const { studentRequestAccesseptEmail, studentRequestRejectEmail } = require('../../helpers/email')
+const { send_notification } = require('../../helpers/notification')
 
 
 const getNewStudent = async (req, res) => {
@@ -240,6 +241,22 @@ const editStatus = async (req, res) => {
             await studentRequestRejectEmail(student.full_name, parent.email, school.school_name, student.parent_name);
         }
 
+        const notiType = `student_status`;
+        const message = {
+            title: `Student application Status.`,
+            body: `💬 Student request for ${student.full_name} has been ${status} by the principal.`,
+        };
+        const Data = {
+            notification_by: req.user.id,
+            notification_to: student.parent_id,
+            notification_type: notiType,
+            body: message.body,
+            title: message.title,
+            school_id: school_id,
+        };
+        await send_notification(Data.message_to, message, notiType, Data);
+        await db.Notification.create(Data);
+
         return res.status(200).json({
             status: 1,
             message: 'Student status updated successfully',
@@ -288,21 +305,52 @@ const studentAssignTeacher = async (req, res) => {
             await student.update({
                 teacher_id: teacher_id || student.teacher_id,
             })
+            const notiType = `student_assign_teacher`;
+            const message = {
+                title: `Student Assign you.`,
+                body: `💬 ${student.full_name} has been assign you.`,
+            };
+            const Data = {
+                notification_by: req.user.id,
+                notification_to: teacher_id,
+                notification_type: notiType,
+                body: message.body,
+                title: message.title,
+                school_id: school_id,
+            };
+            await send_notification(Data.message_to, message, notiType, Data);
+            await db.Notification.create(Data);
         }
 
-        await student.update({
-            request_status: request_status || student.request_status
-        })
+        if (request_status) {
+            await student.update({
+                request_status: request_status || student.request_status
+            })
+            if (request_status === 'accepted') {
+                const parent = await db.User.findByPk(student.parent_id)
+                const school = await db.User.findByPk(school_id)
+                await studentRequestAccesseptEmail(student.full_name, parent.email, school.school_name, student.parent_name);
+            } else if (request_status === 'rejected') {
+                const parent = await db.User.findByPk(student.parent_id)
+                const school = await db.User.findByPk(school_id)
+                await studentRequestRejectEmail(student.full_name, parent.email, school.school_name, student.parent_name);
+            }
 
-
-        if (request_status === 'accepted') {
-            const parent = await db.User.findByPk(student.parent_id)
-            const school = await db.User.findByPk(school_id)
-            await studentRequestAccesseptEmail(student.full_name, parent.email, school.school_name, student.parent_name);
-        } else if (request_status === 'rejected') {
-            const parent = await db.User.findByPk(student.parent_id)
-            const school = await db.User.findByPk(school_id)
-            await studentRequestRejectEmail(student.full_name, parent.email, school.school_name, student.parent_name);
+            const notiType = `student_status`;
+            const message = {
+                title: `Student application Status.`,
+                body: `💬 Student request for ${student.full_name} has been ${request_status} by the principal.`,
+            };
+            const Data = {
+                notification_by: req.user.id,
+                notification_to: student.parent_id,
+                notification_type: notiType,
+                body: message.body,
+                title: message.title,
+                school_id: school_id,
+            };
+            await send_notification(Data.message_to, message, notiType, Data);
+            await db.Notification.create(Data);
         }
 
         return res.status(200).json({
@@ -349,12 +397,12 @@ const listTeacher = async (req, res) => {
 }
 
 const getShift = async (req, res) => {
-    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher" &&  req.user.role != "parent") {
+    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher" && req.user.role != "parent") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
         let school_id = null
-        if (req.user.role != "school" ) {
+        if (req.user.role != "school") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })

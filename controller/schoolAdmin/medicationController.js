@@ -42,7 +42,7 @@ const addMedication = async (req, res) => {
             if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
         }
 
         const student = await db.Student.findOne({
@@ -118,8 +118,7 @@ const editMedication = async (req, res) => {
             if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
 
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "ISO CODE does not match country code." });
-
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
         }
 
 
