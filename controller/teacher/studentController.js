@@ -11,6 +11,7 @@ const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upl
 const phoneUtil = PhoneNumberUtil.getInstance()
 const moment = require('moment');
 const messsage = require('../../model/messsage');
+const { send_notification } = require('../../helpers/notification')
 
 
 
@@ -104,6 +105,41 @@ const submittedAttedance = async (req, res) => {
         );
         if (attendance.is_submitted) {
             return res.status(400).json({ status: 0, messsage: "Attendance allready submitted" })
+        }
+
+        const students = await db.Student.findAll({
+            where: {
+                teacher_id: req.user.id,
+                request_status: 'accepted',
+            }
+        })
+
+        for (const student of students) {
+            const user = await db.StudentAttendance.findOne({
+                where: {
+                    student_id: student.id,
+                    teacher_id: req.user.id,
+                    date: date
+                }
+            })
+            if (user) {
+                const formattedDate = moment(date).format("DD MMMM YYYY");
+                const notiType = "attendance";
+                const message = {
+                    title: "Attendance Submitted",
+                    body: `📅 Attendance for ${formattedDate} has been marked as ${user.attendance_status} for your child ${student.full_name}.`,
+                };
+                const Data = {
+                    notification_by: req.user.id,
+                    notification_to: student.parent_id,
+                    notification_type: notiType,
+                    body: message.body,
+                    title: message.title,
+                    school_id: req.user.school_id,
+                };
+                await send_notification(user.message_to, message, notiType, Data);
+                await db.Notification.create(Data);
+            }
         }
 
         return res.status(200).json({
