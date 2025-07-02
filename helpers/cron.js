@@ -6,7 +6,7 @@ const { send_notification } = require('./notification');
 
 // Runs daily at midnight
 // cron.schedule('* * * * *', async () => {
-cron.schedule('0 */12 * * *', async () => {
+cron.schedule('0 0 * * *', async () => {
 
     try {
         console.log("Runs daily at midnight")

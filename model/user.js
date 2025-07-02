@@ -5,7 +5,6 @@ module.exports = (sequelize, DataTypes) => {
             email: {
                 type: DataTypes.STRING,
                 allowNull: true,
-                unique: true,
             },
             iso_code: {
                 type: DataTypes.STRING,
