@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('../../config/db')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const { Op, Sequelize } = require('sequelize');
+const { Op, Sequelize, literal } = require('sequelize');
 const fs = require('fs').promises;
 const path = require("path");
 const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
@@ -498,7 +498,7 @@ const updateLeaveStatus = async (req, res) => {
             title: message.title,
             school_id: school_id,
         };
-        await send_notification(Data.message_to, message, notiType, Data);
+        await send_notification(leave.teacher_id, message, notiType, Data);
         await db.Notification.create(Data);
 
         return res.status(200).json({
@@ -512,6 +512,94 @@ const updateLeaveStatus = async (req, res) => {
     }
 }
 
+const upcomingBirthday = async (req, res) => {
+    if (req.user.role != "principal" && req.user.role != "school") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page, type } = req.query
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+        const today = moment();
+        const after30 = moment().add(30, 'days');
+
+        const start = today.format("MM-DD");
+        const end = after30.format("MM-DD");
+        let data
+        if (type == "staff") {
+            data = await db.User.findAndCountAll({
+                where: {
+                    school_id: school_id,
+                    role: "teacher",
+                    is_deleted: false,
+                    is_blocked: false,
+                    [Op.and]: [
+                        literal(`DATE_FORMAT(dob, '%m-%d') >= '${start}'`),
+                        literal(`DATE_FORMAT(dob, '%m-%d') <= '${end}'`)
+                    ]
+                },
+                order: [literal("DATE_FORMAT(dob, '%m-%d') ASC")],
+                limit: limit,
+                offset: offset,
+            });
+        }
+        if (type == "student") {
+            data = await db.Student.findAndCountAll({
+                where: {
+                    school_id: school_id,
+                    request_status: "accepted",
+                    [Op.and]: [
+                        literal(`DATE_FORMAT(dob, '%m-%d') >= '${start}'`),
+                        literal(`DATE_FORMAT(dob, '%m-%d') <= '${end}'`)
+                    ]
+                },
+                order: [literal("DATE_FORMAT(dob, '%m-%d') ASC")],
+                limit: limit,
+                offset: offset,
+            });
+        }
+        if (type == "principal") {
+            data = await db.User.findAndCountAll({
+                where: {
+                    school_id: school_id,
+                    role: "principal",
+                    is_deleted: false,
+                    is_blocked: false,
+                    [Op.and]: [
+                        literal(`DATE_FORMAT(dob, '%m-%d') >= '${start}'`),
+                        literal(`DATE_FORMAT(dob, '%m-%d') <= '${end}'`)
+                    ]
+                },
+                order: [literal("DATE_FORMAT(dob, '%m-%d') ASC")],
+                limit: limit,
+                offset: offset,
+            });
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: 'Upcoming  birthdays retrieved successfully',
+            total_birthday: data.count,
+            current_page: parseInt(page),
+            totalPage: Math.ceil(data.count / limit),
+            data: data.rows
+        });
+
+    } catch (error) {
+        console.error("Error :", error);
+        return res.status(500).json({ status: 0, message: "Internal Server Error", error: error.message });
+    }
+}
 
 
 module.exports = {
@@ -525,5 +613,6 @@ module.exports = {
 
     listLeave,
     getLeave,
-    updateLeaveStatus
+    updateLeaveStatus,
+    upcomingBirthday
 };

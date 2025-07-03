@@ -83,7 +83,7 @@ const createStudent = async (req, res) => {
                 title: message.title,
                 school_id: req.user.school_id,
             };
-            await send_notification(data.message_to, message, notiType, Data);
+            await send_notification( data.id, message, notiType, Data);
             await db.Notification.create(Data);
         }
         return res.status(200).json({

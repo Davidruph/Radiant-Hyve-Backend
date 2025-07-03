@@ -150,3 +150,14 @@ exports.updateLeaveValidation = () => {
         validation
     ];
 }
+
+exports.UpconmingbirthdayValidation = () => {
+    return [
+        [
+            check('page').not().isEmpty().withMessage('page is required'),
+            check("type").not().isEmpty().withMessage("type is required")
+                .isIn(['staff', 'student', 'principal']).withMessage("Invalid type, valid type are: 'staff', 'student', 'principal'"),
+        ],
+        validation
+    ];
+}

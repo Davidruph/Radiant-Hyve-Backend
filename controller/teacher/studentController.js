@@ -124,7 +124,7 @@ const submittedAttedance = async (req, res) => {
             })
             if (user) {
                 const formattedDate = moment(date).format("DD MMMM YYYY");
-                const notiType = "attendance";
+                const notiType = "student_attendance";
                 const message = {
                     title: "Attendance Submitted",
                     body: `📅 Attendance for ${formattedDate} has been marked as ${user.attendance_status} for your child ${student.full_name}.`,
@@ -137,7 +137,7 @@ const submittedAttedance = async (req, res) => {
                     title: message.title,
                     school_id: req.user.school_id,
                 };
-                await send_notification(user.message_to, message, notiType, Data);
+                await send_notification(student.parent_id, message, notiType, Data);
                 await db.Notification.create(Data);
             }
         }

@@ -49,7 +49,7 @@ const desbordCount = async (req, res) => {
                 ]
             }
         });
-        
+
         return res.status(200).json({
             status: 1,
             message: "Desbord count successfully",
@@ -63,46 +63,6 @@ const desbordCount = async (req, res) => {
         })
 
     } catch (error) {
-        console.error('Error:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
-    }
-}
-
-const getUpcomingBirthday = async (req, res) => {
-    if (req.user.role != "school") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
-    }
-    try {
-        const { role } = req.query;
-        const today = new Date();
-        const nextWeek = new Date();
-        nextWeek.setDate(today.getDate() + 7);
-        const upcomingBirthdays = await db.User.findAll({
-            where: {
-                school_id: req.user.id,
-                is_deleted: false,
-                role: role || { [Op.in]: ['principal', 'parent', 'teacher'] },
-                [Op.and]: [
-                    Sequelize.where(
-                        Sequelize.fn('TO_CHAR', Sequelize.col('dob'), 'MM-DD'),
-                        {
-                            [Op.between]: [
-                                formatDateMMDD(today),
-                                formatDateMMDD(nextWeek)
-                            ]
-                        }
-                    )
-                ],
-            },
-            attributes: ['id', 'full_name', 'dob', 'role', 'email']
-        });
-        return res.status(200).json({
-            status: 1,
-            message: "Upcoming birthdays retrieved successfully",
-            data: upcomingBirthdays
-        });
-    }
-    catch (error) {
         console.error('Error:', error);
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
@@ -134,9 +94,114 @@ const getProfile = async (req, res) => {
     }
 }
 
+const birthdaysCount = async (req, res) => {
+    if (req.user.role !== "school") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
+    }
+
+    try {
+        const { filter } = req.query;
+
+        let dobCondition = {};
+        const today = moment().format('MM-DD');
+
+        if (filter === 'today') {
+            dobCondition = db.sequelize.where(
+                db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), 'MM-DD'),
+                today
+            );
+        } else if (filter === 'week') {
+            const pastWeekDates = [...Array(7)].map((_, i) =>
+                moment().subtract(i, 'days').format('MM-DD')
+            );
+            dobCondition = db.sequelize.where(
+                db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), 'MM-DD'),
+                {
+                    [Op.in]: pastWeekDates
+                }
+            );
+        } else if (filter === 'month') {
+            const pastMonthDates = [...Array(30)].map((_, i) =>
+                moment().subtract(i, 'days').format('MM-DD')
+            );
+            dobCondition = db.sequelize.where(
+                db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), 'MM-DD'),
+                {
+                    [Op.in]: pastMonthDates
+                }
+            );
+        } else {
+            return res.status(400).json({ status: 0, message: "Invalid filter type. Use 'today', 'week', or 'month'." });
+        }
+
+        // const birthdayCount = await db.User.count({
+        //     where: {
+        //         ...dobCondition,
+        //         school_id: req.user.id,
+        //         is_deleted: false,
+        //         is_blocked: false,
+        //         role: {
+        //             [Op.in]: ['teacher', 'principal']
+        //         },
+        //     }
+        // });
+
+        // const studentCount = await db.Student.count({
+        //     where: {
+        //         ...dobCondition,
+        //         school_id: req.user.id,
+        //         request_status: 'accepted',
+        //     }
+        // });
+
+                const birthdayCount = await db.User.count({
+            where: {
+                [Op.and]: [
+                    dobCondition,
+                    { school_id: req.user.id },
+                    { is_deleted: false },
+                    { is_blocked: false },
+                    {
+                        role: {
+                            [Op.in]: ['teacher', 'principal']
+                        }
+                    }
+                ]
+            }
+        });
+
+        // 👨‍🎓 Count student birthdays
+        const studentCount = await db.Student.count({
+            where: {
+                [Op.and]: [
+                    dobCondition,
+                    { school_id: req.user.id },
+                    { request_status: 'accepted' }
+                ]
+            }
+        });
+
+
+
+        const totalCount = parseInt(birthdayCount) + parseInt(studentCount);
+
+        return res.status(200).json({
+            status: 1,
+            message: "Count retrieved successfully",
+            birthday_count: totalCount
+        });
+
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+};
+
+
 
 module.exports = {
     desbordCount,
-    getUpcomingBirthday,
     getProfile,
+    birthdaysCount,
 }
+

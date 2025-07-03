@@ -196,3 +196,69 @@ exports.studentDetailsValidation = () => {
         ]
     ]
 }
+
+exports.editparentlValidation = () => {
+    return [
+        [
+            check('full_name').optional().not().isEmpty().withMessage('full_name is required'),
+            check('iso_code').optional().not().isEmpty().withMessage('iso_code is required'),
+            check('country_code').optional().not().isEmpty().withMessage('country_code is required'),
+            check('mobile_no').optional().not().isEmpty().withMessage('mobile_no is required'),
+            check('address').optional().not().isEmpty().withMessage('address is required'),
+            check("gender").optional().not().isEmpty().withMessage("gender is required")
+                .isIn(['male', 'female', 'other']).withMessage("Invalid gender, valid gender are: 'male', 'female', 'other'"),
+            check("profile_pic")
+                .custom((value, { req }) => {
+                    const maxFiles = 1;
+                    const allowedMimeTypes = [
+                        'image/jpeg',
+                        'image/jpg',
+                        'image/png',
+                        'image/gif',
+                        'application/octet-stream',
+                    ];
+                    const maxSize = 10 * 1024 * 1024; // 5 MB
+
+                    const files = req.files?.profile_pic;
+
+                    if (!files || !Array.isArray(files) || files.length === 0) {
+                        return true;
+                    }
+
+                    if (files.length > maxFiles) {
+                        files.forEach(file => {
+                            try {
+                                fs.unlinkSync(file.path);
+                            } catch (e) {
+                                console.log("File already deleted or not found");
+                            }
+                        });
+                        throw new Error(`Maximum ${maxFiles} file(s) allowed!`);
+                    }
+
+                    const file = files[0];
+
+                    if (!allowedMimeTypes.includes(file.mimetype)) {
+                        try {
+                            fs.unlinkSync(file.path);
+                        } catch (e) {
+                            console.log("File already deleted or not found");
+                        }
+                        throw new Error("Only JPG, JPEG, PNG,  files are allowed!");
+                    }
+
+                    if (file.size > maxSize) {
+                        try {
+                            fs.unlinkSync(file.path);
+                        } catch (e) {
+                            console.log("File already deleted or not found");
+                        }
+                        throw new Error("File size must be less than 5 MB!");
+                    }
+
+                    return true;
+                }),
+        ],
+        validation
+    ];
+}

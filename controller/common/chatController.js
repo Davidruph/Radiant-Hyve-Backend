@@ -495,7 +495,7 @@ const sendMessage = async (req, res) => {
                             const notiType = "chat";
                             const message = {
                                 title: "New Message Received",
-                                body: `💬 ${req.user.subscription_plan === "gold" ? data.sendermessage.company_name : data.sendermessage.username}: ${text} (Tap to reply).`,
+                                body: `💬 ${ data.sendermessage.full_name}: ${text} (Tap to reply).`,
                             };
                             const Data = {
                                 chat_id: data.chat_id,
@@ -507,7 +507,7 @@ const sendMessage = async (req, res) => {
                                 role: data.sendermessage.role,
 
                             };
-                            // await send_notification(messageData.message_to, message, notiType, Data);
+                            await send_notification(messageData.message_to, message, notiType, Data);
                         }
                     })
                 }

@@ -227,7 +227,88 @@ const studentDetails = async (req, res) => {
     }
 }
 
+const editProfile = async (req, res) => {
+    if (req.user.role != "parent") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
 
+    try {
+        const { full_name, gender, mobile_no, country_code, iso_code, address } = req.body
+
+        const parent = await db.User.findOne({
+            where: {
+                id: req.user.id,
+                school_id,
+                is_deleted: false
+            },
+        })
+
+        if (!parent) {
+            return res.status(404).json({ status: 0, message: "parent not found" })
+        }
+
+        let profileImage = null;
+        if (req.files && req.files.profile_pic && req.files.profile_pic.length > 0) {
+            profileImage = req.files.profile_pic[0];
+            var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
+        }
+
+        if (req.files?.profile_pic && parent.profile_pic) {
+            await deleteFromS3(parent.profile_pic);
+        }
+
+        if (mobile_no) {
+            const existMobile = await db.User.findOne({
+                where: {
+                    mobile_no,
+                    iso_code,
+                    country_code,
+                    id: { [Op.not]: req.user.id },
+                    is_deleted: false
+                }
+            })
+
+            if (existMobile) {
+                return res.status(409).json({
+                    status: 0,
+                    message: 'This mobile number is already registered.'
+                });
+            }
+        }
+
+        if (mobile_no && iso_code && country_code) {
+            try {
+                var number = phoneUtil.parse(req.body.mobile_no, req.body.iso_code);
+
+            } catch {
+                return res.status(400).json({ Status: 0, message: "Number or ISO code not matched." });
+            }
+
+            const isValid = phoneUtil.isValidNumber(number);
+            if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
+
+            const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
+            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
+
+        }
+
+        await parent.update({
+            gender: gender || parent.gender,
+            full_name: full_name || parent.full_name,
+            mobile_no: mobile_no || parent.mobile_no,
+            country_code: country_code || parent.country_code,
+            iso_code: iso_code || parent.iso_code,
+            address: address || parent.address,
+            profile_pic: newProfilePicPath || parent.profile_pic,
+        })
+
+        return res.status(200).json({ status: 1, message: "parent updated successfully", data: parent });
+
+    } catch (error) {
+        console.error('Error edit parent:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+};
 
 
 
@@ -237,4 +318,5 @@ module.exports = {
     getStudent,
     studentDetails,
     listActiveStudent,
+    editProfile
 }

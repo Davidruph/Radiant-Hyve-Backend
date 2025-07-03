@@ -24,6 +24,8 @@ const home = require("../controller/schoolAdmin/homeController")
 
 
 router.get('/deshbord_count',verifyToken, home.desbordCount);
+router.get('/birthday_count',verifyToken, home.birthdaysCount);
+
 
 
 router.put('/edit_school_profile',verifyToken, schoolvalidator.updateSchoolValidation(), principal.editProfile);

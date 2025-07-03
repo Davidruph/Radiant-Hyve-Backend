@@ -254,7 +254,7 @@ const editStatus = async (req, res) => {
             title: message.title,
             school_id: school_id,
         };
-        await send_notification(Data.message_to, message, notiType, Data);
+        await send_notification(Data.notification_to, message, notiType, Data);
         await db.Notification.create(Data);
 
         return res.status(200).json({
@@ -318,7 +318,7 @@ const studentAssignTeacher = async (req, res) => {
                 title: message.title,
                 school_id: school_id,
             };
-            await send_notification(Data.message_to, message, notiType, Data);
+            await send_notification(Data.notification_to, message, notiType, Data);
             await db.Notification.create(Data);
         }
 
@@ -349,7 +349,7 @@ const studentAssignTeacher = async (req, res) => {
                 title: message.title,
                 school_id: school_id,
             };
-            await send_notification(Data.message_to, message, notiType, Data);
+            await send_notification(Data.notification_to, message, notiType, Data);
             await db.Notification.create(Data);
         }
 
