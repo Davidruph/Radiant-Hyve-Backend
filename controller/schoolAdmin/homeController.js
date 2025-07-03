@@ -101,87 +101,62 @@ const birthdaysCount = async (req, res) => {
 
     try {
         const { filter } = req.query;
-
-        let dobCondition = {};
         const today = moment().format('MM-DD');
+        let dateCondition = {};
 
         if (filter === 'today') {
-            dobCondition = db.sequelize.where(
-                db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), 'MM-DD'),
-                today
-            );
+            const today = moment().format('MM-DD');
+            dateCondition = {
+                [Op.and]: db.sequelize.where(
+                    db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), '%m-%d'),
+                    today
+                )
+            };
         } else if (filter === 'week') {
-            const pastWeekDates = [...Array(7)].map((_, i) =>
-                moment().subtract(i, 'days').format('MM-DD')
+            const nextWeekDates = [...Array(7)].map((_, i) =>
+                moment().add(i, 'days').format('MM-DD')
             );
-            dobCondition = db.sequelize.where(
-                db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), 'MM-DD'),
-                {
-                    [Op.in]: pastWeekDates
-                }
-            );
+            dateCondition = {
+                [Op.and]: db.sequelize.where(
+                    db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), '%m-%d'),
+                    { [Op.in]: nextWeekDates }
+                )
+            };
+            console.log("nextWeekDates", nextWeekDates);
         } else if (filter === 'month') {
-            const pastMonthDates = [...Array(30)].map((_, i) =>
-                moment().subtract(i, 'days').format('MM-DD')
+            const nextMonthDates = [...Array(30)].map((_, i) =>
+                moment().add(i, 'days').format('MM-DD')
             );
-            dobCondition = db.sequelize.where(
-                db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), 'MM-DD'),
-                {
-                    [Op.in]: pastMonthDates
-                }
-            );
+            dateCondition = {
+                [Op.and]: db.sequelize.where(
+                    db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), '%m-%d'),
+                    { [Op.in]: nextMonthDates }
+                )
+            };
+            console.log("nextMonthDates", nextMonthDates);
         } else {
             return res.status(400).json({ status: 0, message: "Invalid filter type. Use 'today', 'week', or 'month'." });
         }
 
-        // const birthdayCount = await db.User.count({
-        //     where: {
-        //         ...dobCondition,
-        //         school_id: req.user.id,
-        //         is_deleted: false,
-        //         is_blocked: false,
-        //         role: {
-        //             [Op.in]: ['teacher', 'principal']
-        //         },
-        //     }
-        // });
-
-        // const studentCount = await db.Student.count({
-        //     where: {
-        //         ...dobCondition,
-        //         school_id: req.user.id,
-        //         request_status: 'accepted',
-        //     }
-        // });
-
-                const birthdayCount = await db.User.count({
+        const birthdayCount = await db.User.count({
             where: {
-                [Op.and]: [
-                    dobCondition,
-                    { school_id: req.user.id },
-                    { is_deleted: false },
-                    { is_blocked: false },
-                    {
-                        role: {
-                            [Op.in]: ['teacher', 'principal']
-                        }
-                    }
-                ]
+                ...dateCondition,
+                school_id: req.user.id,
+                is_deleted: false,
+                is_blocked: false,
+                role: {
+                    [Op.in]: ['teacher', 'principal']
+                },
             }
         });
 
-        // 👨‍🎓 Count student birthdays
         const studentCount = await db.Student.count({
             where: {
-                [Op.and]: [
-                    dobCondition,
-                    { school_id: req.user.id },
-                    { request_status: 'accepted' }
-                ]
+                ...dateCondition,
+                school_id: req.user.id,
+                request_status: 'accepted',
             }
         });
-
-
 
         const totalCount = parseInt(birthdayCount) + parseInt(studentCount);
 
@@ -196,6 +171,7 @@ const birthdaysCount = async (req, res) => {
         return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
     }
 };
+
 
 
 
