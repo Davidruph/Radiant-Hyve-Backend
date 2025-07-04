@@ -10,7 +10,7 @@ const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload");
 const phoneUtil = PhoneNumberUtil.getInstance()
 const { send_notification } = require('../../helpers/notification')
-
+const moment = require('moment')
 
 
 const createEvent = async (req, res) => {

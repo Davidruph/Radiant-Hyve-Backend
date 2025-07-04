@@ -25,18 +25,16 @@ const listStudent = async (req, res) => {
         const offset = (page - 1) * limit
 
         const student = await db.Student.findAndCountAll({
-            attributes: ["id", "full_name", "relation_to_child",
-                [
-                    [
-                        Sequelize.literal(`(
-                           SELECT t2.shift_name
-                           FROM tbl_shift t2
-                           WHERE t2.id = Student.shift_id
-                        )`),
-                        'shift_name',
-                    ],
-                ]
-
+            attributes: [
+                "id",
+                "full_name",
+                "relation_to_child",
+                "request_status",
+                [Sequelize.literal(`(
+            SELECT t2.shift_name
+            FROM tbl_shift t2
+            WHERE t2.id = Student.shift_id
+        )`), 'shift_name']
             ],
             where: {
                 parent_id: req.user.id,
@@ -47,7 +45,8 @@ const listStudent = async (req, res) => {
             limit,
             offset,
             order: [['id', 'DESC']],
-        })
+        });
+
 
         return res.status(200).json({
             status: 1,
@@ -133,18 +132,16 @@ const listActiveStudent = async (req, res) => {
         const offset = (page - 1) * limit
 
         const student = await db.Student.findAndCountAll({
-            attributes: ["id", "full_name", "relation_to_child",
-                [
-                    [
-                        Sequelize.literal(`(
-                           SELECT t2.shift_name
-                           FROM tbl_shift t2
-                           WHERE t2.id = Student.shift_id
-                        )`),
-                        'shift_name',
-                    ],
-                ]
-
+            attributes: [
+                "id",
+                "full_name",
+                "relation_to_child",
+                "request_status",
+                [Sequelize.literal(`(
+            SELECT t2.shift_name
+            FROM tbl_shift t2
+            WHERE t2.id = Student.shift_id
+        )`), 'shift_name']
             ],
             where: {
                 parent_id: req.user.id,
@@ -153,7 +150,7 @@ const listActiveStudent = async (req, res) => {
             limit,
             offset,
             order: [['id', 'DESC']],
-        })
+        });
 
         return res.status(200).json({
             status: 1,
@@ -188,10 +185,10 @@ const studentDetails = async (req, res) => {
             return res.status(404).json({ status: 0, message: 'Student not found' })
         }
 
-        let details 
+        let details
         if (type = "menu") {
-            details =  await db.Menu.findAll({
-                where: {student_id},
+            details = await db.Menu.findAll({
+                where: { student_id },
                 include: [
                     {
                         model: db.MenuDay,
@@ -205,13 +202,13 @@ const studentDetails = async (req, res) => {
                 ],
                 order: [['id', 'DESC']],
             })
-        } else if(type = "sleeplog"){
+        } else if (type = "sleeplog") {
             details = await db.SleepLoag.findOne({
-                where: {student_id},
+                where: { student_id },
             })
-        } else if(type = "medication"){
+        } else if (type = "medication") {
             details = await db.MedicationInfo.findAll({
-                where: {student_id},
+                where: { student_id },
             })
         }
 
@@ -238,7 +235,7 @@ const editProfile = async (req, res) => {
         const parent = await db.User.findOne({
             where: {
                 id: req.user.id,
-                school_id,
+                school_id: req.user.school_id,
                 is_deleted: false
             },
         })

@@ -244,7 +244,7 @@ const editStatus = async (req, res) => {
         const notiType = `student_status`;
         const message = {
             title: `Student application Status.`,
-            body: `💬 Student request for ${student.full_name} has been ${status} by the principal.`,
+            body: ` Student request for ${student.full_name} has been ${status} by the principal.`,
         };
         const Data = {
             notification_by: req.user.id,
@@ -308,7 +308,7 @@ const studentAssignTeacher = async (req, res) => {
             const notiType = `student_assign_teacher`;
             const message = {
                 title: `Student Assign you.`,
-                body: `💬 ${student.full_name} has been assign you.`,
+                body: ` ${student.full_name} has been assign you.`,
             };
             const Data = {
                 notification_by: req.user.id,
@@ -339,7 +339,7 @@ const studentAssignTeacher = async (req, res) => {
             const notiType = `student_status`;
             const message = {
                 title: `Student application Status.`,
-                body: `💬 Student request for ${student.full_name} has been ${request_status} by the principal.`,
+                body: ` Student request for ${student.full_name} has been ${request_status} by the principal.`,
             };
             const Data = {
                 notification_by: req.user.id,

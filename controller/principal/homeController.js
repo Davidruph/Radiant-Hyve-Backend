@@ -488,7 +488,7 @@ const updateLeaveStatus = async (req, res) => {
         const notiType = `leave_status`;
         const message = {
             title: `Leave application Status.`,
-            body: `💬 Leave request for ${leave.leave_type} on ${formattedStartDate} has been ${leave_request_status} by the principal.`,
+            body: ` Leave request for ${leave.leave_type} on ${formattedStartDate} has been ${leave_request_status} by the principal.`,
         };
         const Data = {
             notification_by: req.user.id,

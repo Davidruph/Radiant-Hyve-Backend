@@ -52,7 +52,7 @@ const applyLeave = async (req, res) => {
             const notiType = "leave_request";
             const message = {
                 title: "New leave request Received",
-                body: `💬 ${req.user.full_name} requested a ${leave.leave_type} absence for ${formattedStartDate}.`,
+                body: ` ${req.user.full_name} requested a ${leave.leave_type} absence for ${formattedStartDate}.`,
             };
             const Data = {
                 notification_by: req.user.id,
