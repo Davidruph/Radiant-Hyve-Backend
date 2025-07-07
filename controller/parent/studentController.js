@@ -103,12 +103,12 @@ const editStudent = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { student_id, shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code, email, teacher_id } = req.body
+        const { student_id, shift_id, address, madical_insuarance_no, relation_to_child, dob, gender, full_name, mobile_no, country_code, iso_code,  teacher_id } = req.body
 
         const student = await db.Student.findOne({
             where: {
                 id: student_id,
-                school_id: req.user.school_id
+                parent_id: req.user.id
             }
         })
 
