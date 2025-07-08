@@ -25,17 +25,20 @@ const listStudent = async (req, res) => {
         const offset = (page - 1) * limit
 
         const student = await db.Student.findAndCountAll({
-            attributes: [
-                "id",
-                "full_name",
-                "relation_to_child",
-                "request_status",
-                [Sequelize.literal(`(
+            attributes: {
+                include: [
+                    [Sequelize.literal(`(
             SELECT t2.shift_name
             FROM tbl_shift t2
             WHERE t2.id = Student.shift_id
-        )`), 'shift_name']
-            ],
+        )`), 'shift_name'],
+                    [Sequelize.literal(`(
+            SELECT t2.full_name
+            FROM tbl_user t2
+            WHERE t2.id = Student.teacher_id
+        )`), 'teacher_name']
+                ]
+            },
             where: {
                 parent_id: req.user.id,
                 request_status: {
@@ -93,9 +96,29 @@ const getStudent = async (req, res) => {
                         )`),
                         'teacher_name',
                     ],
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.profile_pic
+                           FROM tbl_user t2
+                           WHERE t2.id = Student.teacher_id
+                        )`),
+                        'teacher_profile_pic',
+                    ],
+                    [
+                        Sequelize.literal(`(
+                        SELECT t2.id
+                        FROM tbl_chat t2
+                        WHERE (
+                        (t2.chat_by = Student.teacher_id AND t2.chat_to = ${req.user.id}) OR
+                         (t2.chat_by = ${req.user.id} AND t2.chat_to = Student.teacher_id)
+                       )
+                    )`),
+                        'chat_id',
+                    ],
                 ]
             },
             where: {
+                id: student_id,
                 parent_id: req.user.id,
                 request_status: {
                     [Op.not]: 'inActive'
@@ -172,7 +195,9 @@ const studentDetails = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { student_id, type } = req.query
+        const { student_id, type, page } = req.query
+        let limit = 10
+        let offset = (page - 1) * limit;
 
         const student = await db.Student.findOne({
             where: {
@@ -186,9 +211,15 @@ const studentDetails = async (req, res) => {
         }
 
         let details
-        if (type = "menu") {
+        if (type == "menu") {
             details = await db.Menu.findAll({
-                where: { student_id },
+                where: {
+                    [Op.or]: {
+                        student_id: student_id,
+                        is_all: true
+                    },
+                    school_id: req.user.school_id
+                },
                 include: [
                     {
                         model: db.MenuDay,
@@ -201,14 +232,31 @@ const studentDetails = async (req, res) => {
                     }
                 ],
                 order: [['id', 'DESC']],
+                limit,
+                offset
             })
-        } else if (type = "sleeplog") {
+        } else if (type == "sleeplog") {
             details = await db.SleepLoag.findOne({
                 where: { student_id },
             })
-        } else if (type = "medication") {
+        } else if (type == "medication") {
             details = await db.MedicationInfo.findAll({
                 where: { student_id },
+                attributes: {
+                    include: [
+                        [
+                            Sequelize.literal(`(
+                           SELECT t2.full_name
+                           FROM tbl_student t2
+                           WHERE t2.id = MedicationInfo.student_id
+                        )`),
+                            'student_name',
+                        ],
+                    ]
+                },
+                order: [['id', 'DESC']],
+                limit,
+                offset
             })
         }
 
@@ -307,6 +355,55 @@ const editProfile = async (req, res) => {
     }
 };
 
+const getStudentAttedance = async (req, res) => {
+    if (req.user.role != "parent") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id, page } = req.query
+        if (!student_id || !page) {
+            return res.status(400).json({ status: 0, message: "Please provide student_id or page" })
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
+
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                parent_id: req.user.id,
+                school_id: req.user.school_id
+            },
+        })
+
+        if (!student) {
+            return res.status(404).json({ status: 0, message: "Student not found" })
+        }
+
+        const attendance = await db.StudentAttendance.findAndCountAll({
+            where: {
+                student_id: student_id,
+            },
+            limit,
+            offset,
+            order: [['id', 'DESC']]
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: "Attendance retrieved successfully",
+            total_attedance: attendance.count,
+            current_page: parseInt(page),
+            total_page: Math.ceil(attendance.count / limit),
+            data: attendance.rows
+
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+
+}
 
 
 
@@ -315,5 +412,6 @@ module.exports = {
     getStudent,
     studentDetails,
     listActiveStudent,
-    editProfile
+    editProfile,
+    getStudentAttedance
 }

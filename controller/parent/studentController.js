@@ -184,7 +184,7 @@ const delteStudent = async (req, res) => {
     try {
         const { student_id } = req.query
 
-        if (student_id) {
+        if (!student_id) {
             return res.status(400).json({ status: 0, message: "student_id is required" })
         }
 

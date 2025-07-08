@@ -244,7 +244,7 @@ const deleteMenu = async (req, res) => {
 }
 
 const getMenu = async (req, res) => {
-    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher") {
+    if (req.user.role != "school" && req.user.role != "principal" && req.user.role != "teacher" && req.user.role != "parent") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
@@ -254,7 +254,7 @@ const getMenu = async (req, res) => {
         }
 
         let school_id = null
-        if (req.user.role == "principal" || req.user.role == "teacher") {
+        if (req.user.role != "school") {
             const principal = await db.User.findOne({
                 where: { id: req.user.id, is_deleted: false }
             })

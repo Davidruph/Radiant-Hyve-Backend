@@ -191,9 +191,11 @@ exports.studentDetailsValidation = () => {
     return [
         [
             check('student_id').not().isEmpty().withMessage('student_id is required'),
+            check('page').not().isEmpty().withMessage('page is required'),
             check("type").not().isEmpty().withMessage("type is required")
                 .isIn(['medication', 'sleeplog', 'menu']).withMessage("Invalid type, valid type are: 'medication', 'sleeplog', 'menu'"),
-        ]
+        ],
+        validation
     ]
 }
 

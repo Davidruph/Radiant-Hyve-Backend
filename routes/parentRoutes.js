@@ -24,5 +24,6 @@ router.get('/students_list',verifyToken, parent.listStudent);
 
 router.put('/edit_profile_parent',verifyToken, imageUpload, validation.editparentlValidation(),  parent.editProfile);
 
+router.get('/list_student_attedance_parent',verifyToken, parent.getStudentAttedance);
 
 module.exports = router; 
