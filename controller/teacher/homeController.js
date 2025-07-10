@@ -14,88 +14,71 @@ const moment = require('moment')
 
 
 const editProfile = async (req, res) => {
-    if (req.user.role != "teacher") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    if (req.user.role !== "teacher") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
     }
 
     try {
         const { full_name, gender, dob, about_staff, joining_date, experience, mobile_no, country_code, iso_code } = req.body
 
         const staff = await db.User.findOne({
-            where: {
-                id: req.user.id,
-                role: "teacher",
-                is_deleted: false
-            },
+            where: { id: req.user.id, role: "teacher", is_deleted: false }
         })
 
         if (!staff) {
-            return res.status(404).json({ status: 0, message: "staff not found" })
+            return res.status(404).json({ status: 0, message: "Staff not found" })
         }
 
-        let profileImage = null;
-        if (req.files && req.files.profile_pic && req.files.profile_pic.length > 0) {
-            profileImage = req.files.profile_pic[0];
-            var newProfilePicPath = await upload_file(profileImage, 'profile_pic/')
-        }
-
-        if (req.files?.profile_pic && staff.profile_pic) {
-            await deleteFromS3(staff.profile_pic);
+        let newProfilePicPath;
+        if (req.files?.profile_pic?.[0]) {
+            newProfilePicPath = await upload_file(req.files.profile_pic[0], 'profile_pic/')
+            if (staff.profile_pic) await deleteFromS3(staff.profile_pic)
         }
 
         if (mobile_no) {
             const existMobile = await db.User.findOne({
                 where: {
-                    mobile_no,
-                    iso_code,
-                    country_code,
+                    mobile_no, iso_code, country_code,
                     id: { [Op.not]: req.user.id },
                     is_deleted: false
                 }
             })
 
             if (existMobile) {
-                return res.status(409).json({
-                    status: 0,
-                    message: 'This mobile number is already registered.'
-                });
+                return res.status(409).json({ status: 0, message: 'This mobile number is already registered.' })
             }
-        }
 
-        if (mobile_no && iso_code && country_code) {
             try {
-                var number = phoneUtil.parse(req.body.mobile_no, req.body.iso_code);
-
+                const number = phoneUtil.parse(mobile_no, iso_code)
+                if (!phoneUtil.isValidNumber(number) || phoneUtil.getRegionCodeForNumber(number) !== iso_code) {
+                    return res.status(400).json({ status: 0, message: "Phone number is not correct." })
+                }
             } catch {
-                return res.status(400).json({ Status: 0, message: "Number or ISO code not matched." });
+                return res.status(400).json({ status: 0, message: "Number or ISO code not matched." })
             }
-
-            const isValid = phoneUtil.isValidNumber(number);
-            if (!isValid) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
-
-            const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
-            if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
-
         }
 
-        await staff.update({
-            gender: gender || staff.gender,
-            full_name: full_name || staff.full_name,
-            mobile_no: mobile_no || staff.mobile_no,
-            country_code: country_code || staff.country_code,
-            iso_code: iso_code || staff.iso_code,
-            dob: dob || staff.dob,
-            about_staff: about_staff || staff.about_staff,
-            joining_date: joining_date || staff.joining_date,
-            profile_pic: newProfilePicPath || staff.profile_pic,
-            experience: experience || staff.experience,
-        })
+        const updateData = {}
+        if (full_name) updateData.full_name = full_name
+        if (gender) updateData.gender = gender
+        if (dob) updateData.dob = dob
+        if (about_staff) updateData.about_staff = about_staff
+        if (joining_date) updateData.joining_date = joining_date
+        if (experience) updateData.experience = experience
+        if (mobile_no) {
+            updateData.mobile_no = mobile_no
+            updateData.country_code = country_code
+            updateData.iso_code = iso_code
+        }
+        if (newProfilePicPath) updateData.profile_pic = newProfilePicPath
 
-        return res.status(200).json({ status: 1, message: "profile updated successfully", data: staff });
+        await staff.update(updateData)
+
+        return res.status(200).json({ status: 1, message: "Profile updated successfully", data: staff })
 
     } catch (error) {
-        console.error('Error edit staff:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+        console.error('Error editing profile:', error)
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message })
     }
 };
 

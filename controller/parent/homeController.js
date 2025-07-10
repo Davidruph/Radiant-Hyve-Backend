@@ -371,7 +371,7 @@ const getStudentAttedance = async (req, res) => {
             where: {
                 id: student_id,
                 parent_id: req.user.id,
-                school_id: req.user.school_id
+                school_id: req.user.school_id,
             },
         })
 
@@ -382,6 +382,7 @@ const getStudentAttedance = async (req, res) => {
         const attendance = await db.StudentAttendance.findAndCountAll({
             where: {
                 student_id: student_id,
+                is_submitted: true
             },
             limit,
             offset,
