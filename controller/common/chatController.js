@@ -435,8 +435,6 @@ const sendMessage = async (req, res) => {
             console.log("Error checking socket room", error);
         }
 
-
-
         const mediaTextArray = Array.isArray(media_text) ? media_text : media_text ? JSON.parse(media_text) : [];
         const fileNameArray = Array.isArray(file_name) ? file_name : file_name ? JSON.parse(file_name) : [];
         const messageTypes = Array.isArray(message_type) ? message_type : message_type ? JSON.parse(message_type) : [];
@@ -495,12 +493,12 @@ const sendMessage = async (req, res) => {
                             const notiType = "chat";
                             const message = {
                                 title: "New Message Received",
-                                body: `💬 ${ data.sendermessage.full_name}: ${text} (Tap to reply).`,
+                                body: `💬 ${data.sendermessage.full_name}: ${text} (Tap to reply).`,
                             };
                             const Data = {
                                 chat_id: data.chat_id,
-                                other_id: data.message_to,
-                                user_id: data.message_by,
+                                other_id,
+                                user_id: req.user.id,
                                 fullname: data.sendermessage.full_name,
                                 profile_image: data.sendermessage.profile_pic,
                                 notiType: notiType,
@@ -511,6 +509,7 @@ const sendMessage = async (req, res) => {
                         }
                     })
                 }
+
                 if (enrichedSenderTokens.length > 0) {
                     let chatDetails = await getChatDetails(data);
                     enrichedSenderTokens.map(async (token) => {
@@ -540,6 +539,7 @@ const sendMessage = async (req, res) => {
         });
     }
 };
+
 
 async function getChatDetails(messageData) {
     const userId = messageData.message_to;

@@ -3,6 +3,7 @@ node_modules/
 .env.development
 .env.local
 m/
+*notification.json
  
 # Applications
 *.app
