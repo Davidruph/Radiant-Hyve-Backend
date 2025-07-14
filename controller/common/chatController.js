@@ -476,6 +476,7 @@ const sendMessage = async (req, res) => {
                 }
 
                 if (enrichedReceiverTokens.length > 0) {
+                    console.log("enrichedReceiverTokens", enrichedReceiverTokens)
                     let chatDetails = await getChatDetails(data);
                     // let unreadCount = await unreadChatCount(data.message_to);
                     enrichedReceiverTokens.map(async (token) => {
@@ -505,7 +506,7 @@ const sendMessage = async (req, res) => {
                                 role: data.sendermessage.role,
 
                             };
-                            await send_notification(messageData.message_to, message, notiType, Data);
+                            await send_notification(messageData.message_to, message, notiType, Data, token.device_token);
                         }
                     })
                 }

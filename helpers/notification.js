@@ -1,5 +1,5 @@
 
-const  db  = require("../config/db");
+const db = require("../config/db");
 
 const axios = require("axios");
 const { JWT } = require("google-auth-library");
@@ -29,7 +29,7 @@ async function getAccessToken() {
 }
 // console.log(getAccessToken())
 
-const send_notification = async (user_id, message, notificationType, data) => {
+const send_notification = async (user_id, message, notificationType, data, device_token) => {
     try {
         let notificationCount = await db.Notification.count({ where: { notification_to: user_id, notification_status: "Unread" } });
         console.log(`Notification count for user ${user_id}:`, notificationCount);
@@ -37,14 +37,23 @@ const send_notification = async (user_id, message, notificationType, data) => {
         // Emit the notification count to each user
         await emitToSockets(user_id, "unread_notification_count", { data: notificationCount });
         const accessToken = await getAccessToken();
+        let whereCondition = { user_id: user_id }
+        if (device_token) {
+            whereCondition.device_token = device_token
+        }
         const tokensResult = await db.Token.findAll({
-            where: {
-                user_id: user_id
-            },
+            where: whereCondition,
             attributes: ['device_token'],
             order: [['id', 'DESC']]
         });
-        // console.log("accessToken :-", accessToken)
+        // const tokensResult = await db.Token.findAll({
+        //     where: {
+        //         user_id: user_id
+        //     },
+        //     attributes: ['device_token'],
+        //     order: [['id', 'DESC']]
+        // });
+        console.log("accessToken :-", accessToken)
         const tokenArray = tokensResult.map((token) => token.device_token);
         console.log("tokenArray:", tokenArray);
         if (tokenArray.length <= 0) {
