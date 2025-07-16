@@ -108,7 +108,7 @@ const editStudent = async (req, res) => {
         const student = await db.Student.findOne({
             where: {
                 id: student_id,
-                parent_id: req.user.id
+                school_id: req.user.school_id
             }
         })
 
@@ -190,6 +190,7 @@ const delteStudent = async (req, res) => {
 
         const student = await db.Student.findOne({
             where: {
+                id: student_id,
                 school_id: req.user.school_id,
                 request_status: {
                     [Op.not]: 'inActive'

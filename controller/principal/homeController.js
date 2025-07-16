@@ -128,6 +128,7 @@ const getAttendance = async (req, res) => {
             where: {
                 id: attendance_id,
                 user_id: req.user.id,
+                school_id: req.user.school_id
             },
         });
         if (!attendance) {
