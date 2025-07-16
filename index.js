@@ -14,13 +14,13 @@ const app = express();
 const PORT = process.env.PORT;
 const HOST = process.env.NODE_ENV == "LOCAL" ? process.env.LOCALHOST : process.env.SERVERHOST;
 let projectName = process.env.PROJECT_NAME
-// var corsOptions = {
-//     origin: [`https://${HOST}:${PORT}`, `http://localhost:8800`, `https://${HOST}`],
-//     optionsSuccessStatus: 200,
-// };
-// process.env.NODE_ENV == "LOCAL" ? app.use(cors()) : app.use(cors(corsOptions));
+var corsOptions = {
+    origin: [`http://${HOST}:${PORT}`, `http://localhost:3000`, `http://${HOST}`],
+    optionsSuccessStatus: 200,
+};
+process.env.NODE_ENV == "LOCAL" ? app.use(cors()) : app.use(cors(corsOptions));
 app.use('/uploads', express.static('uploads'));
-// Middleware to parse JSON in the request body
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -35,12 +35,12 @@ app.use(requestLogger)
 // const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(options, app) : https.createServer(options, app);
 
 const server = http.createServer(app);
-// let io = setIO(server);
-// socketConfig(io);
+let io = setIO(server);
+socketConfig(io);
 
 
 app.get("/", async (req, res) => {
-    res.send(`<h3>${projectName} Running!!!</h3>`);
+    res.send("hello harshil");
 });
 
 const start = async () => {
@@ -49,7 +49,7 @@ const start = async () => {
         console.log('Connection has been established successfully.');
         console.log("...........................................................................")
 
-        // await db.Menu.sync({ alter : true });
+        // await db.User.sync({ alter : true });
 
         server.listen(PORT, () => {
             console.log(`${projectName} is running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
