@@ -58,9 +58,6 @@ exports.addPrincipalValidation = () => {
         [
             check('full_name').not().isEmpty().withMessage('full_name is required'),
             check('email').not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
-            check("password")
-                .notEmpty().withMessage("Password is required")
-                .isLength({ min: 8, max: 20 }).withMessage("Password must be between 8 and 20 characters long"),
             check('iso_code').not().isEmpty().withMessage('iso_code is required'),
             check('country_code').not().isEmpty().withMessage('country_code is required'),
             check('mobile_no').not().isEmpty().withMessage('mobile_no is required'),
@@ -218,9 +215,6 @@ exports.addStaffValidation = () => {
         [
             check('full_name').not().isEmpty().withMessage('full_name is required'),
             check('email').not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
-            check("password")
-                .notEmpty().withMessage("Password is required")
-                .isLength({ min: 8, max: 20 }).withMessage("Password must be between 8 and 20 characters long"),
             check('iso_code').not().isEmpty().withMessage('iso_code is required'),
             check('country_code').not().isEmpty().withMessage('country_code is required'),
             check('mobile_no').not().isEmpty().withMessage('mobile_no is required'),
@@ -433,9 +427,6 @@ exports.addparentlValidation = () => {
         [
             check('full_name').not().isEmpty().withMessage('full_name is required'),
             check('email').not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
-            check("password")
-                .notEmpty().withMessage("Password is required")
-                .isLength({ min: 8, max: 20 }).withMessage("Password must be between 8 and 20 characters long"),
             check('iso_code').not().isEmpty().withMessage('iso_code is required'),
             check('address').not().isEmpty().withMessage('address is required'),
             check('country_code').not().isEmpty().withMessage('country_code is required'),

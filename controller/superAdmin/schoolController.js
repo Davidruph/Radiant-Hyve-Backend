@@ -11,17 +11,29 @@ const { v4: uuidv4 } = require("uuid");
 const { upload_file, deleteFromS3, uploadVideo } = require('../../helpers/s3_upload')
 const { addNewSchoolEmail, updateSchoolPasswordEmail, delteSchoolEmails } = require('../../helpers/email');
 
+function generateCode(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstvwxyz0123456789@#$%&*!';
+    let result = '';
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
 const addSchool = async (req, res) => {
     if (req.user.role != "super_admin") {
         return res.status(401).json({ message: "Unauthorized" })
     }
-    const { name, email, password, address } = req.body;
+    const { name, email, address } = req.body;
 
     try {
         const existingUser = await db.User.findOne({ where: { email, is_deleted: false, } })
         if (existingUser) {
             return res.status(400).json({ message: "Email already exists" })
         }
+        
+        const password = generateCode(8)
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await db.User.create({

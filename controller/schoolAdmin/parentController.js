@@ -11,13 +11,22 @@ const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upl
 const phoneUtil = PhoneNumberUtil.getInstance()
 const { AddRoleEmail, updateRolePasswordEmail, deleteEmail, blockEmail, unblockEmail } = require('../../helpers/email');
 
+function generateCode(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstvwxyz0123456789@#$%&*!';
+    let result = '';
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
 
 const addparent = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { email, password, full_name, gender, mobile_no, country_code, iso_code, address } = req.body
+        const { email, full_name, gender, mobile_no, country_code, iso_code, address } = req.body
         const profileImage = req.files?.profile_pic;
 
         const existingUser = await db.User.findOne({ where: { email, is_deleted: false, } })
@@ -65,7 +74,7 @@ const addparent = async (req, res) => {
             const isCorrectISO = phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
             if (!isCorrectISO) return res.status(400).json({ Status: 0, message: "Phone number is not correct." });
         }
-
+        const password = generateCode(8)
         const hashedPassword = await bcrypt.hash(password, 10)
         const parent = await db.User.create({
             email: email,

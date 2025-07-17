@@ -47,9 +47,6 @@ exports.addSchoolValidation = () => {
         [
             check('name').not().isEmpty().withMessage('School Name is required'),
             check('email').not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
-            check("password")
-                .notEmpty().withMessage("Password is required")
-                .isLength({ min: 8, max: 20 }).withMessage("Password must be between 8 and 20 characters long"),
             check('address').not().isEmpty().withMessage('address is required'),
         ],
         validation
