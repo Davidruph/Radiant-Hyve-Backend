@@ -21,7 +21,7 @@ const sendOTPVerificationEmail = async ({ email, otp }) => {
   let htmlContent = sendOTPToEmail(otp);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: "Verification Code: Complete Your Email Verification",
     html: htmlContent,
@@ -40,7 +40,7 @@ const addNewSchoolEmail = async (school_name, email, password) => {
   let htmlContent = addSchoolEmail(school_name, email, password);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: "Your School Account Create Successfully.",
     html: htmlContent,
@@ -59,7 +59,7 @@ const updateSchoolPasswordEmail = async (school_name, email, password) => {
   let htmlContent = updateSchoolEmail(school_name, email, password);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: "Your School Account Password Change By Admin.",
     html: htmlContent,
@@ -78,7 +78,7 @@ const AddRoleEmail = async (school_name, email, password, role) => {
   let htmlContent = addroleEmail(school_name, email, password, role);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Your ${role} Account Create Successfully.`,
     html: htmlContent,
@@ -97,7 +97,7 @@ const updateRolePasswordEmail = async (school_name, email, password, role) => {
   let htmlContent = updateRoleEmail(school_name, email, password, role);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Your School Account Password Change By Admin.`,
     html: htmlContent,
@@ -116,7 +116,7 @@ const studentRequestAccesseptEmail = async (full_name, email, school_name, paren
   let htmlContent = studentRequistAccessept(full_name, school_name, parent_name);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Your Child ${full_name} Admission Request Accepted .`,
     html: htmlContent,
@@ -136,7 +136,7 @@ const studentRequestRejectEmail = async (full_name, email, school_name, parent_n
   let htmlContent = studentRequistRejected(full_name, school_name, parent_name);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Your Child ${full_name} Admission Request Rejected .`,
     html: htmlContent,
@@ -156,7 +156,7 @@ const studentRequestEmail = async (full_name, email, school_name, parent_name) =
   let htmlContent = studentRequistPending(full_name, school_name, parent_name);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Your Child ${full_name} Admission Request Pending .`,
     html: htmlContent,
@@ -176,7 +176,7 @@ const deleteEmail = async (school_name, email, delete_reason, role, full_name) =
   let htmlContent = deleteroleEmail (school_name, email, delete_reason, role, full_name);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Delete Your Account.`,
     html: htmlContent,
@@ -195,7 +195,7 @@ const delteSchoolEmails = async (school_name, email, delete_reason) => {
   let htmlContent = deleteSchoolEmail (school_name, email, delete_reason);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Delete Your Account.`,
     html: htmlContent,
@@ -214,7 +214,7 @@ const blockEmail = async (full_name, school_name, email, role,  block_reason) =>
   let htmlContent = blockroleEmail (full_name, school_name, email, role,  block_reason);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Block Your Account.`,
     html: htmlContent,
@@ -233,7 +233,7 @@ const unblockEmail = async (full_name, school_name, email, role) => {
   let htmlContent = unblockroleEmail(full_name, school_name, email, role);
 
   let mail_option = {
-    from: `"Radiant Hyve" <info@cubesinfotech.in>`,
+    from: `Radiant Hyve <info@cubesinfotech.in>`,
     to: email,
     subject: `Unblock Your Account.`,
     html: htmlContent,
