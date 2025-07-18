@@ -38,6 +38,7 @@ const sendOTPVerificationEmail = async ({ email, otp }) => {
 
 const addNewSchoolEmail = async (school_name, email, password) => {
   let htmlContent = addSchoolEmail(school_name, email, password);
+  console.log("process.env.SENDGRID_API_KEY ---------------->", process.env.SENDGRID_API_KEY);
 
   let mail_option = {
     from: `Radiant Hyve <info@cubesinfotech.in>`,
@@ -173,7 +174,7 @@ const studentRequestEmail = async (full_name, email, school_name, parent_name) =
 
 
 const deleteEmail = async (school_name, email, delete_reason, role, full_name) => {
-  let htmlContent = deleteroleEmail (school_name, email, delete_reason, role, full_name);
+  let htmlContent = deleteroleEmail(school_name, email, delete_reason, role, full_name);
 
   let mail_option = {
     from: `Radiant Hyve <info@cubesinfotech.in>`,
@@ -192,7 +193,7 @@ const deleteEmail = async (school_name, email, delete_reason, role, full_name) =
 }
 
 const delteSchoolEmails = async (school_name, email, delete_reason) => {
-  let htmlContent = deleteSchoolEmail (school_name, email, delete_reason);
+  let htmlContent = deleteSchoolEmail(school_name, email, delete_reason);
 
   let mail_option = {
     from: `Radiant Hyve <info@cubesinfotech.in>`,
@@ -210,8 +211,8 @@ const delteSchoolEmails = async (school_name, email, delete_reason) => {
   });
 }
 
-const blockEmail = async (full_name, school_name, email, role,  block_reason) => {
-  let htmlContent = blockroleEmail (full_name, school_name, email, role,  block_reason);
+const blockEmail = async (full_name, school_name, email, role, block_reason) => {
+  let htmlContent = blockroleEmail(full_name, school_name, email, role, block_reason);
 
   let mail_option = {
     from: `Radiant Hyve <info@cubesinfotech.in>`,
