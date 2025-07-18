@@ -221,10 +221,6 @@ const addSchoolEmail = (school_name, email, password) =>
         <p><strong>Password:</strong> ${password}</p>
       </div>
 
-      
-<div class="button-wrapper">
-  <a href="http://138.197.38.184/school_admin/login" class="button">Login</a>
-</div>
     </div>
     <div class="footer">
       &copy; ${currentYear} Radiant Hyve. All rights reserved.
