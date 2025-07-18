@@ -3,7 +3,7 @@ const nodemailer = require("nodemailer");
 const { sendOTPToEmail, addSchoolEmail, updateSchoolEmail, addroleEmail, updateRoleEmail, studentRequistAccessept, studentRequistRejected, studentRequistPending, blockroleEmail, deleteroleEmail, deleteSchoolEmail, unblockroleEmail } = require('./templetes')
 let sendGridApiKey = process.env.SENDGRID_API_KEY
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(sendGridApiKey);
+sgMail.send(sendGridApiKey);
 
 // var transporter = nodemailer.createTransport({
 //   host: mailTrapHost,
@@ -27,7 +27,7 @@ const sendOTPVerificationEmail = async ({ email, otp }) => {
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send OTP Verification Email ", error);
     } else {
@@ -46,7 +46,7 @@ const addNewSchoolEmail = async (school_name, email, password) => {
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send addNewSchoolEmail Email ", error);
     } else {
@@ -65,7 +65,7 @@ const updateSchoolPasswordEmail = async (school_name, email, password) => {
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send updateSchoolPasswordEmail Email ", error);
     } else {
@@ -84,7 +84,7 @@ const AddRoleEmail = async (school_name, email, password, role) => {
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send AddRoleEmail Email ", error);
     } else {
@@ -103,7 +103,7 @@ const updateRolePasswordEmail = async (school_name, email, password, role) => {
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send updateRolePasswordEmail Email ", error);
     } else {
@@ -122,7 +122,7 @@ const studentRequestAccesseptEmail = async (full_name, email, school_name, paren
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send studentRequestAccesseptEmail Email ", error);
     } else {
@@ -142,7 +142,7 @@ const studentRequestRejectEmail = async (full_name, email, school_name, parent_n
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send studentRequestRejectEmail Email ", error);
     } else {
@@ -162,7 +162,7 @@ const studentRequestEmail = async (full_name, email, school_name, parent_name) =
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send studentRequestEmail Email ", error);
     } else {
@@ -182,7 +182,7 @@ const deleteEmail = async (school_name, email, delete_reason, role, full_name) =
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send delteEmail Email ", error);
     } else {
@@ -201,7 +201,7 @@ const delteSchoolEmails = async (school_name, email, delete_reason) => {
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send delteEmail Email ", error);
     } else {
@@ -220,7 +220,7 @@ const blockEmail = async (full_name, school_name, email, role,  block_reason) =>
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send delteEmail Email ", error);
     } else {
@@ -239,7 +239,7 @@ const unblockEmail = async (full_name, school_name, email, role) => {
     html: htmlContent,
   };
 
-  return sgMail.setApiKey(mail_option, function (error, info) {
+  return sgMail.send(mail_option, function (error, info) {
     if (error) {
       console.log("Error in send unblockEmail Email ", error);
     } else {
