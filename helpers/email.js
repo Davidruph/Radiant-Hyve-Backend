@@ -3,7 +3,7 @@ const nodemailer = require("nodemailer");
 const { sendOTPToEmail, addSchoolEmail, updateSchoolEmail, addroleEmail, updateRoleEmail, studentRequistAccessept, studentRequistRejected, studentRequistPending, blockroleEmail, deleteroleEmail, deleteSchoolEmail, unblockroleEmail } = require('./templetes')
 let sendGridApiKey = process.env.SENDGRID_API_KEY
 const sgMail = require('@sendgrid/mail');
-sgMail.send(sendGridApiKey);
+sgMail.setApiKey(sendGridApiKey);
 
 // var transporter = nodemailer.createTransport({
 //   host: mailTrapHost,
