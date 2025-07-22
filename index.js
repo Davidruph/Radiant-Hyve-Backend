@@ -26,15 +26,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(requestLogger)
 
-// const options = {
-//     ...(process.env.NODE_ENV != "LOCAL" && {
-//         key: fs.readFileSync(process.env.PRIVATEKEY),
-//         cert: fs.readFileSync(process.env.CERTKEY),
-//     }),
-// };
-// const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(options, app) : https.createServer(options, app);
+const options = {
+    ...(process.env.NODE_ENV != "LOCAL" && {
+        key: fs.readFileSync(process.env.PRIVATEKEY),
+        cert: fs.readFileSync(process.env.CERTKEY),
+    }),
+};
+const server = process.env.NODE_ENV == "LOCAL" ? http.createServer(app) : https.createServer(options, app);
 
-const server = http.createServer(app);
 let io = setIO(server);
 socketConfig(io);
 
