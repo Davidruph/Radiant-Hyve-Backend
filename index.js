@@ -14,11 +14,11 @@ const app = express();
 const PORT = process.env.PORT;
 const HOST = process.env.NODE_ENV == "LOCAL" ? process.env.LOCALHOST : process.env.SERVERHOST;
 let projectName = process.env.PROJECT_NAME
-var corsOptions = {
-    origin: [`http://${HOST}:${PORT}`, `http://localhost:3000`, `http://${HOST}`],
-    optionsSuccessStatus: 200,
-};
-process.env.NODE_ENV == "LOCAL" ? app.use(cors()) : app.use(cors(corsOptions));
+// var corsOptions = {
+//     origin: [`http://${HOST}:${PORT}`, `http://localhost:3000`, `http://${HOST}`],
+//     optionsSuccessStatus: 200,
+// };
+app.use(cors());
 app.use('/uploads', express.static('uploads'));
 
 app.use(express.json());
