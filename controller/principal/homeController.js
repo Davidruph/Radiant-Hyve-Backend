@@ -127,7 +127,6 @@ const getAttendance = async (req, res) => {
         const attendance = await db.Attendance.findOne({
             where: {
                 id: attendance_id,
-                user_id: req.user.id,
                 school_id: req.user.school_id
             },
         });
