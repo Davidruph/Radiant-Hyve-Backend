@@ -346,6 +346,7 @@ const getLessonChatMessages = async (req, res) => {
                     model: db.User,
                     as: "sendermessage",
                     attributes: ['id', 'full_name', 'profile_pic', 'role', 'school_name'],
+                    where: {is_deleted : false}
                 },
                 {
                     model: db.MessageStatus,
