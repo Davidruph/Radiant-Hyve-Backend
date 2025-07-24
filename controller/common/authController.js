@@ -248,7 +248,7 @@ const resetPassword = async (req, res) => {
     const { email, newPassword } = req.body;
 
     try {
-        const user = await db.User.findOne({ where: { email } });
+        const user = await db.User.findOne({ where: { email , is_deleted: false} });
 
         if (!user) {
             return res.status(404).json({ status: 0, message: 'User not found.' });
