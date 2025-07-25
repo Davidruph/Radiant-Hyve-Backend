@@ -307,7 +307,7 @@ const parentDetails = async (req, res) => {
                                     SELECT COUNT(*) 
                                     FROM tbl_student t2 
                                     WHERE t2.parent_id = ${parent_id}
-                                    AND t2.request_status != 'inActive'
+                                      AND (LOWER(t2.request_status) IS NULL OR LOWER(t2.request_status) != 'inactive') 
                                 )`),
                     "total_student"
                 ],
