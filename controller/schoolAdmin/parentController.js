@@ -307,6 +307,7 @@ const parentDetails = async (req, res) => {
                                     SELECT COUNT(*) 
                                     FROM tbl_student t2 
                                     WHERE t2.parent_id = ${parent_id}
+                                    AND t2.request_status != 'inActive'
                                 )`),
                     "total_student"
                 ],
@@ -344,7 +345,7 @@ const parentDetails = async (req, res) => {
         })
 
         if (!parent) {
-            return res.status(404).json({ status: 0, message: "parent not found" })
+            return res.status(404).json({ status: 2, message: "parent not found" })
         }
 
         return res.status(200).json({

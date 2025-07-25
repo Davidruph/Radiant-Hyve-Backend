@@ -182,7 +182,7 @@ const getStudent = async (req, res) => {
         })
 
         if (!student) {
-            return res.status(404).json({ status: 0, message: "Student not found" })
+            return res.status(404).json({ status: 2, message: "Student not found" })
         }
 
         return res.status(200).json({
@@ -507,7 +507,7 @@ const studentAttendance = async (req, res) => {
         })
 
         if (!student) {
-            return res.status(404).json({ status: 0, message: 'Student not found' })
+            return res.status(404).json({ status: 2, message: 'Student not found' })
         }
 
         const attedance = await db.StudentAttendance.findAndCountAll({
@@ -565,7 +565,7 @@ const listParantStudent = async (req, res) => {
         })
 
         if (!parent) {
-            return res.status(404).json({ status: 0, message: 'parent not found' })
+            return res.status(404).json({ status: 2, message: 'parent not found' })
         }
 
         const Student = await db.Student.findAndCountAll({
@@ -633,7 +633,7 @@ const listTeacherStudent = async (req, res) => {
         })
 
         if (!user) {
-            return res.status(404).json({ status: 0, message: 'Teacher not found' })
+            return res.status(404).json({ status: 2, message: 'Teacher not found' })
         }
         const whereClause = {
             school_id,

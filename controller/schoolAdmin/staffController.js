@@ -398,7 +398,7 @@ const getStaff = async (req, res) => {
         })
 
         if (!Staff) {
-            return res.status(404).json({ status: 0, message: "Staff not found" })
+            return res.status(404).json({ status: 2, message: "Staff not found" })
         }
 
         return res.status(200).json({

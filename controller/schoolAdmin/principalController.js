@@ -314,7 +314,7 @@ const getPrincipal = async (req, res) => {
         })
 
         if (!principal) {
-            return res.status(404).json({ status: 0, message: "Principal not found" })
+            return res.status(404).json({ status: 2, message: "Principal not found" })
         }
 
         return res.status(200).json({
