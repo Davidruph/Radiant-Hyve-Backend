@@ -570,7 +570,8 @@ const listParantStudent = async (req, res) => {
 
         const Student = await db.Student.findAndCountAll({
             where: {
-                parent_id: parent_id
+                parent_id: parent_id,
+                request_status: { [Op.ne]: 'inActive' }
             },
             attributes: {
                 include: [
