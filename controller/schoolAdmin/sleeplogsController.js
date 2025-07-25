@@ -192,7 +192,7 @@ const getSleepLog = async (req, res) => {
         }
         const sleep_log = await db.SleepLoag.findByPk(id);
         if (!sleep_log) {
-            return res.status(404).json({ message: 'Sleep log not found' });
+            return res.status(404).json({status: 2, message: 'Sleep log not found' });
         }
 
         const sleepLogs = await db.SleepLoag.findOne({

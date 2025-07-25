@@ -198,7 +198,7 @@ const getEvent = async (req, res) => {
         })
 
         if (!event) {
-            return res.status(404).json({ status: 0, message: "Event not found" })
+            return res.status(404).json({ status: 2, message: "Event not found" })
         }
 
         return res.status(200).json({ status: 1, message: "Event get successfully", data: event })

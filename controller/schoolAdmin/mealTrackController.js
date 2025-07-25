@@ -290,7 +290,7 @@ const getMenu = async (req, res) => {
             ],
         })
         if (!menu) {
-            return res.status(404).json({ status: 0, message: 'Menu not found' })
+            return res.status(404).json({ status: 2, message: 'Menu not found' })
         }
         return res.status(200).json({ status: 1, message: 'Menu get successfully', data: menu })
     } catch (error) {

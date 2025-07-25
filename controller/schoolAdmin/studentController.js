@@ -291,7 +291,7 @@ const studentAssignTeacher = async (req, res) => {
         })
 
         if (!student) {
-            return res.status(404).json({ status: 0, message: "Student not found" })
+            return res.status(404).json({ status: 2, message: "Student not found" })
         };
 
         if (teacher_id) {

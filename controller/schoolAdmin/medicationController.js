@@ -192,7 +192,7 @@ const getMedication = async (req, res) => {
         })
 
         if (!medication) {
-            return res.status(404).json({ status: 0, message: "Medication not found " })
+            return res.status(404).json({ status: 2, message: "Medication not found " })
         }
 
         return res.status(200).json({ status: 1, message: "get medication ditails successfully", data: medication })

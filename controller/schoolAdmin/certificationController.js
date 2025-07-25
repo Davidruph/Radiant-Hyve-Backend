@@ -172,7 +172,7 @@ const getCertificat = async (req, res) => {
             ],
         })
         if (!certification) {
-            return res.status(404).json({ status: 0, message: "Certificate not found" })
+            return res.status(404).json({ status: 2, message: "Certificate not found" })
         }
 
         return res.status(200).json({ status: 1, message: "get certificate ditails successfully", data: certification })
