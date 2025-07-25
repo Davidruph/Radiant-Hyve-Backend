@@ -247,6 +247,7 @@ const listParent = async (req, res) => {
                                 SELECT COUNT(*) 
                                 FROM tbl_student t2 
                                 WHERE t2.parent_id = User.id 
+                                 AND (LOWER(t2.request_status) IS NULL OR LOWER(t2.request_status) != 'inactive') 
                             )`),
                     "total_student"
                 ],
