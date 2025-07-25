@@ -380,6 +380,7 @@ const getStaff = async (req, res) => {
                                 SELECT COUNT(*) 
                                 FROM tbl_student t2 
                                 WHERE t2.teacher_id = ${staff_id}
+                                  AND (LOWER(t2.request_status) IS NULL OR LOWER(t2.request_status) != 'inactive')
                             )`),
                     "total_student"
                 ],
@@ -591,7 +592,8 @@ const assignStudentList = async (req, res) => {
 
         const whereClause = {
             teacher_id: staff_id,
-            ...(shift_id && { shift_id: shift_id })
+            ...(shift_id && { shift_id: shift_id }),
+            request_status: { [Op.ne]: 'inactive' },
         };
 
         if (search) {

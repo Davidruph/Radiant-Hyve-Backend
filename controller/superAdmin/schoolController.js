@@ -239,7 +239,7 @@ const getSchoolById = async (req, res) => {
             },
         });
         if (!school) {
-            return res.status(404).json({ status: 0, message: 'School not found' });
+            return res.status(404).json({ status: 2, message: 'School not found' });
         }
 
         const data = {
