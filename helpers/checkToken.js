@@ -9,7 +9,8 @@ exports.checkToken = async (data, user_id) => {
         user_id: user_id,
         device_id: data.device_id,
         device_token: data.device_token,
-        device_type: data.device_type
+        device_type: data.device_type,
+        refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     }
     var token = await db.Token.findOne({ where: { device_id: data.device_id , user_id } })
 
@@ -25,10 +26,6 @@ exports.checkToken = async (data, user_id) => {
         user_id: user_id,
         token_id: token.id
     }, `${process.env.JWT_SECRET_KEY}`, { expiresIn: '1d' });
-
-    await token.update({
-        refresh_token: uuidv4(), token_expire_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    })
 
     return {
         token: jwtToken,
