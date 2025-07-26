@@ -26,7 +26,12 @@ const verifyToken = (req, res, next) => {
             if (User.is_block == true) {
                 return res.status(401).json({ status: 0, message: "You are block by admin!" });
             }
-            const tokens = await db.Token.findByPk(decodedToken.token_id);
+            const tokens = await db.Token.findOne({
+                where: {
+                    id: decodedToken.token_id,
+                    user_id: decodedToken.user_id,
+                }
+            });
             console.log("token=============================>", tokens);
             
             if (!tokens) {
