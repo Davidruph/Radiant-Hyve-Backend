@@ -11,10 +11,10 @@ exports.checkToken = async (data, user_id) => {
         device_token: data.device_token,
         device_type: data.device_type
     }
-    var token = await db.Token.findOne({ where: { device_id: data.device_id } })
+    var token = await db.Token.findOne({ where: { device_id: data.device_id , user_id } })
 
     if (token) {
-        await db.Token.update({ device_token: data.device_token, device_type: data.device_type, user_id }, { where: { device_id: data.device_id } })
+        await db.Token.update({ device_token: data.device_token, device_type: data.device_type, user_id }, { where: { device_id: data.device_id, user_id } })
         // await token.destroy()
     } else {
         token = await db.Token.create(tokenData)
