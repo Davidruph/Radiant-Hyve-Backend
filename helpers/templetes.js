@@ -19,6 +19,7 @@ const sendOTPToEmail = (otp) =>
     .container {
       max-width: 400px;
       margin: 20px auto;
+      border:2px solid #D3D3D3;
       background: #f0f0f075;
       padding: 20px;
       border-radius: 10px;
@@ -123,6 +124,7 @@ const addSchoolEmail = (school_name, email, password) =>
     .container {
       max-width: 600px;
       margin: auto;
+      border:2px solid #D3D3D3;
       background: #ffffff;
       padding: 0;
       border-radius: 8px;
@@ -249,6 +251,7 @@ const updateSchoolEmail = (school_name, email, password) =>
     .container {
       max-width: 600px;
       margin: auto;
+      border:2px solid #D3D3D3;
       background: #ffffff;
       padding: 0;
       border-radius: 8px;
@@ -346,9 +349,6 @@ const updateSchoolEmail = (school_name, email, password) =>
         <p><strong>New Password:</strong> ${password}</p>
       </div>
 
-      <div class="button-wrapper">
-        <a href="http://138.197.38.184/school_admin/login" class="button">Login</a>
-      </div>
     </div>
     <div class="footer">
       &copy; ${currentYear} Radiant Hyve. All rights reserved.
@@ -378,6 +378,7 @@ const addroleEmail = (school_name, email, password, role) => `
       max-width: 600px;
       margin: auto;
       background: #ffffff;
+      border:2px solid #D3D3D3;
       padding: 0;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -502,6 +503,7 @@ const updateRoleEmail = (school_name, email, password, role) => `
       max-width: 600px;
       margin: auto;
       background: #ffffff;
+      border:2px solid #D3D3D3;
       padding: 0;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -626,6 +628,7 @@ const studentRequistAccessept = (full_name, school_name, parent_name) => `
       max-width: 600px;
       margin: auto;
       background: #ffffff;
+      border:2px solid #D3D3D3;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
       overflow: hidden;
@@ -696,7 +699,7 @@ const studentRequistRejected = (full_name, school_name, parent_name) => `
   <title>Student Rejected - Radiant Hyve</title>
   <style>
     body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; color: #2d3748; }
-    .container { max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); overflow: hidden; }
+    .container { max-width: 600px; border:2px solid #D3D3D3; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); overflow: hidden; }
     .header { background-color: #293FE3; padding: 25px; text-align: center; }
     .header img { max-height: 40px; }
     .content { padding: 24px; }
@@ -739,7 +742,7 @@ const studentRequistPending = (full_name, school_name, parent_name) => `
   <title>Student Status - Waiting - Radiant Hyve</title>
   <style>
     body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; color: #2d3748; }
-    .container { max-width: 600px; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); overflow: hidden; }
+    .container { max-width: 600px; border:2px solid #D3D3D3; margin: auto; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); overflow: hidden; }
     .header { background-color: #293FE3; padding: 25px; text-align: center; }
     .header img { max-height: 40px; }
     .content { padding: 24px; }
@@ -793,6 +796,7 @@ const blockroleEmail = (full_name, school_name, email, role,  block_reason) => `
     .container {
       max-width: 600px;
       margin: auto;
+      border:2px solid #D3D3D3;
       background: #ffffff;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -901,6 +905,7 @@ const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => 
     .container {
       max-width: 600px;
       margin: auto;
+      border:2px solid #D3D3D3;
       background: #ffffff;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -1051,6 +1056,7 @@ const deleteSchoolEmail = (school_name, email, delete_reason) => `
       max-width: 600px;
       margin: auto;
       background: #ffffff;
+      border:2px solid #D3D3D3;
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
       overflow: hidden;
@@ -1195,6 +1201,7 @@ const unblockroleEmail = (full_name, school_name, email, role) => `
 
     .container {
       max-width: 600px;
+      border:2px solid #D3D3D3;
       margin: auto;
       background: #ffffff;
       border-radius: 8px;
