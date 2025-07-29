@@ -936,7 +936,7 @@ const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => 
       gap: 10px;
     }
 
-.icon{
+.deleteicon{
  display:flex;
       align-items: center;
           justify-content: center;
@@ -1005,7 +1005,7 @@ const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => 
       <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
-    <div class="icon">
+    <div class="deleteicon">
 
   <img src="https://cdn-icons-png.flaticon.com/512/6932/6932392.png" alt="Delete Icon" class="title-icon" />
       </div>
@@ -1022,10 +1022,6 @@ const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => 
       <div class="credentials-box">
         <p><strong>Email Id:</strong> ${email}</p>
          <p><strong>Reason:</strong> ${delete_reason}</p>
-      </div>
-
-      <div class="button-wrapper">
-        <a href="http://138.197.38.184/school_admin/login" class="button">Back to Admin Panel</a>
       </div>
     </div>
     <div class="footer">
