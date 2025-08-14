@@ -1,0 +1,333 @@
+require('dotenv').config();
+const db = require('../../config/db')
+const { Op, Sequelize, col, fn, where } = require('sequelize');
+const fs = require('fs').promises;
+const path = require("path");
+const { PhoneNumberUtil, PhoneNumberFormat } = require("google-libphonenumber");
+const { error } = require('console');
+const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload");
+const { send_notification } = require('../../helpers/notification')
+const moment = require('moment');
+
+
+const blockStudent = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id } = req.body
+        if (!student_id) {
+            return res.status(400).json({ status: 0, message: "student_id is required" })
+        }
+        let school_id = req.user.id
+        if (req.user.role == "principal") {
+            school_id = req.user.school_id
+        }
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                school_id: school_id,
+                request_status: { [Op.in]: ["accepted", "feesPending"] }
+            }
+        })
+        if (!student) {
+            return res.status(400).json({ status: 0, message: "Student not found" })
+        }
+        if (student.request_status == "feesPending") {
+            await student.update({
+                request_status: "accepted"
+            })
+            return res.status(200).json({ status: 1, message: "Student Unblocked successfully" })
+        }
+        await student.update({
+            request_status: "feesPending"
+        })
+        return res.status(200).json({ status: 1, message: "Student blocked successfully" })
+
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
+const makePayment = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        let { student_id, month, year } = req.body;
+        let school_id = req.user.id;
+
+        if (req.user.role == "principal") {
+            school_id = req.user.school_id;
+        }
+
+        const now = new Date();
+        if (!month) month = now.getMonth() + 1; // current month (1-based)
+        if (!year) year = now.getFullYear(); // current year
+
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                school_id: school_id,
+                request_status: { [Op.in]: ["accepted", "feesPending"] }
+            }
+        });
+        if (!student) {
+            return res.status(400).json({ status: 0, message: "Student not found" });
+        }
+
+        if (student.request_status == "feesPending") {
+            await student.update({ request_status: "accepted" });
+        }
+
+        const shift = await db.Shift.findByPk(student.shift_id);
+
+        const invoice = await db.Invoice.findOne({
+            where: {
+                student_id,
+                school_id,
+                parent_id: student.school_id,
+                month: month,
+                year: year,
+                total_fees: shift.shift_fee
+            }
+        });
+
+        // Month number to word mapping
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        const monthWord = monthNames[month - 1] || month;
+
+        const notiType = `payment`;
+        const message = {
+            title: `Fee Payment Confirmation`,
+            body: `We have received the fee payment for ${student.full_name} for ${monthWord} ${year}. Thank you for completing the payment promptly.`
+        };
+
+        const Data = {
+            notification_by: req.user.id,
+            notification_to: student.parent_id,
+            notification_type: notiType,
+            body: message.body,
+            title: message.title,
+            school_id: school_id,
+        };
+
+        await send_notification(req.user.id, message, notiType, Data);
+        await db.Notification.create(Data);
+
+        return res.status(200).json({
+            status: 1,
+            message: "Payment recorded successfully",
+            data: invoice
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message });
+    }
+};
+
+const remainingFees = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id, month, year, title, body } = req.body
+
+        const now = new Date();
+        if (!month) month = now.getMonth() + 1;
+        if (!year) year = now.getFullYear();
+
+        let school_id = req.user.id;
+
+        if (req.user.role == "principal") {
+            school_id = req.user.school_id;
+        }
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                school_id: school_id,
+                request_status: { [Op.in]: ["accepted", "feesPending"] }
+            }
+        });
+        if (!student) {
+            return res.status(400).json({ status: 0, message: "Student not found" });
+        }
+
+        const notiType = `remainder_fees`;
+        const message = {
+            title: title,
+            body: body
+        };
+
+        const Data = {
+            notification_by: req.user.id,
+            notification_to: student.parent_id,
+            notification_type: notiType,
+            body: message.body,
+            title: message.title,
+            school_id: school_id,
+        };
+
+        await send_notification(req.user.id, message, notiType, Data);
+        await db.Notification.create(Data);
+
+        return res.status(200).json({
+            status: 1,
+            message: "Remaining fees sent successfully",
+        });
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
+const listStudentFees = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { month, year, page, search, type } = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, message: 'page is required' });
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
+        let school_id = req.user.id;
+
+        if (req.user.role == "principal") {
+            school_id = req.user.school_id;
+        }
+        const now = new Date();
+        if (!month) month = now.getMonth() + 1;
+        if (!year) year = now.getFullYear();
+
+        let include = []
+        if (type == 1) {
+            include = [
+                {
+                    model: db.Invoice,
+                    as: "invoice",
+                    where: {
+                        month,
+                        year
+                    },
+                    required: true
+                }
+            ]
+        }
+        const whereCondition = {
+            school_id: school_id,
+            request_status: { [Op.in]: ["accepted", "feesPending"] }
+        };
+
+        if (search) {
+            whereCondition.full_name = { [Op.like]: `%${search}%` };
+        }
+
+        const student = await db.Student.findAndCountAll({
+            where: whereCondition,
+            attributes: {
+                include: [
+                    [
+                        db.sequelize.literal(`(SELECT COUNT(*) 
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year})`),
+                        'is_pay'
+                    ]
+                ]
+            },
+            include: include,
+            limit,
+            offset,
+            order: [['id', 'DESC']]
+        })
+
+        return res.status(200).json({
+            status: 1,
+            message: "student list get successfully",
+            data: student.rows,
+            total_student: student.count,
+            page: page,
+            total_page: Math.ceil(student.count / limit)
+        })
+
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
+const getInvoice = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id, month, year } = req.body
+        const now = new Date();
+        if (!month) month = now.getMonth() + 1;
+        if (!year) year = now.getFullYear();
+
+        let school_id = req.user.id;
+
+        if (req.user.role == "principal") {
+            school_id = req.user.school_id;
+        }
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                school_id: school_id,
+                request_status: { [Op.in]: ["accepted", "feesPending"] }
+            }
+        });
+        if (!student) {
+            return res.status(400).json({ status: 0, message: "Student not found" });
+        }
+        const invoice = await db.Invoice.findOne({
+            where: {
+                student_id,
+                school_id,
+                parent_id: student.school_id,
+                month: month,
+                year: year,
+            },
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.full_name
+                           FROM tbl_student t2
+                           WHERE t2.id = Invoice.student_id
+                        )`),
+                        'student_name',
+                    ],
+                ]
+            },
+        });
+        if (!invoice) {
+            return res.status(400).json({ status: 0, message: "Invoice not found" });
+        }
+        return res.status(200).json({
+            status: 1,
+            message: "Invoice get successfully",
+            data: invoice
+        })
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
+
+module.exports = {
+    blockStudent,
+    makePayment,
+    remainingFees,
+    listStudentFees,
+    getInvoice
+}

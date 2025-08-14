@@ -742,3 +742,53 @@ exports.getAttedanceCountValidation = () => {
         validation
     ];
 }
+
+exports.makePaymentValidation = () => {
+    return [
+        [
+            check('student_id').not().isEmpty().withMessage('student_id is required'),
+            check('month').not().isEmpty().withMessage('month is required'),
+            check('year').optional().not().isEmpty().withMessage('year is required'),
+        ],
+        validation
+    ];
+}
+
+exports.remainingFeesValidation = () => {
+    return [
+        [
+            check('student_id').not().isEmpty().withMessage('student_id is required'),
+            check('month').not().isEmpty().withMessage('month is required'),
+            check('year').optional().not().isEmpty().withMessage('year is required'),
+            check('title').not().isEmpty().withMessage('title is required'),
+            check('body').not().isEmpty().withMessage('body is required'),
+        ],
+        validation
+    ];
+}
+
+exports.getStudentFeesValidation = () => {
+    return [
+        [
+            check('month').not().isEmpty().withMessage('month is required'),
+            check('page').not().isEmpty().withMessage('page is required'),
+            check('year').optional().not().isEmpty().withMessage('year is required'),
+            check('search').optional().not().isEmpty().withMessage('search is required'),
+            check('type').optional().not().isEmpty().withMessage('type is required'),
+        ],
+        validation
+    ];
+}
+
+exports.getInvoiceValidation = () => {
+    return [
+        [
+            check('student_id').not().isEmpty().withMessage('student_id is required'),
+            check('month').not().isEmpty().withMessage('month is required'),
+            check('year').optional().not().isEmpty().withMessage('year is required'),
+        ],
+        validation
+    ];
+}
+
+

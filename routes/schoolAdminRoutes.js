@@ -21,12 +21,19 @@ const event = require("../controller/schoolAdmin/eventController")
 const sleep_loag = require("../controller/schoolAdmin/sleeplogsController")
 const menu = require("../controller/schoolAdmin/mealTrackController")
 const home = require("../controller/schoolAdmin/homeController")
+const fees = require("../controller/schoolAdmin/feesController")
 
 
 router.get('/deshbord_count',verifyToken, home.desbordCount);
 router.get('/birthday_count',verifyToken, home.birthdaysCount);
 
+router.post('/create_sos',verifyToken, home.createSos);
 
+router.post('/block_student', verifyToken, fees.blockStudent);
+router.post('/make_payment', verifyToken, schoolvalidator.makePaymentValidation(), fees.makePayment);
+router.post('/remaining_fees', verifyToken, schoolvalidator.remainingFeesValidation(), fees.remainingFees);
+router.get('/list_student_fees', verifyToken, schoolvalidator.getStudentFeesValidation(), fees.listStudentFees);
+router.get('/get_invoice', verifyToken, schoolvalidator.getInvoiceValidation(), fees.getInvoice);
 
 router.put('/edit_school_profile',verifyToken, schoolvalidator.updateSchoolValidation(), principal.editProfile);
 

@@ -172,6 +172,53 @@ const birthdaysCount = async (req, res) => {
     }
 };
 
+const createSos = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { sos_name } = req.body
+        if (!sos_name) {
+            return res.status(400).json({ status: 0, message: "sos_name is required" })
+        }
+        let school_id = req.user.id
+        if (req.user.role == "principal") {
+            school_id = req.user.school_id
+        }
+        const sos = await db.Sos.create({
+            sos_name: sos_name,
+            school_id: school_id
+        })
+        const users = await db.User.findAll({
+            where: {
+                school_id: school_id,
+                is_deleted: false,
+                is_blocked: false,
+            }
+        })
+        for (const user of users) {
+            const notiType = `sos`;
+            const message = {
+                title: `SOS Alert`,
+                body: `An SOS request from ${sos_name} has been triggered. Please check immediately.`
+            };
+            const Data = {
+                notification_by: req.user.id,
+                notification_to: user.id,
+                notification_type: notiType,
+                body: message.body,
+                title: message.title,
+                school_id: school_id,
+            };
+            await send_notification(user.id, message, notiType, Data);
+            await db.Notification.create(Data);
+        }
+        return res.status(200).json({ status: 1, message: "Sos created successfully", data: sos })
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
 
 
 
@@ -179,5 +226,6 @@ module.exports = {
     desbordCount,
     getProfile,
     birthdaysCount,
+    createSos
 }
 
