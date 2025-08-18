@@ -48,8 +48,8 @@ const start = async () => {
         console.log('Connection has been established successfully.');
         console.log("...........................................................................")
 
-        await db.SosType.sync({ alter : true });
-        await db.Sos.sync({ alter : true });
+        // await db.SosType.sync({ alter : true });
+        // await db.Sos.sync({ alter : true });
 
         server.listen(PORT, () => {
             console.log(`${projectName} is running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
