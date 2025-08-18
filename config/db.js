@@ -27,6 +27,7 @@ db.AddRole = require('../model/addRole')(sequelize, Sequelize, Model)
 db.Notification = require('../model/notification')(sequelize, Sequelize, Model)
 db.Sos = require('../model/sos')(sequelize, Sequelize, Model)
 db.Invoice = require('../model/invoice')(sequelize, Sequelize, Model)
+db.SosType = require('../model/sosType')(sequelize, Sequelize, Model)
 
 db.Student.hasMany(db.Invoice, {foreignKey: "student_id",as: "invoice"})
 db.Invoice.belongsTo(db.Student, {foreignKey: "student_id",as: "student"})

@@ -177,16 +177,24 @@ const createSos = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { sos_name } = req.body
-        if (!sos_name) {
-            return res.status(400).json({ status: 0, message: "sos_name is required" })
+        const { sos_type_id } = req.body
+        if (!sos_type_id) {
+            return res.status(400).json({ status: 0, message: "sos_type_id is required" })
         }
         let school_id = req.user.id
         if (req.user.role == "principal") {
             school_id = req.user.school_id
         }
+        const sosType = await db.SosType.findOne({
+            where: {
+                id: sos_type_id,
+            }
+        })
+        if (!sosType) {
+            return res.status(400).json({ status: 0, message: "Sos type not found" })
+        }
         const sos = await db.Sos.create({
-            sos_name: sos_name,
+            sos_type_id: sos_type_id,
             school_id: school_id
         })
         const users = await db.User.findAll({
@@ -200,7 +208,7 @@ const createSos = async (req, res) => {
             const notiType = `sos`;
             const message = {
                 title: `SOS Alert`,
-                body: `An SOS request from ${sos_name} has been triggered. Please check immediately.`
+                body: `An SOS request from ${sosType.sos_name} has been triggered. Please check immediately.`
             };
             const Data = {
                 notification_by: req.user.id,
@@ -220,12 +228,43 @@ const createSos = async (req, res) => {
     }
 }
 
+const getSos = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const sos = await db.SosType.findAll()
+        return res.status(200).json({ status: 1, message: "Sos retrieved successfully", data: sos })
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
+const addSosType = async (req, res) => {
+    try {
+        const { sos_name } = req.body
+        if (!sos_name) {
+            return res.status(400).json({ status: 0, message: "sos_name is required" })
+        }
+        const sosType = await db.SosType.create({
+            sos_name: sos_name
+        })
+        return res.status(200).json({ status: 1, message: "Sos type added successfully", data: sosType })
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
 
 
 module.exports = {
     desbordCount,
     getProfile,
     birthdaysCount,
-    createSos
+    createSos,
+    getSos,
+    addSosType
 }
 

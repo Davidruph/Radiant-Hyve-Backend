@@ -2,9 +2,16 @@ module.exports = (sequelize, DataTypes) => {
     const Sos = sequelize.define(
         'Sos',
         {
-            sos_name: {
-                type: DataTypes.STRING,
+            sos_type_id: {
+                type: DataTypes.INTEGER,
                 allowNull: true,
+                defaultValue: null,
+                references: {
+                    model: 'tbl_sos_type',
+                    key: 'id',
+                },
+                onUpdate: 'CASCADE',
+                onDelete: 'CASCADE',
             },
             school_id: {
                 type: DataTypes.INTEGER,
