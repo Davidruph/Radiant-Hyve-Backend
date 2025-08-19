@@ -95,83 +95,106 @@ const getProfile = async (req, res) => {
     }
 }
 
-const birthdaysCount = async (req, res) => {
+const homeCount = async (req, res) => {
     if (req.user.role !== "school") {
-        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
+        return res.status(403).json({
+            status: 0,
+            message: "You are not authorized to perform this action"
+        });
     }
 
     try {
         const { filter } = req.query;
-        const today = moment().format('MM-DD');
-        let dateCondition = {};
+        const schoolId = req.user.id;
 
-        if (filter === 'today') {
-            const today = moment().format('MM-DD');
-            dateCondition = {
-                [Op.and]: db.sequelize.where(
-                    db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), '%m-%d'),
-                    today
-                )
-            };
-        } else if (filter === 'week') {
-            const nextWeekDates = [...Array(7)].map((_, i) =>
-                moment().add(i, 'days').format('MM-DD')
+        const getDateRange = (type) => {
+            if (type === "today") {
+                return [moment().startOf("day").toDate(), moment().endOf("day").toDate()];
+            }
+            if (type === "week") {
+                return [moment().startOf("week").toDate(), moment().endOf("week").toDate()];
+            }
+            if (type === "month") {
+                return [moment().startOf("month").toDate(), moment().endOf("month").toDate()];
+            }
+            return null;
+        };
+
+        const getBirthdayCondition = (type) => {
+            const todayMD = moment().format("MM-DD");
+
+            if (type === "today") {
+                return db.sequelize.where(
+                    db.sequelize.fn("DATE_FORMAT", db.sequelize.col("dob"), "%m-%d"),
+                    todayMD
+                );
+            }
+
+            let end;
+            if (type === "week") {
+                end = moment().endOf("week").format("MM-DD");
+            } else if (type === "month") {
+                end = moment().endOf("month").format("MM-DD");
+            } else {
+                return null;
+            }
+
+            return db.sequelize.where(
+                db.sequelize.fn("DATE_FORMAT", db.sequelize.col("dob"), "%m-%d"),
+                { [Op.between]: [todayMD, end] }
             );
-            dateCondition = {
-                [Op.and]: db.sequelize.where(
-                    db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), '%m-%d'),
-                    { [Op.in]: nextWeekDates }
-                )
-            };
-            console.log("nextWeekDates", nextWeekDates);
-        } else if (filter === 'month') {
-            const nextMonthDates = [...Array(30)].map((_, i) =>
-                moment().add(i, 'days').format('MM-DD')
-            );
-            dateCondition = {
-                [Op.and]: db.sequelize.where(
-                    db.sequelize.fn('DATE_FORMAT', db.sequelize.col('dob'), '%m-%d'),
-                    { [Op.in]: nextMonthDates }
-                )
-            };
-            console.log("nextMonthDates", nextMonthDates);
-        } else {
-            return res.status(400).json({ status: 0, message: "Invalid filter type. Use 'today', 'week', or 'month'." });
+        };
+
+        if (!["today", "week", "month"].includes(filter)) {
+            return res.status(400).json({
+                status: 0,
+                message: "Invalid filter type. Use 'today', 'week', or 'month'."
+            });
         }
 
-        const birthdayCount = await db.User.count({
-            where: {
-                ...dateCondition,
-                school_id: req.user.id,
-                is_deleted: false,
-                is_blocked: false,
-                role: {
-                    [Op.in]: ['teacher', 'principal']
-                },
-            }
-        });
+        const [startDate, endDate] = getDateRange(filter);
+        const birthdayCondition = getBirthdayCondition(filter);
 
-        const studentCount = await db.Student.count({
-            where: {
-                ...dateCondition,
-                school_id: req.user.id,
-                request_status: 'accepted',
-            }
-        });
+        const invoiceCondition = { school_id: schoolId, createdAt: { [Op.between]: [startDate, endDate] } };
+        const sosCondition = { school_id: schoolId, createdAt: { [Op.between]: [startDate, endDate] } };
 
-        const totalCount = parseInt(birthdayCount) + parseInt(studentCount);
+        // 🔹 Run queries in parallel
+        const [birthdayCount, studentCount, invoiceCount, sosCount] = await Promise.all([
+            db.User.count({
+                where: {
+                    school_id: schoolId,
+                    is_deleted: false,
+                    is_blocked: false,
+                    role: { [Op.in]: ["teacher", "principal"] },
+                    [Op.and]: birthdayCondition
+                }
+            }),
+            db.Student.count({
+                where: { school_id: schoolId, request_status: "accepted" , [Op.and]: birthdayCondition}
+            }),
+            db.Invoice.count({ where: invoiceCondition }),
+            db.Sos.count({ where: sosCondition })
+        ]);
 
         return res.status(200).json({
             status: 1,
             message: "Count retrieved successfully",
-            birthday_count: totalCount
+            birthday_count: birthdayCount + studentCount,
+            invoice_count: invoiceCount,
+            sos_count: sosCount,
         });
 
     } catch (error) {
-        console.error('Error:', error);
-        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+        console.error("Error:", error);
+        return res.status(500).json({
+            status: 0,
+            message: "Internal server error",
+            error: error.message
+        });
     }
 };
+
+
 
 const createSos = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
@@ -301,7 +324,7 @@ const listSos = async (req, res) => {
 module.exports = {
     desbordCount,
     getProfile,
-    birthdaysCount,
+    homeCount,
     createSos,
     getSos,
     addSosType,

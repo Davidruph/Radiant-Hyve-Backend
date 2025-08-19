@@ -116,7 +116,7 @@ const makePayment = async (req, res) => {
             school_id: school_id,
         };
 
-        await send_notification(req.user.id, message, notiType, Data);
+        await send_notification(student.parent_id, message, notiType, Data);
         await db.Notification.create(Data);
 
         return res.status(200).json({
@@ -172,7 +172,7 @@ const remainingFees = async (req, res) => {
             school_id: school_id,
         };
 
-        await send_notification(req.user.id, message, notiType, Data);
+        await send_notification(student.parent_id, message, notiType, Data);
         await db.Notification.create(Data);
 
         return res.status(200).json({

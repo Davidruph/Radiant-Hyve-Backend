@@ -25,7 +25,7 @@ const fees = require("../controller/schoolAdmin/feesController")
 
 
 router.get('/deshbord_count',verifyToken, home.desbordCount);
-router.get('/birthday_count',verifyToken, home.birthdaysCount);
+router.get('/birthday_count',verifyToken, home.homeCount);
 
 router.post('/create_sos',verifyToken, home.createSos);
 router.get('/get_sos',verifyToken, home.getSos);
