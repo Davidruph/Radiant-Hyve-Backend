@@ -200,6 +200,7 @@ const createSos = async (req, res) => {
         })
         const users = await db.User.findAll({
             where: {
+                id: { [Op.in]: [req.user.id] },
                 school_id: school_id,
                 is_deleted: false,
                 is_blocked: false,
@@ -258,6 +259,43 @@ const addSosType = async (req, res) => {
     }
 }
 
+const listSos = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page } = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, message: "page is required" })
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
+        const sos = await db.Sos.findAll({
+            where: {
+                school_id: req.user.id
+            },
+            attributes:{
+                include:[
+                    [
+                        Sequelize.literal(`(
+                           SELECT t2.sos_name
+                           FROM tbl_sos_type t2
+                           WHERE t2.id = Sos.sos_type_id
+                        )`),
+                        'sos_name',
+                    ],
+                ]
+
+            },
+            limit: limit,
+            offset: offset
+        })
+        return res.status(200).json({ status: 1, message: "Sos retrieved successfully", data: sos })
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
 
 
 module.exports = {
@@ -266,6 +304,7 @@ module.exports = {
     birthdaysCount,
     createSos,
     getSos,
-    addSosType
+    addSosType,
+    listSos
 }
 

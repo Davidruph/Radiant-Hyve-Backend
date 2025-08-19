@@ -30,6 +30,7 @@ router.get('/birthday_count',verifyToken, home.birthdaysCount);
 router.post('/create_sos',verifyToken, home.createSos);
 router.get('/get_sos',verifyToken, home.getSos);
 router.post('/add_sos_type',verifyToken, home.addSosType);
+router.get('/list_sos',verifyToken, home.listSos);
 
 router.post('/block_student', verifyToken, fees.blockStudent);
 router.post('/make_payment', verifyToken, schoolvalidator.makePaymentValidation(), fees.makePayment);
