@@ -770,7 +770,7 @@ exports.remainingFeesValidation = () => {
 exports.getStudentFeesValidation = () => {
     return [
         [
-            check('month').not().isEmpty().withMessage('month is required'),
+            check('month').optional().not().isEmpty().withMessage('month is required'),
             check('page').not().isEmpty().withMessage('page is required'),
             check('year').optional().not().isEmpty().withMessage('year is required'),
             check('search').optional().not().isEmpty().withMessage('search is required'),
@@ -780,15 +780,5 @@ exports.getStudentFeesValidation = () => {
     ];
 }
 
-exports.getInvoiceValidation = () => {
-    return [
-        [
-            check('student_id').not().isEmpty().withMessage('student_id is required'),
-            check('month').not().isEmpty().withMessage('month is required'),
-            check('year').optional().not().isEmpty().withMessage('year is required'),
-        ],
-        validation
-    ];
-}
 
 

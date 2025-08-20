@@ -36,7 +36,7 @@ router.post('/block_student', verifyToken, fees.blockStudent);
 router.post('/make_payment', verifyToken, schoolvalidator.makePaymentValidation(), fees.makePayment);
 router.post('/remaining_fees', verifyToken, schoolvalidator.remainingFeesValidation(), fees.remainingFees);
 router.get('/list_student_fees', verifyToken, schoolvalidator.getStudentFeesValidation(), fees.listStudentFees);
-router.get('/get_invoice', verifyToken, schoolvalidator.getInvoiceValidation(), fees.getInvoice);
+router.get('/get_invoice', verifyToken,  fees.getInvoice);
 
 router.put('/edit_school_profile',verifyToken, schoolvalidator.updateSchoolValidation(), principal.editProfile);
 

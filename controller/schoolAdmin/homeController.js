@@ -23,6 +23,7 @@ const desbordCount = async (req, res) => {
         const staff = await db.User.count({ where: { school_id: req.user.id, role: "teacher", is_deleted: false } })
         const parent = await db.User.count({ where: { school_id: req.user.id, role: "parent", is_deleted: false } })
         const student = await db.Student.count({ where: { school_id: req.user.id, request_status: 'accepted' } })
+        const total_earning = await db.Invoice.sum('total_fees', { where: { school_id: req.user.id } })
 
         const today = moment();
         const nextMonth = moment().add(1, 'months');
@@ -59,7 +60,8 @@ const desbordCount = async (req, res) => {
                 total_staff: staff,
                 total_parent: parent,
                 total_student: student,
-                total_upcoming_birthday: upcomingBirthday
+                total_upcoming_birthday: upcomingBirthday,
+                total_earning: parseFloat(total_earning).toFixed(2)
             }
         })
 
@@ -170,7 +172,7 @@ const homeCount = async (req, res) => {
                 }
             }),
             db.Student.count({
-                where: { school_id: schoolId, request_status: "accepted" , [Op.and]: birthdayCondition}
+                where: { school_id: schoolId, request_status: "accepted", [Op.and]: birthdayCondition }
             }),
             db.Invoice.count({ where: invoiceCondition }),
             db.Sos.count({ where: sosCondition })
@@ -293,12 +295,12 @@ const listSos = async (req, res) => {
         }
         const limit = 10
         const offset = (page - 1) * limit
-        const sos = await db.Sos.findAll({
+        const sos = await db.Sos.findAndCountAll({
             where: {
                 school_id: req.user.id
             },
-            attributes:{
-                include:[
+            attributes: {
+                include: [
                     [
                         Sequelize.literal(`(
                            SELECT t2.sos_name
@@ -308,12 +310,18 @@ const listSos = async (req, res) => {
                         'sos_name',
                     ],
                 ]
-
             },
             limit: limit,
             offset: offset
         })
-        return res.status(200).json({ status: 1, message: "Sos retrieved successfully", data: sos })
+        return res.status(200).json({
+            status: 1,
+            message: "Sos retrieved successfully",
+            data: sos.rows,
+            total_sos: sos.count,
+            page: page,
+            total_page: Math.ceil(sos.count / limit)
+        })
     } catch (error) {
         console.error('Error:', error)
         return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })

@@ -83,7 +83,8 @@ const makePayment = async (req, res) => {
 
         const shift = await db.Shift.findByPk(student.shift_id);
 
-        const invoice = await db.Invoice.findOne({
+        let invoice = {}
+        invoice = await db.Invoice.findOne({
             where: {
                 student_id,
                 school_id,
@@ -93,6 +94,19 @@ const makePayment = async (req, res) => {
                 total_fees: shift.shift_fee
             }
         });
+
+        if (invoice) {
+            return res.status(400).json({ status: 0, message: "This student already paid the fees for this month" });
+        } else {
+            invoice = await db.Invoice.create({
+                student_id,
+                school_id,
+                parent_id: student.school_id,
+                month: month,
+                year: year,
+                total_fees: shift.shift_fee
+            })
+        }
 
         // Month number to word mapping
         const monthNames = [
@@ -187,10 +201,10 @@ const remainingFees = async (req, res) => {
 
 const listStudentFees = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { month, year, page, search, type } = req.query
+        let { month, year, page, search, type } = req.query
         if (!page) {
             return res.status(400).json({ status: 0, message: 'page is required' });
         }
@@ -205,20 +219,6 @@ const listStudentFees = async (req, res) => {
         if (!month) month = now.getMonth() + 1;
         if (!year) year = now.getFullYear();
 
-        let include = []
-        if (type == 1) {
-            include = [
-                {
-                    model: db.Invoice,
-                    as: "invoice",
-                    where: {
-                        month,
-                        year
-                    },
-                    required: true
-                }
-            ]
-        }
         const whereCondition = {
             school_id: school_id,
             request_status: { [Op.in]: ["accepted", "feesPending"] }
@@ -227,27 +227,64 @@ const listStudentFees = async (req, res) => {
         if (search) {
             whereCondition.full_name = { [Op.like]: `%${search}%` };
         }
+        if (type == 1) {
+            whereCondition[Op.and] = db.sequelize.literal(`(
+                SELECT COUNT(*) 
+                FROM tbl_invoice t1 
+                WHERE t1.student_id = Student.id 
+                AND t1.month = ${month} 
+                AND t1.year = ${year}
+            ) > 0`);
+        } else if (type == 0) {
+            whereCondition[Op.and] = db.sequelize.literal(`(
+                SELECT COUNT(*) 
+                FROM tbl_invoice t1 
+                WHERE t1.student_id = Student.id 
+                AND t1.month = ${month} 
+                AND t1.year = ${year}
+            ) = 0`);
+        }
+
 
         const student = await db.Student.findAndCountAll({
             where: whereCondition,
             attributes: {
                 include: [
                     [
-                        db.sequelize.literal(`(SELECT COUNT(*) 
+                        db.sequelize.literal(`(
+                            SELECT t1.shift_fee 
+                            FROM tbl_shift t1 
+                            WHERE t1.id = Student.shift_id
+                        )`),
+                        'shift_fee'
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT COUNT(*) 
                             FROM tbl_invoice t1 
                             WHERE t1.student_id = Student.id 
                             AND t1.month = ${month} 
-                            AND t1.year = ${year})`),
+                            AND t1.year = ${year}
+                        )`),
                         'is_pay'
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.id
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year}
+                        )`),
+                        'invoice_id'
                     ]
                 ]
             },
-            include: include,
             limit,
             offset,
-            order: [['id', 'DESC']]
-        })
-
+            order: [['id', 'DESC']],
+        });
+        
         return res.status(200).json({
             status: 1,
             message: "student list get successfully",
@@ -268,46 +305,34 @@ const getInvoice = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { student_id, month, year } = req.body
-        const now = new Date();
-        if (!month) month = now.getMonth() + 1;
-        if (!year) year = now.getFullYear();
+        const { invoice_id } = req.query
+        if (!invoice_id) {
+            return res.status(400).json({ status: 0, message: "invoice_id is required" });
+        }
 
         let school_id = req.user.id;
 
         if (req.user.role == "principal") {
             school_id = req.user.school_id;
         }
-        const student = await db.Student.findOne({
-            where: {
-                id: student_id,
-                school_id: school_id,
-                request_status: { [Op.in]: ["accepted", "feesPending"] }
-            }
-        });
-        if (!student) {
-            return res.status(400).json({ status: 0, message: "Student not found" });
-        }
+
         const invoice = await db.Invoice.findOne({
             where: {
-                student_id,
-                school_id,
-                parent_id: student.school_id,
-                month: month,
-                year: year,
+                id: invoice_id,
+                school_id: school_id
             },
             attributes: {
                 include: [
                     [
-                        Sequelize.literal(`(
-                           SELECT t2.full_name
-                           FROM tbl_student t2
-                           WHERE t2.id = Invoice.student_id
+                        db.sequelize.literal(`(
+                            SELECT t1.full_name 
+                            FROM tbl_student t1 
+                            WHERE t1.id = Invoice.student_id
                         )`),
-                        'student_name',
-                    ],
+                        'student_name'
+                    ]
                 ]
-            },
+            }
         });
         if (!invoice) {
             return res.status(400).json({ status: 0, message: "Invoice not found" });
