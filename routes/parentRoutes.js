@@ -26,8 +26,8 @@ router.put('/edit_profile_parent',verifyToken, imageUpload, validation.editparen
 
 router.get('/list_student_attedance_parent',verifyToken, parent.getStudentAttedance);
 
-router.get('/list_student_invoice',verifyToken, student.listStudentFees);
-router.get('/list_student_fees',verifyToken, student.listStudent);
+router.get('/list_students_invoice',verifyToken, student.listStudentFees);
+router.get('/list_students_fees',verifyToken, student.listStudent);
 
 
 module.exports = router; 
