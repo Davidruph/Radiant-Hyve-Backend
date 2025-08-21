@@ -84,7 +84,7 @@ const getAllStudent = async (req, res) => {
 
         const whereClause = {
             school_id,
-            request_status: 'accepted',
+            request_status: { [Op.or]: ['accepted', 'feesPending'] },
         };
 
         if (shift_id && parseInt(shift_id) !== 0) {
