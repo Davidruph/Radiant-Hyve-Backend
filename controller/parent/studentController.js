@@ -214,7 +214,99 @@ const delteStudent = async (req, res) => {
 
 }
 
+const listStudent = async (req, res) => {
+    try{
+        const { page } = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, message: 'page is required' })
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
 
+        const student = await db.Student.findAndCountAll({
+            where: {
+                school_id: req.user.school_id,
+                parent_id: req.user.id,
+                request_status: {
+                    [Op.or]: ['accepted', 'feesPending']
+                }
+            },
+            attributes:{
+                include:[
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.shift_fee 
+                            FROM tbl_shift t1 
+                            WHERE t1.id = Student.shift_id
+                        )`),
+                        'shift_fee'
+                    ],
+                ]
+            },
+            limit,
+            offset,
+            order: [['id', 'DESC']],
+        })
+
+        return res.status(200).json({ status: 1, message: 'Student list', data: student.rows, current_page: page, total_page: Math.ceil(student.count / limit) })
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const listStudentFees = async (req, res) => {
+    try{
+        const { page, student_id } = req.query
+        if (!page || !student_id) {
+            return res.status(400).json({ status: 0, message: 'page and student_id is required' })
+        }
+
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                school_id: req.user.school_id,
+                parent_id: req.user.id,
+                request_status: {
+                    [Op.or]: ['accepted', 'feesPending']
+                }
+            }
+        })
+        
+        if (!student) {
+            return res.status(404).json({ status: 0, message: 'Student not found' })
+        }
+
+        const limit = 10
+        const offset = (page - 1) * limit
+        const invoice = await db.Invoice.findAndCountAll({
+            where: {
+                student_id: student_id,
+                school_id: req.user.school_id
+            },
+            attributes:{
+                include:[
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.full_name 
+                            FROM tbl_student t1 
+                            WHERE t1.id = ${student_id}
+                        )`),
+                        'student_name'
+                    ],
+                ]
+            },
+            limit,
+            offset,
+            order: [['id', 'DESC']],
+        })
+
+        return res.status(200).json({ status: 1, message: 'Student fees list', data: invoice.rows, current_page: page, total_page: Math.ceil(invoice.count / limit) })
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
 
 
 
@@ -224,4 +316,6 @@ module.exports = {
     delteStudent,
     createStudent,
     editStudent,
+    listStudent,
+    listStudentFees
 }
