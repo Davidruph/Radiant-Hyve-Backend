@@ -8,6 +8,7 @@ const { error } = require('console');
 const { upload_file, deleteFromS3, uploadVideo } = require("../../helpers/s3_upload");
 const { send_notification } = require('../../helpers/notification')
 const moment = require('moment');
+const { log } = require('winston');
 
 
 const blockStudent = async (req, res) => {
@@ -234,6 +235,9 @@ const listStudentFees = async (req, res) => {
                 WHERE t1.student_id = Student.id 
                 AND t1.month = ${month} 
                 AND t1.year = ${year}
+                 ORDER BY t1.id DESC
+ LIMIT 1
+
             ) > 0`);
         } else if (type == 0) {
             whereCondition[Op.and] = db.sequelize.literal(`(
@@ -242,8 +246,14 @@ const listStudentFees = async (req, res) => {
                 WHERE t1.student_id = Student.id 
                 AND t1.month = ${month} 
                 AND t1.year = ${year}
+                 ORDER BY t1.id DESC
+ LIMIT 1
+
             ) = 0`);
         }
+        console.log("month==============", month);
+        console.log("year==============", year);
+        console.log("whereCondition==============", whereCondition);
 
 
         const student = await db.Student.findAndCountAll({
@@ -275,6 +285,9 @@ const listStudentFees = async (req, res) => {
                             WHERE t1.student_id = Student.id 
                             AND t1.month = ${month} 
                             AND t1.year = ${year}
+                             ORDER BY t1.id DESC
+ LIMIT 1
+
                         )`),
                         'invoice_id'
                     ]
