@@ -88,7 +88,7 @@ const makePayment = async (req, res) => {
             where: {
                 student_id,
                 school_id,
-                parent_id: student.school_id,
+                parent_id: student.parent_id,
                 month: month,
                 year: year,
                 total_fees: shift.shift_fee
@@ -101,7 +101,7 @@ const makePayment = async (req, res) => {
             invoice = await db.Invoice.create({
                 student_id,
                 school_id,
-                parent_id: student.school_id,
+                parent_id: student.parent_id,
                 month: month,
                 year: year,
                 total_fees: shift.shift_fee
