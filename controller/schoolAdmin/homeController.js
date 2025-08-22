@@ -225,7 +225,7 @@ const createSos = async (req, res) => {
         })
         const users = await db.User.findAll({
             where: {
-                id: { [Op.in]: [req.user.id] },
+                id: { [Op.ne]: req.user.id },
                 school_id: school_id,
                 is_deleted: false,
                 is_blocked: false,
