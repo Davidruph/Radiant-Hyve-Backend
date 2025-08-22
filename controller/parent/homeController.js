@@ -202,7 +202,7 @@ const studentDetails = async (req, res) => {
         const student = await db.Student.findOne({
             where: {
                 parent_id: req.user.id,
-                request_status: "accepted"
+                request_status: { [Op.or]: ["accepted", "feesPending"] }
             },
         })
 
