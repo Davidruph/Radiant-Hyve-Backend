@@ -79,6 +79,14 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT('long'),
                 allowNull: true,
             },
+            latitude: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            longitude: {
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
             about_staff: {
                 type: DataTypes.TEXT('long'),
                 allowNull: true,

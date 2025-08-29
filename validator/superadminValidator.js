@@ -48,6 +48,8 @@ exports.addSchoolValidation = () => {
             check('name').not().isEmpty().withMessage('School Name is required'),
             check('email').not().isEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
             check('address').not().isEmpty().withMessage('address is required'),
+            check('latitude').not().isEmpty().withMessage('latitude is required'),
+            check('longitude').not().isEmpty().withMessage('longitude is required'),
         ],
         validation
     ];
@@ -59,6 +61,8 @@ exports.updateSchoolValidation = () => {
             check('name').optional().not().isEmpty().withMessage('School Name is required'),
             check('address').optional().not().isEmpty().withMessage('address is required'),
             check('id').not().isEmpty().withMessage('School id is required'),
+            check('latitude').optional().not().isEmpty().withMessage('latitude is required'),
+            check('longitude').optional().not().isEmpty().withMessage('longitude is required'),
         ],
         validation
     ];

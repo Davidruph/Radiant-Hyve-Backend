@@ -25,7 +25,7 @@ const addSchool = async (req, res) => {
     if (req.user.role != "super_admin") {
         return res.status(401).json({ message: "Unauthorized" })
     }
-    const { name, email, address } = req.body;
+    const { name, email, address, latitude, longitude } = req.body;
 
     try {
         const existingUser = await db.User.findOne({ where: { email, is_deleted: false, } })
@@ -42,6 +42,8 @@ const addSchool = async (req, res) => {
             password: hashedPassword,
             address,
             role: 'school',
+            latitude,
+            longitude
         });
 
         await user.update({
@@ -103,7 +105,7 @@ const editSchool = async (req, res) => {
     if (req.user.role != "super_admin") {
         return res.status(401).json({ message: "Unauthorized" })
     }
-    const { name, address, id } = req.body;
+    const { name, address, latitude, longitude, id } = req.body;
 
     try {
         const school = await db.User.findOne({
@@ -120,6 +122,8 @@ const editSchool = async (req, res) => {
 
         school.school_name = name || school.school_name;
         school.address = address || school.address;
+        school.latitude = latitude || school.latitude;
+        school.longitude = longitude || school.longitude;
 
         await school.save();
 
