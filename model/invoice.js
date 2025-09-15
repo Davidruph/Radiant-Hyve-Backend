@@ -42,7 +42,15 @@ module.exports = (sequelize, DataTypes) => {
             year:{
                 type: DataTypes.INTEGER,
                 allowNull: true,
-            }
+            },
+            comment:{
+                type: DataTypes.TEXT('long'),
+                allowNull: true,
+            },
+            payment_type:{
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
         }, {
         tableName: 'tbl_invoice',
         timestamps: true

@@ -61,7 +61,15 @@ module.exports = (sequelize, DataTypes) => {
             is_submitted: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: false,
-            }
+            },
+            parent_name:{
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
+            relation_to_child:{
+                type: DataTypes.STRING,
+                allowNull: true,
+            },
         },
         {
             tableName: "tbl_student_attendance",

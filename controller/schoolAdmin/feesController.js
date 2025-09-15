@@ -56,7 +56,7 @@ const makePayment = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        let { student_id, month, year } = req.body;
+        let { student_id, month, year , comment, payment_type} = req.body;
         let school_id = req.user.id;
 
         if (req.user.role == "principal") {
@@ -105,7 +105,9 @@ const makePayment = async (req, res) => {
                 parent_id: student.parent_id,
                 month: month,
                 year: year,
-                total_fees: shift.shift_fee
+                total_fees: shift.shift_fee,
+                comment: comment,
+                payment_type: payment_type
             })
         }
 

@@ -749,6 +749,8 @@ exports.makePaymentValidation = () => {
             check('student_id').not().isEmpty().withMessage('student_id is required'),
             check('month').not().isEmpty().withMessage('month is required'),
             check('year').optional().not().isEmpty().withMessage('year is required'),
+            check('comment').optional().not().isEmpty().withMessage('comment is required'),
+            check('payment_type').optional().not().isEmpty().withMessage('payment_type is required'),
         ],
         validation
     ];

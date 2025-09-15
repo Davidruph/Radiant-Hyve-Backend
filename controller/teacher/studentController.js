@@ -20,7 +20,7 @@ const studentAttendance = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { student_id, attendance_status } = req.body;
+        const { student_id, attendance_status, parent_name, relation_to_child } = req.body;
 
         const student = await db.Student.findOne({
             where: {
@@ -51,7 +51,7 @@ const studentAttendance = async (req, res) => {
         }
 
         if (attendance && attendance_status == "out") {
-            await attendance.update({ out_time: moment().toDate(), is_out: true })
+            await attendance.update({ out_time: moment().toDate(), is_out: true, parent_name: parent_name, relation_to_child: relation_to_child })
         }
 
         if (attendance && (attendance_status === 'present' || attendance_status === 'absent')) {

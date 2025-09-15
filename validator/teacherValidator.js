@@ -137,7 +137,8 @@ exports.studeneAttedanceValidation = () => {
             check('student_id').not().isEmpty().withMessage('student_id is required'),
             check("attendance_status").not().isEmpty().withMessage("attendance_status is required")
                 .isIn(['out', 'present', 'absent']).withMessage("Invalid attendance_status, valid attendance_status are: 'out', 'present', 'absent'"),
-
+            check('parent_name').optional().not().isEmpty().withMessage('parent_name is required'),
+            check('relation_to_child').optional().not().isEmpty().withMessage('relation_to_child is required'),
         ],
         validation
     ];
