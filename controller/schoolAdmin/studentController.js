@@ -691,6 +691,59 @@ const listTeacherStudent = async (req, res) => {
 
 }
 
+const listInvoice = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { month, year } = req.query
+
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
+
+        const invoice = await db.Invoice.findAll({
+            where: {
+                school_id,
+                month,
+                year
+            },
+            attributes: {
+                include: [
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.full_name 
+                            FROM tbl_student t1 
+                            WHERE t1.id = Invoice.student_id
+                        )`),
+                        'student_name'
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.parent_name 
+                            FROM tbl_user t1 
+                            WHERE t1.id = Invoice.parent_id
+                        )`),
+                        'parent_name'
+                    ]
+                ]
+            }
+        })
+
+        return res.status(200).json({ status: 1, message: "Invoice get successfully", data: invoice })
+
+    }
+    catch (error) {
+        console.error('Error get student:', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
 
 module.exports = {
     getNewStudent,
@@ -703,5 +756,7 @@ module.exports = {
     listWaitingStudent,
     studentAttendance,
     listParantStudent,
-    listTeacherStudent
+    listTeacherStudent,
+
+    listInvoice
 }

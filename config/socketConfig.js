@@ -209,8 +209,6 @@ function socketConfig(io) {
             }
         });
 
-
-
         socket.on("join_room", async function (data) {
             console.log("join_room called", data);
             var user_id = data.user_id;
