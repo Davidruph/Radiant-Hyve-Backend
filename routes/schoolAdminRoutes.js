@@ -34,6 +34,8 @@ router.get('/list_sos',verifyToken, home.listSos);
 
 router.get('/list_invoice', verifyToken, student.listInvoice);
 
+router.post('/notification', verifyToken, home.notification);
+
 router.post('/block_student', verifyToken, fees.blockStudent);
 router.post('/make_payment', verifyToken, schoolvalidator.makePaymentValidation(), fees.makePayment);
 router.post('/remaining_fees', verifyToken, schoolvalidator.remainingFeesValidation(), fees.remainingFees);

@@ -328,6 +328,74 @@ const listSos = async (req, res) => {
     }
 }
 
+const notification = async (req, res) => {
+    try {
+        const { parent_ids, title, description } = req.body;
+        if ( !title || !description) {
+            return res.status(400).json({ status: 0, message: "title and description are required" });
+        }
+
+        let users = [];
+
+        if (parent_ids) {
+            const userIds = parent_ids.split(',').map(id => parseInt(id.trim()));
+
+            if (userIds.length === 0) {
+                return res.status(400).json({ status: 0, message: 'Please select at least one user.' });
+            }
+
+            users = await db.User.findAll({
+                where: {
+                    id: userIds,
+                    role: "parent",
+                    is_deleted: false,
+                    is_blocked: false,
+                    school_id: req.user.id
+                }
+            });
+
+            if (users.length !== userIds.length) {
+                return res.status(400).json({ status: 0, message: 'One or more users are invalid.' });
+            }
+        } else {
+            users = await db.User.findAll({
+                where: {
+                    is_deleted: false,
+                    role: "parent",
+                    is_blocked: false,
+                    school_id: req.user.id
+                }
+            });
+        }
+
+        const notiType = "By_admin";
+        const message = {
+            title: title,
+            body: description
+        };
+
+        await Promise.all(users.map(async (u) => {
+            const notificationData = {
+                notification_by: req.user.id,
+                notification_to: u.id,
+                notification_type: notiType,
+                notification_status: "Unread",
+                title: message.title,
+                body: message.body,
+            };
+
+            await db.Notification.create(notificationData);
+            await send_notification(notificationData.notification_to, message, notiType, notificationData);
+        }));
+
+        res.status(200).json({ status: 1, message: "Notification sent successfully." });
+
+    } catch (error) {
+        console.log("Error in sending notification:", error);
+        res.status(500).json({ status: 0, message: "An error occurred.", error: error.message });
+    }
+}
+
 
 module.exports = {
     desbordCount,
@@ -336,6 +404,8 @@ module.exports = {
     createSos,
     getSos,
     addSosType,
-    listSos
+    listSos,
+
+    notification
 }
 
