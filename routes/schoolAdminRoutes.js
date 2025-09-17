@@ -33,14 +33,17 @@ router.post('/add_sos_type',verifyToken, home.addSosType);
 router.get('/list_sos',verifyToken, home.listSos);
 
 router.get('/list_invoice', verifyToken, student.listInvoice);
+router.get('/list_student_fees_history', verifyToken, fees.listStudentFeesHistory);
+router.post('/admin_notification', verifyToken, home.notification);
+router.get('/get_parent_admin', verifyToken, home.getParent);
 
-router.post('/notification', verifyToken, home.notification);
 
 router.post('/block_student', verifyToken, fees.blockStudent);
 router.post('/make_payment', verifyToken, schoolvalidator.makePaymentValidation(), fees.makePayment);
 router.post('/remaining_fees', verifyToken, schoolvalidator.remainingFeesValidation(), fees.remainingFees);
 router.get('/list_student_fees', verifyToken, schoolvalidator.getStudentFeesValidation(), fees.listStudentFees);
 router.get('/get_invoice', verifyToken,  fees.getInvoice);
+
 
 router.put('/edit_school_profile',verifyToken, schoolvalidator.updateSchoolValidation(), principal.editProfile);
 

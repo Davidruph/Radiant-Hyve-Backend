@@ -336,17 +336,12 @@ const notification = async (req, res) => {
         }
 
         let users = [];
-
-        if (parent_ids) {
-            const userIds = parent_ids.split(',').map(id => parseInt(id.trim()));
-
-            if (userIds.length === 0) {
-                return res.status(400).json({ status: 0, message: 'Please select at least one user.' });
-            }
-
+        console.log("req.user=============================", req.body)
+        
+        if (parent_ids && parent_ids.length > 0) {
             users = await db.User.findAll({
                 where: {
-                    id: userIds,
+                    id: { [Op.in]: parent_ids },
                     role: "parent",
                     is_deleted: false,
                     is_blocked: false,
@@ -354,7 +349,7 @@ const notification = async (req, res) => {
                 }
             });
 
-            if (users.length !== userIds.length) {
+            if (users.length !== parent_ids.length) {
                 return res.status(400).json({ status: 0, message: 'One or more users are invalid.' });
             }
         } else {
@@ -367,6 +362,9 @@ const notification = async (req, res) => {
                 }
             });
         }
+        console.log("users=============================", users.map(u => u.id))
+        console.log("req.user.id=============================", req.user.id)
+        console.log("notiType=============================", users.length)
 
         const notiType = "By_admin";
         const message = {
@@ -396,6 +394,20 @@ const notification = async (req, res) => {
     }
 }
 
+const getParent = async (req, res) => {
+    try {
+        const parent = await db.User.findAll({
+            where: { role: "parent", is_deleted: false, is_blocked: false, school_id: req.user.id }
+        })
+        return res.status(200).json({ status: 1, message: "Parent retrieved successfully", data: parent })
+    }
+    catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
+
 
 module.exports = {
     desbordCount,
@@ -406,6 +418,7 @@ module.exports = {
     addSosType,
     listSos,
 
-    notification
+    notification,
+    getParent
 }
 

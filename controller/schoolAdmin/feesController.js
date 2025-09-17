@@ -288,10 +288,21 @@ const listStudentFees = async (req, res) => {
                             AND t1.month = ${month} 
                             AND t1.year = ${year}
                              ORDER BY t1.id DESC
- LIMIT 1
-
+                             LIMIT 1
                         )`),
                         'invoice_id'
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.payment_type
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year}
+                             ORDER BY t1.id DESC
+                            LIMIT 1
+                        )`),
+                        'payment_type'
                     ]
                 ]
             },
@@ -363,11 +374,121 @@ const getInvoice = async (req, res) => {
     }
 }
 
+const listStudentFeesHistory = async (req, res) => {
+    if (req.user.role != "school" && req.user.role != "principal") {
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        let { month, year, type } = req.query
+      
+        let school_id = req.user.id;
+
+        if (req.user.role == "principal") {
+            school_id = req.user.school_id;
+        }
+        const now = new Date();
+        if (!month) month = now.getMonth() + 1;
+        if (!year) year = now.getFullYear();
+
+        const whereCondition = {
+            school_id: school_id,
+            request_status: { [Op.in]: ["accepted", "feesPending"] }
+        };
+
+        if (type == 1) {
+            whereCondition[Op.and] = db.sequelize.literal(`(
+                SELECT COUNT(*) 
+                FROM tbl_invoice t1 
+                WHERE t1.student_id = Student.id 
+                AND t1.month = ${month} 
+                AND t1.year = ${year}
+                 ORDER BY t1.id DESC
+ LIMIT 1
+
+            ) > 0`);
+        } else if (type == 0) {
+            whereCondition[Op.and] = db.sequelize.literal(`(
+                SELECT COUNT(*) 
+                FROM tbl_invoice t1 
+                WHERE t1.student_id = Student.id 
+                AND t1.month = ${month} 
+                AND t1.year = ${year}
+                 ORDER BY t1.id DESC
+ LIMIT 1
+
+            ) = 0`);
+        }
+
+        const student = await db.Student.findAndCountAll({
+            where: whereCondition,
+            attributes: {
+                include: [
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.shift_fee 
+                            FROM tbl_shift t1 
+                            WHERE t1.id = Student.shift_id
+                        )`),
+                        'shift_fee'
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT COUNT(*) 
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year}
+                        )`),
+                        'is_pay'
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.id
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year}
+                             ORDER BY t1.id DESC
+                             LIMIT 1
+                        )`),
+                        'invoice_id'
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.payment_type
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year}
+                             ORDER BY t1.id DESC
+                            LIMIT 1
+                        )`),
+                        'payment_type'
+                    ]
+                ]
+            },
+            order: [['id', 'DESC']],
+        });
+        
+        return res.status(200).json({
+            status: 1,
+            message: "student list get successfully",
+            data: student.rows,
+        })
+
+    } catch (error) {
+        console.error('Error:', error)
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+    }
+}
+
 
 module.exports = {
     blockStudent,
     makePayment,
     remainingFees,
     listStudentFees,
-    getInvoice
+    getInvoice,
+
+    listStudentFeesHistory
 }
