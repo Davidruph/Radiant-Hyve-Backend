@@ -30,6 +30,7 @@ exports.checkToken = async (data, user_id) => {
     return {
         token: jwtToken,
         refresh_token: token.refresh_token,
+        token_id: token.id
     }
 }
 

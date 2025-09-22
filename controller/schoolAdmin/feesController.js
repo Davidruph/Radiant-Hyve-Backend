@@ -303,7 +303,19 @@ const listStudentFees = async (req, res) => {
                             LIMIT 1
                         )`),
                         'payment_type'
-                    ]
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.comment
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year}
+                             ORDER BY t1.id DESC
+                            LIMIT 1
+                        )`),
+                        'comment'
+                    ],
                 ]
             },
             limit,
@@ -464,7 +476,19 @@ const listStudentFeesHistory = async (req, res) => {
                             LIMIT 1
                         )`),
                         'payment_type'
-                    ]
+                    ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.comment
+                            FROM tbl_invoice t1 
+                            WHERE t1.student_id = Student.id 
+                            AND t1.month = ${month} 
+                            AND t1.year = ${year}
+                             ORDER BY t1.id DESC
+                            LIMIT 1
+                        )`),
+                        'comment'
+                    ],
                 ]
             },
             order: [['id', 'DESC']],

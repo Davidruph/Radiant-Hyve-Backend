@@ -104,6 +104,7 @@ const login = async (req, res) => {
             message: 'Login successful.',
             token: token.token,
             refresh_token: token.refresh_token,
+            token_id: token.token_id,
             data: user
         });
 

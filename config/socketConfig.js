@@ -1,6 +1,6 @@
 const redisClient = require('./redisConfig.js');
 const { getIO } = require('./socketSetup.js');
-const  db  = require('./db.js');
+const db = require('./db.js');
 const jwt = require('jsonwebtoken')
 
 
@@ -149,32 +149,20 @@ function socketConfig(io) {
     io.on("connection", async (socket) => {
         console.log("connection", socket.id);
         socket.on("socket_register", async function (data) {
-            console.log("socket_register ->", data.user_id, socket.id, data.token);
+            console.log("socket_register ->", data.user_id, socket.id, data.token_id);
             let user_id = data.user_id;
             if (!user_id) {
                 return;
             }
             socket.user_id = user_id;
 
-            if (data.token) {
-                // Decode the token
-                let decoded;
-                try {
-                    decoded = jwt.decode(data.token); // decode without verifying
-                    console.log("Decoded JWT:", decoded);
-                } catch (error) {
-                    console.error("Failed to decode token:", error);
-                    return;
-                }
+            if (data.token_id) {
+                const token_id = data.token_id;
 
-                if (decoded && decoded.token_id) {
-                    const token_id = decoded.token_id;
-
-                    const token = await db.Token.findOne({ where: { id: token_id } });
-                    if (token) {
-                        socket.device_token = token.device_token;
-                        socket.device_id = token.device_id;
-                    }
+                const token = await db.Token.findOne({ where: { id: token_id } });
+                if (token) {
+                    socket.device_token = token.device_token;
+                    socket.device_id = token.device_id;
                 }
             }
 
@@ -307,4 +295,4 @@ function socketConfig(io) {
     }, SOCKET_TIMEOUT); // Run the check every SOCKET_TIMEOUT milliseconds
 }
 
-module.exports = { socketConfig, emitToSockets, getSocketCount, getUniqueJoinUserIdsByChatId , emitToSocketById};
+module.exports = { socketConfig, emitToSockets, getSocketCount, getUniqueJoinUserIdsByChatId, emitToSocketById };
