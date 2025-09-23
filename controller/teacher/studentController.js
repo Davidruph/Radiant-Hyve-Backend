@@ -700,7 +700,7 @@ const listdiaperAndbath = async (req, res) => {
                             Sequelize.literal(`(
                                 SELECT t2.full_name
                                 FROM tbl_student t2
-                                WHERE t2.id = Diaper.student_id
+                                WHERE t2.id = Bath.student_id
                             )`),
                             'student_name'
                         ],
@@ -708,7 +708,7 @@ const listdiaperAndbath = async (req, res) => {
                             Sequelize.literal(`(
                                 SELECT t2.full_name
                                 FROM tbl_user t2
-                                WHERE t2.id = Diaper.teacher_id
+                                WHERE t2.id = Bath.teacher_id
                             )`),
                             'teacher_name'
                         ],
@@ -716,7 +716,7 @@ const listdiaperAndbath = async (req, res) => {
                             Sequelize.literal(`(
                                 SELECT t2.full_name
                                 FROM tbl_user t2
-                                WHERE t2.id = Diaper.parent_id
+                                WHERE t2.id = Bath.parent_id
                             )`),
                             'parent_name'
                         ],
