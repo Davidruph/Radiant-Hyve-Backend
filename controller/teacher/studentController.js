@@ -595,6 +595,156 @@ const studentProfilePicEdit = async (req, res) => {
     }
 }
 
+const adddiaperAndbath = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { student_id, reason, type } = req.body
+        const student = await db.Student.findOne({
+            where: {
+                id: student_id,
+                teacher_id: req.user.id
+            },
+        })
+        if (!student) {
+            return res.status(404).json({ status: 0, message: "Student not found" })
+        }
+        let data = {}
+        if (type == "diaper") {
+            data = await db.Diaper.create({
+                student_id: student_id,
+                teacher_id: req.user.id,
+                parent_id: student.parent_id,
+                reason: reason,
+                type: type
+            })
+        } else if (type == "bath") {
+            data = await db.Bath.create({
+                student_id: student_id,
+                teacher_id: req.user.id,
+                parent_id: student.parent_id,
+                reason: reason,
+            })
+        } else {
+            return res.status(400).json({ status: 0, message: "Invalid type , valid type are: 'diaper', 'bath' " })
+        }
+        return res.status(200).json({
+            status: 1,
+            message: "diaper or bath added successfully",
+            data: data
+        })
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
+const listdiaperAndbath = async (req, res) => {
+    if (req.user.role != "teacher") {
+        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+    }
+    try {
+        const { page , type} = req.query
+        if (!page) {
+            return res.status(400).json({ status: 0, message: "page is required" })
+        }
+        const limit = 10
+        const offset = (page - 1) * limit
+        let data = {}
+        if (type == "diaper") {
+            data = await db.Diaper.findAndCountAll({
+                where: {
+                    teacher_id: req.user.id
+                },
+                attributes: {
+                    include: [
+                        [
+                            Sequelize.literal(`(
+                                SELECT t2.full_name
+                                FROM tbl_student t2
+                                WHERE t2.id = Diaper.student_id
+                            )`),
+                            'student_name'
+                        ],
+                        [
+                            Sequelize.literal(`(
+                                SELECT t2.full_name
+                                FROM tbl_user t2
+                                WHERE t2.id = Diaper.teacher_id
+                            )`),
+                            'teacher_name'
+                        ],
+                        [
+                            Sequelize.literal(`(
+                                SELECT t2.full_name
+                                FROM tbl_user t2
+                                WHERE t2.id = Diaper.parent_id
+                            )`),
+                            'parent_name'
+                        ],
+                    ],
+                },
+                limit,
+                offset,
+                order: [['id', 'DESC']]
+            })
+        } else if (type == "bath") {
+            data = await db.Bath.findAndCountAll({
+                where: {
+                    teacher_id: req.user.id
+                },
+                attributes: {
+                    include: [
+                        [
+                            Sequelize.literal(`(
+                                SELECT t2.full_name
+                                FROM tbl_student t2
+                                WHERE t2.id = Diaper.student_id
+                            )`),
+                            'student_name'
+                        ],
+                        [
+                            Sequelize.literal(`(
+                                SELECT t2.full_name
+                                FROM tbl_user t2
+                                WHERE t2.id = Diaper.teacher_id
+                            )`),
+                            'teacher_name'
+                        ],
+                        [
+                            Sequelize.literal(`(
+                                SELECT t2.full_name
+                                FROM tbl_user t2
+                                WHERE t2.id = Diaper.parent_id
+                            )`),
+                            'parent_name'
+                        ],
+                    ],
+                },
+                limit,
+                offset,
+                order: [['id', 'DESC']]
+            })
+        } else {
+            return res.status(400).json({ status: 0, message: "Invalid type , valid type are: 'diaper', 'bath' " })
+        }
+
+        return res.status(200).json({
+            status: 1,
+            message: "diaper or bath list retrieved successfully",
+            total_data: data.count,
+            current_page: parseInt(page),
+            total_page: Math.ceil(data.count / limit),
+            data: data.rows
+        })
+
+    } catch (error) {
+        console.error('Error :', error);
+        return res.status(500).json({ status: 0, message: 'Internal server error', error: error.message });
+    }
+}
+
 
 
 module.exports = {
@@ -608,5 +758,8 @@ module.exports = {
     getStudent,
 
     studentProfilePicEdit,
+    adddiaperAndbath,
+
+    listdiaperAndbath
 
 }

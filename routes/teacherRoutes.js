@@ -45,4 +45,8 @@ router.put('/edit_student_profile_pic',verifyToken,imageUpload, student.studentP
 
 router.get('/get_student_attedance',verifyToken, teacherValidator.getAttedanceValidation(), student.getStudentAttedance);
 
+router.post('/add_diaper_and_bath',verifyToken, student.adddiaperAndbath);
+router.get('/list_diaper_and_bath',verifyToken, student.listdiaperAndbath);
+
+
 module.exports = router;
