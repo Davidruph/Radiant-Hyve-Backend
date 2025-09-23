@@ -29,5 +29,8 @@ router.get('/list_student_attedance_parent',verifyToken, parent.getStudentAtteda
 router.get('/list_students_invoice',verifyToken, student.listStudentFees);
 router.get('/list_students_fees',verifyToken, student.listStudent);
 
+router.get('/list_students_diaper_and_bath',verifyToken, parent.listDiaperAndBath);
+
+
 
 module.exports = router; 
