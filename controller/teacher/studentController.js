@@ -629,6 +629,21 @@ const adddiaperAndbath = async (req, res) => {
         } else {
             return res.status(400).json({ status: 0, message: "Invalid type , valid type are: 'diaper', 'bath' " })
         }
+        const notiType = "diaper_bath";
+        const message = {
+            title: type == "diaper" ? "Diaper Added" : "Bath Added",
+            body: `📝 ${student.full_name} has added a ${type} for ${reason}.`,
+        };
+        const Data = {
+            notification_by: req.user.id,
+            notification_to: student.parent_id,
+            notification_type: notiType,
+            body: message.body,
+            title: message.title,
+            school_id: req.user.school_id,
+        };
+        await send_notification(student.parent_id, message, notiType, Data);
+        await db.Notification.create(Data); 
         return res.status(200).json({
             status: 1,
             message: "diaper or bath added successfully",
