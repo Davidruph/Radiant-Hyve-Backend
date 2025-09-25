@@ -611,6 +611,7 @@ const adddiaperAndbath = async (req, res) => {
             return res.status(404).json({ status: 0, message: "Student not found" })
         }
         let data = {}
+        let body = null
         if (type == "diaper") {
             data = await db.Diaper.create({
                 student_id: student_id,
@@ -619,6 +620,17 @@ const adddiaperAndbath = async (req, res) => {
                 reason: reason,
                 type: type
             })
+            if (reason == "Wet Only") {
+                body = `${student.full_name} diaper was changed (wet).`
+            } else if (reason == "Soiled") {
+                body = `${student.full_name} diaper was changed for hygiene and comfort.`
+            } else if (reason == "Wet & Soiled") {
+                body = `${student.full_name} A full diaper change was provided for comfort and cleanliness.`
+            } else if (reason == "Rash Care Applied") {
+                body = `${student.full_name} Diaper was changed and cream applied for extra care.`
+            } else {
+                body = `${student.full_name} received diaper care today.`
+            }
         } else if (type == "bath") {
             data = await db.Bath.create({
                 student_id: student_id,
@@ -626,13 +638,24 @@ const adddiaperAndbath = async (req, res) => {
                 parent_id: student.parent_id,
                 reason: reason,
             })
+            if (reason == "Hygiene Incident – Soiling") {
+                body = `${student.full_name} was bathed today for hygiene and comfort.`
+            } else if (reason == "Hygiene Incident – Bathroom Accident") {
+                body = `A full clean-up was provided to keep ${student.full_name} fresh and comfortable.`
+            } else if (reason == "Hygiene Incident – Clothing Soiled") {
+                body = `${student.full_name} was bathed and changed into clean clothes.`
+            } else if (reason == "Comfort & Cleanliness – Freshen Up") {
+                body = `${student.full_name} was given a bath today for comfort and hygiene.`
+            } else {
+                body = `${student.full_name} received extra hygiene care today.`
+            }
         } else {
             return res.status(400).json({ status: 0, message: "Invalid type , valid type are: 'diaper', 'bath' " })
         }
         const notiType = "diaper_bath";
         const message = {
             title: type == "diaper" ? "Diaper Added" : "Bath Added",
-            body: `📝 ${student.full_name} has added a ${type} for ${reason}.`,
+            body: body,
         };
         const Data = {
             notification_by: req.user.id,
@@ -643,7 +666,7 @@ const adddiaperAndbath = async (req, res) => {
             school_id: req.user.school_id,
         };
         await send_notification(student.parent_id, message, notiType, Data);
-        await db.Notification.create(Data); 
+        await db.Notification.create(Data);
         return res.status(200).json({
             status: 1,
             message: "diaper or bath added successfully",
@@ -660,7 +683,7 @@ const listdiaperAndbath = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { page , type} = req.query
+        const { page, type } = req.query
         if (!page) {
             return res.status(400).json({ status: 0, message: "page is required" })
         }
