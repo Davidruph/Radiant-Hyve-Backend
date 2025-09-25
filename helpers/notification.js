@@ -89,6 +89,30 @@ const send_notification = async (user_id, message, notificationType, data, devic
                     data: {
                         ...stringData,
                         notification_type: notificationType.toString()
+                    },
+                    apns: {
+                        payload: {
+                            aps: {
+                                sound: "default",
+                                badge: 1,
+                                alert: {
+                                    title: message.title,
+                                    body: message.body
+                                },
+                                content_available: 1,
+                                mutable_content: 1
+                            }
+                        },
+                        headers: {
+                            "apns-priority": "10",
+                            "apns-push-type": "alert"
+                        }
+                    },
+                    android: {
+                        notification: {
+                            sound: "default",
+                            channel_id: "default"
+                        }
                     }
                 },
             };
