@@ -266,6 +266,14 @@ const listStudentAttedance = async (req, res) => {
             }
         })
 
+        const is_clockout_all_student = await db.StudentAttendance.findOne({
+            where:{
+                teacher_id: req.user.id,
+                date: date ? date : moment().format('YYYY-MM-DD'),
+                is_out: false
+            }
+        })
+
         const isChecked = existeAttedance.every(item => item.is_submitted === true);
 
         return res.status(200).json({
@@ -275,8 +283,8 @@ const listStudentAttedance = async (req, res) => {
             current_page: parseInt(page),
             total_page: Math.ceil(attendance.count / limit),
             is_submitted: isChecked,
-            data: attendance.rows
-
+            data: attendance.rows,
+            is_clockout_all_student: is_clockout_all_student ? false : true
         })
 
     } catch (error) {

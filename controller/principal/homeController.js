@@ -16,20 +16,59 @@ const { send_notification } = require('../../helpers/notification')
 
 const Attendance = async (req, res) => {
     if (req.user.role != "teacher" && req.user.role != "principal") {
-        return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
+        return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
     }
+
     try {
         const { address, latitude, longitude } = req.body;
+
+        const school = await db.User.findOne({
+            where: { id: req.user.school_id, is_deleted: false }
+        })
+
+        if (!school || !school.latitude || !school.longitude) {
+            return res.status(400).json({ status: 0, message: "School location not set" });
+        }
+
+        // --- Function to calculate distance (in meters) ---
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Radius of earth in meters
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // --- Distance check ---
+        const distance = getDistanceFromLatLonInMeters(
+            parseFloat(latitude),
+            parseFloat(longitude),
+            parseFloat(school.latitude),
+            parseFloat(school.longitude)
+        );
+
+        if (distance > 500) {
+            return res.status(400).json({
+                status: 0,
+                message: `You must be within 500 meters of school to clock in/out. Current distance: ${Math.round(distance)} meters`
+            });
+        }
+
         const user = await db.User.findOne({
             where: { id: req.user.id, is_deleted: false }
         })
 
-        const existigAttendance = await db.Attendance.findOne({
+        const existingAttendance = await db.Attendance.findOne({
             where: { user_id: user.id, is_clock_in: true, school_id: user.school_id }
         })
 
-        if (existigAttendance) {
-            await existigAttendance.update({
+        if (existingAttendance) {
+            await existingAttendance.update({
                 is_clock_in: false,
                 clock_out_time: moment().toDate(),
                 clock_out_address: address,
@@ -39,9 +78,9 @@ const Attendance = async (req, res) => {
             return res.status(200).json({
                 status: 1,
                 message: "Clock out successfully",
-                data: existigAttendance
+                data: existingAttendance
             })
-        } else if (!existigAttendance) {
+        } else {
             const attendance = await db.Attendance.create({
                 user_id: user.id,
                 school_id: user.school_id,
