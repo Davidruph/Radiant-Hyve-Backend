@@ -202,7 +202,7 @@ const editStatus = async (req, res) => {
         return res.status(403).json({ satus: 0, message: "You are not authorized to perform this action" })
     }
     try {
-        const { student_id, status } = req.body
+        const { student_id, status, rejected_reason } = req.body
         let school_id = null
         if (req.user.role == "principal") {
             const principal = await db.User.findOne({
@@ -228,7 +228,8 @@ const editStatus = async (req, res) => {
         }
 
         await student.update({
-            request_status: status
+            request_status: status,
+            rejected_reason: rejected_reason || student.rejected_reason
         })
 
         if (status === 'accepted') {
