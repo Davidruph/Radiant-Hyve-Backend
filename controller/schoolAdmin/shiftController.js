@@ -122,7 +122,7 @@ const listShift = async (req, res) => {
             where: whereCondition,
             limit,
             offset,
-            order: [['id', 'ASC']]
+            order: [['id', 'DESC']]
         })
 
         return res.status(200).json({
