@@ -92,9 +92,15 @@ const makePayment = async (req, res) => {
                 parent_id: student.parent_id,
                 month: month,
                 year: year,
-                total_fees: shift.shift_fee
+                shift_fee: shift.shift_fee,
             }
         });
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        const isPastMonth =
+        parseInt(year) < currentYear ||
+        (parseInt(year) === currentYear && parseInt(month) < currentMonth);
 
         if (invoice) {
             return res.status(400).json({ status: 0, message: "This student already paid the fees for this month" });
@@ -105,7 +111,9 @@ const makePayment = async (req, res) => {
                 parent_id: student.parent_id,
                 month: month,
                 year: year,
-                total_fees: shift.shift_fee,
+                total_fees: parseFloat(shift.shift_fee + (isPastMonth ? shift.penalty : 0)),
+                penalty_fees: parseFloat(isPastMonth ? shift.penalty : 0),
+                shift_fee: shift.shift_fee,
                 comment: comment,
                 payment_type: payment_type
             })
@@ -206,21 +214,27 @@ const listStudentFees = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {
         return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" })
     }
+
     try {
-        let { month, year, page, search, type } = req.query
+        let { month, year, page, search, type } = req.query;
         if (!page) {
             return res.status(400).json({ status: 0, message: 'page is required' });
         }
-        const limit = 10
-        const offset = (page - 1) * limit
+
+        const limit = 10;
+        const offset = (page - 1) * limit;
         let school_id = req.user.id;
 
         if (req.user.role == "principal") {
             school_id = req.user.school_id;
         }
+
         const now = new Date();
-        if (!month) month = now.getMonth() + 1;
-        if (!year) year = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        if (!month) month = currentMonth;
+        if (!year) year = currentYear;
 
         const whereCondition = {
             school_id: school_id,
@@ -230,6 +244,7 @@ const listStudentFees = async (req, res) => {
         if (search) {
             whereCondition.full_name = { [Op.like]: `%${search}%` };
         }
+
         if (type == 1) {
             whereCondition[Op.and] = db.sequelize.literal(`(
                 SELECT COUNT(*) 
@@ -237,9 +252,8 @@ const listStudentFees = async (req, res) => {
                 WHERE t1.student_id = Student.id 
                 AND t1.month = ${month} 
                 AND t1.year = ${year}
-                 ORDER BY t1.id DESC
- LIMIT 1
-
+                ORDER BY t1.id DESC
+                LIMIT 1
             ) > 0`);
         } else if (type == 0) {
             whereCondition[Op.and] = db.sequelize.literal(`(
@@ -248,15 +262,10 @@ const listStudentFees = async (req, res) => {
                 WHERE t1.student_id = Student.id 
                 AND t1.month = ${month} 
                 AND t1.year = ${year}
-                 ORDER BY t1.id DESC
- LIMIT 1
-
+                ORDER BY t1.id DESC
+                LIMIT 1
             ) = 0`);
         }
-        console.log("month==============", month);
-        console.log("year==============", year);
-        console.log("whereCondition==============", whereCondition);
-
 
         const student = await db.Student.findAndCountAll({
             where: whereCondition,
@@ -270,14 +279,14 @@ const listStudentFees = async (req, res) => {
                         )`),
                         'shift_fee'
                     ],
-                    // [
-                    //     db.sequelize.literal(`(
-                    //         SELECT t1.penalty
-                    //         FROM tbl_shift t1 
-                    //         WHERE t1.id = Student.shift_id
-                    //     )`),
-                    //     'penalty'
-                    // ],
+                    [
+                        db.sequelize.literal(`(
+                            SELECT t1.penalty
+                            FROM tbl_shift t1 
+                            WHERE t1.id = Student.shift_id
+                        )`),
+                        'penalty'
+                    ],
                     [
                         db.sequelize.literal(`(
                             SELECT COUNT(*) 
@@ -295,8 +304,8 @@ const listStudentFees = async (req, res) => {
                             WHERE t1.student_id = Student.id 
                             AND t1.month = ${month} 
                             AND t1.year = ${year}
-                             ORDER BY t1.id DESC
-                             LIMIT 1
+                            ORDER BY t1.id DESC
+                            LIMIT 1
                         )`),
                         'invoice_id'
                     ],
@@ -307,7 +316,7 @@ const listStudentFees = async (req, res) => {
                             WHERE t1.student_id = Student.id 
                             AND t1.month = ${month} 
                             AND t1.year = ${year}
-                             ORDER BY t1.id DESC
+                            ORDER BY t1.id DESC
                             LIMIT 1
                         )`),
                         'payment_type'
@@ -319,7 +328,7 @@ const listStudentFees = async (req, res) => {
                             WHERE t1.student_id = Student.id 
                             AND t1.month = ${month} 
                             AND t1.year = ${year}
-                             ORDER BY t1.id DESC
+                            ORDER BY t1.id DESC
                             LIMIT 1
                         )`),
                         'comment'
@@ -330,21 +339,34 @@ const listStudentFees = async (req, res) => {
             offset,
             order: [['id', 'DESC']],
         });
-        
+
+        // 🔹 Add is_penalty flag based on month/year comparison
+        const studentsWithPenalty = student.rows.map(st => {
+            const isPastMonth =
+                parseInt(year) < currentYear ||
+                (parseInt(year) === currentYear && parseInt(month) < currentMonth);
+
+            return {
+                ...st.toJSON(),
+                is_penalty: isPastMonth ? 1 : 0
+            };
+        });
+
         return res.status(200).json({
             status: 1,
-            message: "student list get successfully",
-            data: student.rows,
+            message: "Student list fetched successfully",
+            data: studentsWithPenalty,
             total_student: student.count,
             page: page,
             total_page: Math.ceil(student.count / limit)
-        })
+        });
 
     } catch (error) {
-        console.error('Error:', error)
-        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message })
+        console.error('Error:', error);
+        return res.status(500).json({ status: 0, message: "Internal server error", error: error.message });
     }
-}
+};
+
 
 const getInvoice = async (req, res) => {
     if (req.user.role != "school" && req.user.role != "principal") {

@@ -1,5 +1,3 @@
-const shift = require("./shift");
-
 module.exports = (sequelize, DataTypes) => {
     const Invoice = sequelize.define(
         'Invoice',
