@@ -167,5 +167,7 @@ const deleteShift = async (req, res) => {
 module.exports = {
     addShift,
     editShift,
-    listShift
+    listShift,
+
+    deleteShift
 }

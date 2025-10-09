@@ -71,6 +71,7 @@ router.get('/list_all_leave',verifyToken, staff.allLeave);
 router.post('/add_shift',verifyToken,schoolvalidator.addShiftValidation(), shift.addShift);
 router.put('/edit_shift',verifyToken,schoolvalidator.editShiftValidation(), shift.editShift);
 router.get('/list_shift',verifyToken, shift.listShift);
+router.delete('/delete_shift',verifyToken, shift.deleteShift);
 
 
 
