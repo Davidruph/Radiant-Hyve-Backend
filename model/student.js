@@ -59,6 +59,10 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 'pending',
                 allowNull: false,
             },
+            rejected_reason: {
+                type: DataTypes.TEXT('long'),
+                allowNull: true,
+            },
             shift_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,

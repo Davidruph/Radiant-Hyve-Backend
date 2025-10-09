@@ -28,6 +28,14 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 onDelete: 'CASCADE',
             },
+            penalty:{
+                type: DataTypes.FLOAT(10, 2),
+                allowNull: true,
+            },
+            is_deleted: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
         },
         {
             tableName: "tbl_shift",

@@ -384,6 +384,7 @@ exports.addShiftValidation = () => {
         [
             check('shift_fee').not().isEmpty().withMessage('shift_fee is required'),
             check('shift_name').not().isEmpty().withMessage('shift_name is required'),
+            check('penalty').not().isEmpty().withMessage('penalty is required'),
         ],
         validation
     ];
@@ -395,6 +396,7 @@ exports.editShiftValidation = () => {
             check('shift_id').not().isEmpty().withMessage('shift_id is required'),
             check('shift_fee').optional().not().isEmpty().withMessage('shift_fee is required'),
             check('shift_name').optional().not().isEmpty().withMessage('shift_name is required'),
+            check('penalty').optional().not().isEmpty().withMessage('penalty is required'),
         ],
         validation
     ];

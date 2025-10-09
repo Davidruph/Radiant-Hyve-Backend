@@ -270,6 +270,14 @@ const listStudentFees = async (req, res) => {
                         )`),
                         'shift_fee'
                     ],
+                    // [
+                    //     db.sequelize.literal(`(
+                    //         SELECT t1.penalty
+                    //         FROM tbl_shift t1 
+                    //         WHERE t1.id = Student.shift_id
+                    //     )`),
+                    //     'penalty'
+                    // ],
                     [
                         db.sequelize.literal(`(
                             SELECT COUNT(*) 

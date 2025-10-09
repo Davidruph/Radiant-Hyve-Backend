@@ -24,7 +24,8 @@ const createStudent = async (req, res) => {
         const shift = await db.Shift.findOne({
             where: {
                 id: shift_id,
-                school_id: req.user.school_id
+                school_id: req.user.school_id,
+                is_deleted: false
             }
         })
 
@@ -119,7 +120,8 @@ const editStudent = async (req, res) => {
             const shift = await db.Shift.findOne({
                 where: {
                     id: shift_id,
-                    school_id: req.user.school_id
+                    school_id: req.user.school_id,
+                    is_deleted: false
                 }
             })
 

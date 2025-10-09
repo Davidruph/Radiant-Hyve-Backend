@@ -412,7 +412,7 @@ const getShift = async (req, res) => {
         }
 
         const shift = await db.Shift.findAll({
-            where: { school_id },
+            where: { school_id, is_deleted: false },
         })
 
         return res.status(200).json({

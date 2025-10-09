@@ -308,8 +308,8 @@ const listStudentTeacher = async (req, res) => {
         const limit = 10
         const offset = (parseInt(page) - 1) * limit
         if (shift_id) {
-            const shift = await db.Shift.findAll({
-                where: { id: shift_id, school_id: req.user.school_id },
+            const shift = await db.Shift.findOne({
+                where: { id: shift_id, school_id: req.user.school_id, is_deleted: false },
             })
             if (!shift) {
                 return res.status(404).json({ status: 0, message: "Shift not found" })

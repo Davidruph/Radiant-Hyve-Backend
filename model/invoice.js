@@ -1,3 +1,5 @@
+const shift = require("./shift");
+
 module.exports = (sequelize, DataTypes) => {
     const Invoice = sequelize.define(
         'Invoice',
@@ -34,6 +36,14 @@ module.exports = (sequelize, DataTypes) => {
             total_fees:{
                 type: DataTypes.FLOAT(11, 2),
                 allowNull: true, 
+            },
+            penalty_fees:{
+                type: DataTypes.FLOAT(11, 2),
+                allowNull: true, 
+            },
+            shift_fee:{
+                type: DataTypes.FLOAT(11, 2),
+                allowNull: true,
             },
             month:{
                 type: DataTypes.INTEGER,
