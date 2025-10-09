@@ -149,8 +149,17 @@ const deleteShift = async (req, res) => {
         if (!shift_id) {
             return res.status(400).json({ status: 0, message: "shift_id is required" })
         }
+        let school_id = null
+        if (req.user.role == "principal") {
+            const principal = await db.User.findOne({
+                where: { id: req.user.id, is_deleted: false }
+            })
+            school_id = principal.school_id
+        } else {
+            school_id = req.user.id
+        }
 
-        const shift = await db.Shift.findOne({ where: { id: shift_id, school_id: req.user.id, is_deleted: false } })
+        const shift = await db.Shift.findOne({ where: { id: shift_id, school_id, is_deleted: false } })
         if (!shift) {
             return res.status(404).json({ status: 0, message: "Shift not found" })
         }
@@ -168,6 +177,5 @@ module.exports = {
     addShift,
     editShift,
     listShift,
-
     deleteShift
 }
