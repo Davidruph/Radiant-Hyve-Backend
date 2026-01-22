@@ -436,7 +436,7 @@ const editProfile = async (req, res) => {
     if (req.user.role !== "school") {
         return res.status(403).json({ status: 0, message: "You are not authorized to perform this action" });
     }
-    const { name, address } = req.body;
+    const { name, address, latitude, longitude } = req.body;
 
     try {
         const school = await db.User.findOne({
@@ -449,6 +449,8 @@ const editProfile = async (req, res) => {
 
         school.school_name = name || school.school_name;
         school.address = address || school.address;
+        school.latitude = latitude || school.latitude;
+        school.longitude = longitude || school.longitude;
 
         await school.save();
 
