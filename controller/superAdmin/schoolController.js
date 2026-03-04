@@ -60,30 +60,36 @@ const addSchool = async (req, res) => {
     await user.update({
       school_id: user.id
     });
-    await addNewSchoolEmail(name, email, password);
+
+    let emailSent = false;
+    try {
+      await addNewSchoolEmail(name, email, password);
+      emailSent = true;
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      emailSent = false;
+    }
+
     await db.Chat.create({
       chat_by: user.id,
       chat_to: user.id,
       school_id: user.id
     });
 
-    return res
-      .status(201)
-      .json({
-        status: 1,
-        message: "School added successfully",
-        data: user,
-        password: password
-      });
+    return res.status(201).json({
+      status: 1,
+      message: "School added successfully",
+      data: user,
+      password: password,
+      email_sent: emailSent
+    });
   } catch (error) {
     console.error("Error adding school:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
@@ -127,13 +133,11 @@ const listSchool = async (req, res) => {
     });
   } catch (error) {
     console.error("Error retrieving schools:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
@@ -163,22 +167,18 @@ const editSchool = async (req, res) => {
 
     await school.save();
 
-    return res
-      .status(200)
-      .json({
-        status: 1,
-        message: "School updated successfully",
-        data: school
-      });
+    return res.status(200).json({
+      status: 1,
+      message: "School updated successfully",
+      data: school
+    });
   } catch (error) {
     console.error("Error updating school:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
@@ -214,13 +214,11 @@ const changeSchoolPassword = async (req, res) => {
       .json({ status: 1, message: "School password updated successfully" });
   } catch (error) {
     console.error("Error updating school password:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
@@ -276,13 +274,11 @@ const deleteSchool = async (req, res) => {
       .json({ status: 1, message: "School deleted successfully" });
   } catch (error) {
     console.error("Error deleting school:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
@@ -356,13 +352,11 @@ const getSchoolById = async (req, res) => {
     });
   } catch (error) {
     console.error("Error retrieving school:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
