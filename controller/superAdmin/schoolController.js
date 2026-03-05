@@ -377,6 +377,22 @@ const createSubscription = async (req, res) => {
   }
 
   try {
+    // Check for duplicate plan
+    const existingPlan = await db.SubscriptionPlan.findOne({
+      where: {
+        package_name: packageName,
+        service_type: serviceType,
+        service_fee: serviceFee
+      }
+    });
+
+    if (existingPlan) {
+      return res.status(400).json({
+        status: 0,
+        message: `A subscription plan with package name ${packageName}, ${serviceType} service type and fee ${serviceFee} already exists`
+      });
+    }
+
     // Create the subscription plan
     const subscriptionPlan = await db.SubscriptionPlan.create({
       package_name: packageName,
@@ -461,12 +477,155 @@ const listSubscriptionPlans = async (req, res) => {
   }
 };
 
+const updateSubscriptionPlan = async (req, res) => {
+  if (req.user.role != "super_admin") {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const {
+    plan_id,
+    description,
+    addFeatures,
+    modifyFeatures,
+    removeFeatureIds,
+    package_name,
+    service_type,
+    service_fee
+  } = req.body;
+
+  // Validate required fields
+  if (!plan_id) {
+    return res.status(400).json({
+      status: 0,
+      message: "plan_id is required"
+    });
+  }
+
+  try {
+    // Check if plan exists
+    const plan = await db.SubscriptionPlan.findOne({
+      where: { id: plan_id },
+      include: [
+        {
+          model: db.Feature,
+          attributes: ["id", "feature_name"],
+          as: "Features"
+        }
+      ]
+    });
+
+    if (!plan) {
+      return res.status(404).json({
+        status: 0,
+        message: "Subscription plan not found"
+      });
+    }
+
+    // Update description if provided
+    if (description) {
+      await plan.update({ description });
+    }
+
+    if (package_name || service_type || service_fee) {
+      // Check for duplicate plan with new details
+      const existingPlan = await db.SubscriptionPlan.findOne({
+        where: {
+          id: { [Op.ne]: plan_id },
+          package_name: package_name || plan.package_name,
+          service_type: service_type || plan.service_type,
+          service_fee: service_fee || plan.service_fee
+        }
+      });
+
+      if (existingPlan) {
+        return res.status(400).json({
+          status: 0,
+          message: `A subscription plan with package name ${package_name || plan.package_name}, ${service_type || plan.service_type} service type and fee ${service_fee || plan.service_fee} already exists`
+        });
+      }
+
+      // Update the subscription plan details
+      await plan.update({
+        package_name: package_name || plan.package_name,
+        service_type: service_type || plan.service_type,
+        service_fee: service_fee || plan.service_fee
+      });
+    }
+
+    // Remove features if provided
+    if (
+      removeFeatureIds &&
+      Array.isArray(removeFeatureIds) &&
+      removeFeatureIds.length > 0
+    ) {
+      await db.Feature.destroy({
+        where: {
+          id: removeFeatureIds,
+          plan_id: plan_id
+        }
+      });
+    }
+
+    // Modify existing features if provided
+    if (
+      modifyFeatures &&
+      Array.isArray(modifyFeatures) &&
+      modifyFeatures.length > 0
+    ) {
+      for (const feature of modifyFeatures) {
+        if (feature.id && feature.feature_name) {
+          await db.Feature.update(
+            { feature_name: feature.feature_name },
+            { where: { id: feature.id, plan_id: plan_id } }
+          );
+        }
+      }
+    }
+
+    // Add new features if provided
+    if (addFeatures && Array.isArray(addFeatures) && addFeatures.length > 0) {
+      const featureRecords = addFeatures.map((featureName) => ({
+        plan_id: plan_id,
+        feature_name: featureName
+      }));
+
+      await db.Feature.bulkCreate(featureRecords);
+    }
+
+    // Fetch updated plan with features
+    const updatedPlan = await db.SubscriptionPlan.findOne({
+      where: { id: plan_id },
+      include: [
+        {
+          model: db.Feature,
+          attributes: ["id", "feature_name"],
+          as: "Features"
+        }
+      ]
+    });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Subscription plan updated successfully",
+      data: updatedPlan
+    });
+  } catch (error) {
+    console.error("Error updating subscription plan:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addSchool,
   listSchool,
   editSchool,
   createSubscription,
   listSubscriptionPlans,
+  updateSubscriptionPlan,
   changeSchoolPassword,
   deleteSchool,
   getSchoolById

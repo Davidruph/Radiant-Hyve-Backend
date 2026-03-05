@@ -37,5 +37,10 @@ router.get(
   verifyToken,
   school.listSubscriptionPlans
 );
+router.put(
+  "/update_subscription_plan",
+  verifyToken,
+  school.updateSubscriptionPlan
+);
 
 module.exports = router;
