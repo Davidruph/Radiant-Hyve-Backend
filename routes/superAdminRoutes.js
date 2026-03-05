@@ -27,6 +27,15 @@ router.patch(
 router.delete("/delete_school", verifyToken, school.deleteSchool);
 router.get("/get_school", verifyToken, school.getSchoolById);
 router.get("/list_school", verifyToken, school.listSchool);
-router.get("/create_subscription_plan", verifyToken, school.createSubscription);
+router.post(
+  "/create_subscription_plan",
+  verifyToken,
+  school.createSubscription
+);
+router.get(
+  "/list_subscription_plans",
+  verifyToken,
+  school.listSubscriptionPlans
+);
 
 module.exports = router;

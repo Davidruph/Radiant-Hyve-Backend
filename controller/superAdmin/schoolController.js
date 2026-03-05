@@ -422,11 +422,50 @@ const createSubscription = async (req, res) => {
   }
 };
 
+const listSubscriptionPlans = async (req, res) => {
+  try {
+    const { page = 1 } = req.query;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const plans = await db.SubscriptionPlan.findAndCountAll({
+      where: { is_active: true },
+      include: [
+        {
+          model: db.Feature,
+          attributes: ["id", "feature_name"],
+          as: "Features"
+        }
+      ],
+      limit: limit,
+      offset: offset,
+      order: [["createdAt", "DESC"]]
+    });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Subscription plans retrieved successfully",
+      total_plans: plans.count,
+      current_page: parseInt(page),
+      total_pages: Math.ceil(plans.count / limit),
+      data: plans.rows
+    });
+  } catch (error) {
+    console.error("Error retrieving subscription plans:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addSchool,
   listSchool,
   editSchool,
   createSubscription,
+  listSubscriptionPlans,
   changeSchoolPassword,
   deleteSchool,
   getSchoolById
