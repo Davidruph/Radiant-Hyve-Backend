@@ -7,6 +7,10 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true
       },
+      package_name: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+      },
       service_type: {
         type: DataTypes.ENUM("Monthly", "Yearly"),
         allowNull: false
