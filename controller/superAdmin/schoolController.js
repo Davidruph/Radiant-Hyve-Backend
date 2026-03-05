@@ -379,6 +379,7 @@ const createSubscription = async (req, res) => {
   try {
     // Create the subscription plan
     const subscriptionPlan = await db.SubscriptionPlan.create({
+      package_name: packageName,
       service_type: serviceType,
       service_fee: serviceFee,
       description: description || null,

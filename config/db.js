@@ -47,6 +47,14 @@ db.SosType = require("../model/sosType")(sequelize, Sequelize, Model);
 db.Menu = require("../model/menu")(sequelize, Sequelize, Model);
 db.Bath = require("../model/bath")(sequelize, Sequelize, Model);
 db.Diaper = require("../model/diaper")(sequelize, Sequelize, Model);
+db.SubscriptionPlan = require("../model/subscriptionPlan")(
+  sequelize,
+  Sequelize,
+  Model
+);
+db.Feature = require("../model/feature")(sequelize, Sequelize, Model);
+db.Subscriber = require("../model/subscriber")(sequelize, Sequelize, Model);
+db.Transaction = require("../model/transaction")(sequelize, Sequelize, Model);
 
 db.Student.hasMany(db.Invoice, { foreignKey: "student_id", as: "invoice" });
 db.Invoice.belongsTo(db.Student, { foreignKey: "student_id", as: "student" });
@@ -272,5 +280,42 @@ db.StudentMenu.belongsTo(db.Menu, { foreignKey: "menu_id", as: "studentMenu" });
 
 db.User.hasMany(db.User, { foreignKey: "school_id", as: "schoolUser" });
 db.User.belongsTo(db.User, { foreignKey: "school_id", as: "User" });
+
+// Subscription Plan Associations
+db.SubscriptionPlan.hasMany(db.Feature, {
+  foreignKey: "plan_id",
+  as: "Features"
+});
+db.Feature.belongsTo(db.SubscriptionPlan, {
+  foreignKey: "plan_id",
+  as: "Plan"
+});
+
+db.SubscriptionPlan.hasMany(db.Subscriber, {
+  foreignKey: "plan_id",
+  as: "Subscribers"
+});
+db.Subscriber.belongsTo(db.SubscriptionPlan, {
+  foreignKey: "plan_id",
+  as: "Plan"
+});
+
+db.Subscriber.hasMany(db.Transaction, {
+  foreignKey: "subscription_id",
+  as: "Transactions"
+});
+db.Transaction.belongsTo(db.Subscriber, {
+  foreignKey: "subscription_id",
+  as: "Subscription"
+});
+
+db.User.hasMany(db.Subscriber, {
+  foreignKey: "user_id",
+  as: "Subscriptions"
+});
+db.Subscriber.belongsTo(db.User, {
+  foreignKey: "user_id",
+  as: "User"
+});
 
 module.exports = db;
