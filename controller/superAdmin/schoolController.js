@@ -360,10 +360,73 @@ const getSchoolById = async (req, res) => {
   }
 };
 
+const createSubscription = async (req, res) => {
+  if (req.user.role != "super_admin") {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const { packageName, serviceType, serviceFee, description, features } =
+    req.body;
+
+  // Validate required fields
+  if (!packageName || !serviceType || !serviceFee) {
+    return res.status(400).json({
+      status: 0,
+      message: "packageName, serviceType, and serviceFee are required"
+    });
+  }
+
+  try {
+    // Create the subscription plan
+    const subscriptionPlan = await db.SubscriptionPlan.create({
+      service_type: serviceType,
+      service_fee: serviceFee,
+      description: description || null,
+      is_active: true
+    });
+
+    // Create features if provided
+    if (features && Array.isArray(features) && features.length > 0) {
+      const featureRecords = features.map((featureName) => ({
+        plan_id: subscriptionPlan.id,
+        feature_name: featureName
+      }));
+
+      await db.Feature.bulkCreate(featureRecords);
+    }
+
+    // Fetch the created plan with its features
+    const planWithFeatures = await db.SubscriptionPlan.findOne({
+      where: { id: subscriptionPlan.id },
+      include: [
+        {
+          model: db.Feature,
+          attributes: ["id", "feature_name"],
+          as: "Features" // Make sure this alias matches your association
+        }
+      ]
+    });
+
+    return res.status(201).json({
+      status: 1,
+      message: "Subscription plan created successfully",
+      data: planWithFeatures
+    });
+  } catch (error) {
+    console.error("Error creating subscription:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addSchool,
   listSchool,
   editSchool,
+  createSubscription,
   changeSchoolPassword,
   deleteSchool,
   getSchoolById
