@@ -34,12 +34,10 @@ function generateCode(length) {
 
 const addStaff = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const {
@@ -142,29 +140,24 @@ const addStaff = async (req, res) => {
     return res.status(200).json({
       status: 1,
       message: "Staff Added Successfully",
-      data: Staff,
-      password: password
+      data: Staff
     });
   } catch (error) {
     console.error("Error adding principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const editStaff = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
 
   try {
@@ -277,24 +270,20 @@ const editStaff = async (req, res) => {
       .json({ status: 1, message: "staff updated successfully", data: staff });
   } catch (error) {
     console.error("Error edit staff:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const changeStaffPassword = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { password, staff_id } = req.body;
@@ -348,24 +337,20 @@ const changeStaffPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Error edit principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const listStaff = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { page, search } = req.query;
@@ -443,24 +428,20 @@ const listStaff = async (req, res) => {
     });
   } catch (error) {
     console.error("Error list Staff:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const getStaff = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
 
   try {
@@ -539,24 +520,20 @@ const getStaff = async (req, res) => {
     });
   } catch (error) {
     console.error("Error get Staff:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const deleteStaff = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
 
   try {
@@ -625,24 +602,20 @@ const deleteStaff = async (req, res) => {
     });
   } catch (error) {
     console.error("Error delete Staff:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const blockStaff = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { staff_id, block_reason } = req.body;
@@ -725,12 +698,10 @@ const blockStaff = async (req, res) => {
 
 const assignStudentList = async (req, res) => {
   if (req.user.role != "school" && req.user.role != "principal") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { staff_id, page, search, shift_id } = req.query;
@@ -826,12 +797,10 @@ const assignStudentList = async (req, res) => {
 
 const allLeave = async (req, res) => {
   if (req.user.role != "school") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { page, type } = req.query;
