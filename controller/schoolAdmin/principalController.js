@@ -34,12 +34,10 @@ function generateCode(length) {
 
 const addPrincipal = async (req, res) => {
   if (req.user.role != "school") {
-    return res
-      .status(403)
-      .json({
-        satus: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      satus: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const {
@@ -133,29 +131,24 @@ const addPrincipal = async (req, res) => {
     return res.status(200).json({
       status: 1,
       message: "Principal Added Successfully",
-      data: principal,
-      password: password
+      data: principal
     });
   } catch (error) {
     console.error("Error adding principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const editPrincipal = async (req, res) => {
   if (req.user.role !== "school") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
 
   try {
@@ -254,33 +247,27 @@ const editPrincipal = async (req, res) => {
       experience: experience || principal.experience
     });
 
-    return res
-      .status(200)
-      .json({
-        status: 1,
-        message: "Principal updated successfully",
-        data: principal
-      });
+    return res.status(200).json({
+      status: 1,
+      message: "Principal updated successfully",
+      data: principal
+    });
   } catch (error) {
     console.error("Error edit principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const changePrincipalPassword = async (req, res) => {
   if (req.user.role !== "school") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { password, principal_id } = req.body;
@@ -323,24 +310,20 @@ const changePrincipalPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Error edit principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const listPrincipal = async (req, res) => {
   if (req.user.role !== "school") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { page, search } = req.query;
@@ -396,24 +379,20 @@ const listPrincipal = async (req, res) => {
     });
   } catch (error) {
     console.error("Error list principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const getPrincipal = async (req, res) => {
   if (req.user.role !== "school") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { principal_id } = req.query;
@@ -469,24 +448,20 @@ const getPrincipal = async (req, res) => {
     });
   } catch (error) {
     console.error("Error get principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const deletePrincipal = async (req, res) => {
   if (req.user.role !== "school") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { principal_id, delete_reason } = req.query;
@@ -542,24 +517,20 @@ const deletePrincipal = async (req, res) => {
     });
   } catch (error) {
     console.error("Error ddlete principal:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const blockPrincipal = async (req, res) => {
   if (req.user.role !== "school") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   try {
     const { principal_id, block_reason } = req.body;
@@ -631,12 +602,10 @@ const blockPrincipal = async (req, res) => {
 
 const editProfile = async (req, res) => {
   if (req.user.role !== "school") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
   const { name, address, latitude, longitude } = req.body;
 
@@ -656,33 +625,27 @@ const editProfile = async (req, res) => {
 
     await school.save();
 
-    return res
-      .status(200)
-      .json({
-        status: 1,
-        message: "School updated successfully",
-        data: school
-      });
+    return res.status(200).json({
+      status: 1,
+      message: "School updated successfully",
+      data: school
+    });
   } catch (error) {
     console.error("Error updating school:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
 const getAttedanceCount = async (req, res) => {
   if (req.user.role !== "school" && req.user.role !== "principal") {
-    return res
-      .status(403)
-      .json({
-        status: 0,
-        message: "You are not authorized to perform this action"
-      });
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
   }
 
   try {
@@ -761,13 +724,11 @@ const getAttedanceCount = async (req, res) => {
     });
   } catch (error) {
     console.error("Error:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
   }
 };
 
