@@ -1,4 +1,4 @@
-const moment = require('moment');
+const moment = require("moment");
 
 const currentYear = moment().year();
 
@@ -208,7 +208,7 @@ const addSchoolEmail = (school_name, email, password) =>
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
       <div class="title">New School Created</div>
@@ -230,7 +230,7 @@ const addSchoolEmail = (school_name, email, password) =>
   </div>
 </body>
 </html>
-`
+`;
 
 const updateSchoolEmail = (school_name, email, password) =>
   `
@@ -334,7 +334,7 @@ const updateSchoolEmail = (school_name, email, password) =>
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
       <div class="title">School Password Updated</div>
@@ -356,7 +356,7 @@ const updateSchoolEmail = (school_name, email, password) =>
   </div>
 </body>
 </html>
-`
+`;
 
 const addroleEmail = (school_name, email, password, role) => `
 <!DOCTYPE html>
@@ -460,7 +460,7 @@ const addroleEmail = (school_name, email, password, role) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
       <div class="title">New ${role} Created</div>
@@ -481,7 +481,7 @@ const addroleEmail = (school_name, email, password, role) => `
   </div>
 </body>
 </html>
-`
+`;
 
 const updateRoleEmail = (school_name, email, password, role) => `
 <!DOCTYPE html>
@@ -585,7 +585,7 @@ const updateRoleEmail = (school_name, email, password, role) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png" alt="Radiant Hyve Logo" />
+      <img src="http://localhost:8800/uploads/logo.png" alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
       <div class="title">${role} Password Updated</div>
@@ -607,7 +607,7 @@ const updateRoleEmail = (school_name, email, password, role) => `
   </div>
 </body>
 </html>
-`
+`;
 
 const studentRequistAccessept = (full_name, school_name, parent_name) => `
 <!DOCTYPE html>
@@ -668,7 +668,7 @@ const studentRequistAccessept = (full_name, school_name, parent_name) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1" alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
 <div class="icon" style="text-align: center; margin-bottom: 16px;">
@@ -688,7 +688,7 @@ const studentRequistAccessept = (full_name, school_name, parent_name) => `
   </div>
 </body>
 </html>
-`
+`;
 
 const studentRequistRejected = (full_name, school_name, parent_name) => `
 <!DOCTYPE html>
@@ -711,7 +711,7 @@ const studentRequistRejected = (full_name, school_name, parent_name) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
 <div class="icon" style="text-align: center; margin-bottom: 16px;">
@@ -731,7 +731,7 @@ const studentRequistRejected = (full_name, school_name, parent_name) => `
   </div>
 </body>
 </html>
-`
+`;
 
 const studentRequistPending = (full_name, school_name, parent_name) => `
 <!DOCTYPE html>
@@ -754,7 +754,7 @@ const studentRequistPending = (full_name, school_name, parent_name) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
 <div class="icon" style="text-align: center; margin-bottom: 16px;">
@@ -775,9 +775,9 @@ const studentRequistPending = (full_name, school_name, parent_name) => `
   </div>
 </body>
 </html>
-`
+`;
 
-const blockroleEmail = (full_name, school_name, email, role,  block_reason) => `
+const blockroleEmail = (full_name, school_name, email, role, block_reason) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -863,7 +863,7 @@ const blockroleEmail = (full_name, school_name, email, role,  block_reason) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
       <div class="title">${role} Blocked</div>
@@ -884,9 +884,15 @@ const blockroleEmail = (full_name, school_name, email, role,  block_reason) => `
   </div>
 </body>
 </html>
-`
+`;
 
-const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => `
+const deleteroleEmail = (
+  school_name,
+  email,
+  delete_reason,
+  role,
+  full_name
+) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1002,7 +1008,7 @@ const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => 
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
     <div class="deleteicon">
@@ -1030,7 +1036,7 @@ const deleteroleEmail = (school_name, email, delete_reason, role, full_name) => 
   </div>
 </body>
 </html>
-`
+`;
 
 const deleteSchoolEmail = (school_name, email, delete_reason) => `
 <!DOCTYPE html>
@@ -1148,7 +1154,7 @@ const deleteSchoolEmail = (school_name, email, delete_reason) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
     <div class="icon">
@@ -1177,7 +1183,7 @@ const deleteSchoolEmail = (school_name, email, delete_reason) => `
   </div>
 </body>
 </html>
-`
+`;
 
 const unblockroleEmail = (full_name, school_name, email, role) => `
 <!DOCTYPE html>
@@ -1281,7 +1287,7 @@ const unblockroleEmail = (full_name, school_name, email, role) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="http://138.197.38.184/school_admin/static/media/Frame_1.e2e44f1be4634e2438f1.png"alt="Radiant Hyve Logo" />
+      <img src="http://138.197.38.184/static/media/Frame 1.e2e44f1be4634e2438f1"alt="Radiant Hyve Logo" />
     </div>
     <div class="content">
       <div class="title">${role} Unblocked</div>
@@ -1304,8 +1310,7 @@ const unblockroleEmail = (full_name, school_name, email, role) => `
 </body>
 </html>
 
-`
-
+`;
 
 module.exports = {
   sendOTPToEmail,
