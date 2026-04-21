@@ -125,15 +125,7 @@ exports.forgotPasswordValidation = () => {
         .isEmpty()
         .withMessage("Email is required")
         .isEmail()
-        .withMessage("Invalid email format"),
-      check("role")
-        .not()
-        .isEmpty()
-        .withMessage("Role is required")
-        .isIn(["super_admin", "school", "teacher", "parent", "principal"])
-        .withMessage(
-          "Invalid role, valid roles are: super_admin, school, teacher, parent, principal"
-        )
+        .withMessage("Invalid email format")
     ],
     validation
   ];
@@ -148,14 +140,7 @@ exports.forgoteVerifyValidation = () => {
         .withMessage("Email is required")
         .isEmail()
         .withMessage("Invalid email format"),
-      check("otp").not().isEmpty().withMessage("otp is required").trim(),
-      check("role")
-        .notEmpty()
-        .withMessage("role is required")
-        .isIn(["super_admin", "school", "teacher", "parent", "principal"])
-        .withMessage(
-          "Invalid role, valid roles are: super_admin, school, teacher, parent, principal"
-        )
+      check("otp").not().isEmpty().withMessage("otp is required").trim()
     ],
     validation
   ];

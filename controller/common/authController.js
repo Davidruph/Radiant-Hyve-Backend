@@ -149,12 +149,10 @@ const superAdminLogin = async (req, res) => {
     }
 
     if (user.role != "super_admin") {
-      return res
-        .status(403)
-        .json({
-          status: 0,
-          message: "Access denied. Only superadmin can log in here."
-        });
+      return res.status(403).json({
+        status: 0,
+        message: "Access denied. Only superadmin can log in here."
+      });
     }
 
     let tokenRecord = await db.Token.findOne({
@@ -193,20 +191,20 @@ const superAdminLogin = async (req, res) => {
   }
 };
 
-const forgotePasswor = async (req, res) => {
-  const { email, role } = req.body;
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
 
   if (!email) {
     return res.status(400).json({ status: 0, message: "email is required" });
   }
 
-  if (!role) {
-    return res.status(400).json({ status: 0, message: "role is required" });
-  }
+  // if (!role) {
+  //   return res.status(400).json({ status: 0, message: "role is required" });
+  // }
 
   try {
     const user = await db.User.findOne({
-      where: { email, role, is_deleted: false }
+      where: { email, is_deleted: false }
     });
 
     if (!user) {
@@ -229,8 +227,8 @@ const forgotePasswor = async (req, res) => {
       message: `OTP has been sent to your email`,
       data: {
         id: user.id,
-        email: user.email,
-        otp: user.otp
+        email: user.email
+        // otp: user.otp
       }
     });
   } catch (error) {
@@ -241,12 +239,12 @@ const forgotePasswor = async (req, res) => {
   }
 };
 
-const verifyForgotePasswordOtp = async (req, res) => {
-  const { otp, email, role } = req.body;
+const verifyForgotPasswordOtp = async (req, res) => {
+  const { otp, email } = req.body;
 
   try {
     const user = await db.User.findOne({
-      where: { email, role, is_deleted: false }
+      where: { email, is_deleted: false }
     });
 
     if (!user) {
@@ -274,13 +272,11 @@ const verifyForgotePasswordOtp = async (req, res) => {
       .json({ status: 1, message: "OTP verified successfully." });
   } catch (error) {
     console.error("Error during OTP verification:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error.",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error.",
+      error: error.message
+    });
   }
 };
 
@@ -295,12 +291,10 @@ const resetPassword = async (req, res) => {
     }
 
     if (user.is_otp_verify === false) {
-      return res
-        .status(400)
-        .json({
-          status: 0,
-          message: "OTP not verified. Please verify OTP first."
-        });
+      return res.status(400).json({
+        status: 0,
+        message: "OTP not verified. Please verify OTP first."
+      });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -315,13 +309,11 @@ const resetPassword = async (req, res) => {
       .json({ status: 1, message: "Password reset successfully." });
   } catch (error) {
     console.error("Error during password reset:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error.",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error.",
+      error: error.message
+    });
   }
 };
 
@@ -341,12 +333,10 @@ const changePassword = async (req, res) => {
     }
 
     if (password === newPassword) {
-      return res
-        .status(400)
-        .json({
-          status: 0,
-          message: "New password cannot be the same as the current password."
-        });
+      return res.status(400).json({
+        status: 0,
+        message: "New password cannot be the same as the current password."
+      });
     }
 
     const isPasswordTrue = await bcrypt.compare(password, user.password);
@@ -384,13 +374,11 @@ const getProfile = async (req, res) => {
       .json({ status: 1, message: "get profile successfully.", data: user });
   } catch (error) {
     console.error("Error during :", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error.",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error.",
+      error: error.message
+    });
   }
 };
 
@@ -401,13 +389,11 @@ const logout = async (req, res) => {
     return res.status(200).json({ status: 1, message: "Logout successful." });
   } catch (error) {
     console.error("Error during logout:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error.",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error.",
+      error: error.message
+    });
   }
 };
 
@@ -422,12 +408,10 @@ const refreshTokenWeb = async (req, res) => {
     const storedToken = await db.Token.findOne({ where: { refresh_token } });
     if (!storedToken || storedToken.token_expire_at < new Date()) {
       if (storedToken) await db.Token.destroy({ where: { refresh_token } });
-      return res
-        .status(403)
-        .json({
-          status: 0,
-          message: "Invalid or expired refresh token, please log in again"
-        });
+      return res.status(403).json({
+        status: 0,
+        message: "Invalid or expired refresh token, please log in again"
+      });
     }
     const user = await db.User.findByPk(storedToken.user_id);
     if (!user)
@@ -444,13 +428,11 @@ const refreshTokenWeb = async (req, res) => {
     });
   } catch (error) {
     console.error("Error refreshing token:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error.",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error.",
+      error: error.message
+    });
   }
 };
 
@@ -465,12 +447,10 @@ const refreshToken = async (req, res) => {
     const storedToken = await db.Token.findOne({ where: { refresh_token } });
     if (!storedToken || storedToken.token_expire_at < new Date()) {
       if (storedToken) await db.Token.destroy({ where: { refresh_token } });
-      return res
-        .status(403)
-        .json({
-          status: 0,
-          message: "Invalid or expired refresh token, please log in again"
-        });
+      return res.status(403).json({
+        status: 0,
+        message: "Invalid or expired refresh token, please log in again"
+      });
     }
     const user = await db.User.findByPk(storedToken.user_id);
     if (!user)
@@ -548,13 +528,11 @@ const listNotification = async (req, res) => {
     });
   } catch (error) {
     console.error("Error during list notification:", error);
-    return res
-      .status(500)
-      .json({
-        status: 0,
-        message: "Internal server error.",
-        error: error.message
-      });
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error.",
+      error: error.message
+    });
   }
 };
 
@@ -563,8 +541,8 @@ module.exports = {
   login,
   superAdminLogin,
 
-  forgotePasswor,
-  verifyForgotePasswordOtp,
+  forgotPassword,
+  verifyForgotPasswordOtp,
   resetPassword,
 
   changePassword,

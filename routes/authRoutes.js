@@ -10,14 +10,14 @@ router.post("/singup", auth.singup);
 
 router.post("/login", authValidator.loginValidation(), auth.login);
 router.post(
-  "/forgote_password",
+  "/forgot_password",
   authValidator.forgotPasswordValidation(),
-  auth.forgotePasswor
+  auth.forgotPassword
 );
 router.post(
   "/verify_otp",
   authValidator.forgoteVerifyValidation(),
-  auth.verifyForgotePasswordOtp
+  auth.verifyForgotPasswordOtp
 );
 router.post(
   "/reset_password",
