@@ -56,6 +56,24 @@ db.Feature = require("../model/feature")(sequelize, Sequelize, Model);
 db.Subscriber = require("../model/subscriber")(sequelize, Sequelize, Model);
 db.Transaction = require("../model/transaction")(sequelize, Sequelize, Model);
 
+// Transportation Models
+db.Vehicle = require("../model/vehicle")(sequelize, DataTypes);
+db.Route = require("../model/route")(sequelize, DataTypes);
+db.RouteStop = require("../model/routeStop")(sequelize, DataTypes);
+db.StudentTransport = require("../model/studentTransport")(
+  sequelize,
+  DataTypes
+);
+db.DropOffRecipient = require("../model/dropOffRecipient")(
+  sequelize,
+  DataTypes
+);
+db.TransportLog = require("../model/transportLog")(sequelize, DataTypes);
+db.TransportException = require("../model/transportException")(
+  sequelize,
+  DataTypes
+);
+
 db.Student.hasMany(db.Invoice, { foreignKey: "student_id", as: "invoice" });
 db.Invoice.belongsTo(db.Student, { foreignKey: "student_id", as: "student" });
 
@@ -316,6 +334,115 @@ db.User.hasMany(db.Subscriber, {
 db.Subscriber.belongsTo(db.User, {
   foreignKey: "user_id",
   as: "User"
+});
+
+// Transportation Associations
+db.User.hasMany(db.Vehicle, { foreignKey: "school_id", as: "vehicles" });
+db.Vehicle.belongsTo(db.User, { foreignKey: "school_id", as: "school" });
+
+db.User.hasMany(db.Vehicle, {
+  foreignKey: "driver_id",
+  as: "assignedVehicles"
+});
+db.Vehicle.belongsTo(db.User, { foreignKey: "driver_id", as: "driver" });
+
+db.User.hasMany(db.Route, { foreignKey: "school_id", as: "routes" });
+db.Route.belongsTo(db.User, { foreignKey: "school_id", as: "school" });
+
+db.Vehicle.hasMany(db.Route, { foreignKey: "vehicle_id", as: "routes" });
+db.Route.belongsTo(db.Vehicle, { foreignKey: "vehicle_id", as: "vehicle" });
+
+db.User.hasMany(db.Route, { foreignKey: "driver_id", as: "drivingRoutes" });
+db.Route.belongsTo(db.User, { foreignKey: "driver_id", as: "driver" });
+
+db.Route.hasMany(db.RouteStop, { foreignKey: "route_id", as: "stops" });
+db.RouteStop.belongsTo(db.Route, { foreignKey: "route_id", as: "route" });
+
+db.Route.hasMany(db.StudentTransport, {
+  foreignKey: "route_id",
+  as: "students"
+});
+db.StudentTransport.belongsTo(db.Route, {
+  foreignKey: "route_id",
+  as: "route"
+});
+
+db.Student.hasMany(db.StudentTransport, {
+  foreignKey: "student_id",
+  as: "transportAssignments"
+});
+db.StudentTransport.belongsTo(db.Student, {
+  foreignKey: "student_id",
+  as: "student"
+});
+
+db.RouteStop.hasMany(db.StudentTransport, {
+  foreignKey: "route_stop_id",
+  as: "students"
+});
+db.StudentTransport.belongsTo(db.RouteStop, {
+  foreignKey: "route_stop_id",
+  as: "stop"
+});
+
+db.Student.hasMany(db.DropOffRecipient, {
+  foreignKey: "student_id",
+  as: "recipients"
+});
+db.DropOffRecipient.belongsTo(db.Student, {
+  foreignKey: "student_id",
+  as: "student"
+});
+
+db.User.hasMany(db.DropOffRecipient, {
+  foreignKey: "school_id",
+  as: "dropoffRecipients"
+});
+db.DropOffRecipient.belongsTo(db.User, {
+  foreignKey: "school_id",
+  as: "school"
+});
+
+db.Route.hasMany(db.TransportLog, { foreignKey: "route_id", as: "logs" });
+db.TransportLog.belongsTo(db.Route, { foreignKey: "route_id", as: "route" });
+
+db.User.hasMany(db.TransportLog, { foreignKey: "driver_id", as: "driverLogs" });
+db.TransportLog.belongsTo(db.User, { foreignKey: "driver_id", as: "driver" });
+
+db.Student.hasMany(db.TransportLog, {
+  foreignKey: "student_id",
+  as: "transportLogs"
+});
+db.TransportLog.belongsTo(db.Student, {
+  foreignKey: "student_id",
+  as: "student"
+});
+
+db.Route.hasMany(db.TransportException, {
+  foreignKey: "route_id",
+  as: "exceptions"
+});
+db.TransportException.belongsTo(db.Route, {
+  foreignKey: "route_id",
+  as: "route"
+});
+
+db.Student.hasMany(db.TransportException, {
+  foreignKey: "student_id",
+  as: "transportExceptions"
+});
+db.TransportException.belongsTo(db.Student, {
+  foreignKey: "student_id",
+  as: "student"
+});
+
+db.User.hasMany(db.TransportException, {
+  foreignKey: "resolved_by",
+  as: "resolvedExceptions"
+});
+db.TransportException.belongsTo(db.User, {
+  foreignKey: "resolved_by",
+  as: "resolvedBy"
 });
 
 module.exports = db;

@@ -50,7 +50,8 @@ const addStaff = async (req, res) => {
       experience,
       mobile_no,
       country_code,
-      iso_code
+      iso_code,
+      role = "teacher"
     } = req.body;
     const profileImage = req.files.profile_pic[0];
 
@@ -92,21 +93,21 @@ const addStaff = async (req, res) => {
       } catch {
         return res
           .status(400)
-          .json({ Status: 0, message: "Number or ISO code not matched." });
+          .json({ status: 0, message: "Number or ISO code not matched." });
       }
 
       const isValid = phoneUtil.isValidNumber(number);
       if (!isValid)
         return res
           .status(400)
-          .json({ Status: 0, message: "Phone number is not correct." });
+          .json({ status: 0, message: "Phone number is not correct." });
 
       const isCorrectISO =
         phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
       if (!isCorrectISO)
         return res
           .status(400)
-          .json({ Status: 0, message: "Phone number is not correct." });
+          .json({ status: 0, message: "Phone number is not correct." });
     }
     const password = generateCode(8);
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -123,18 +124,19 @@ const addStaff = async (req, res) => {
       about_staff: about_staff,
       profile_pic: newProfilePicPath,
       experience: experience,
-      role: "teacher",
+      role: role,
       school_id: school_id
     });
 
     const school = await db.User.findByPk(school_id);
-    await AddRoleEmail(school.school_name, email, password, "Teacher");
+    const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+    await AddRoleEmail(school.school_name, email, password, roleLabel);
 
     await db.AddRole.create({
       school_id,
       add_to: Staff.id,
       add_by: req.user.id,
-      add_role: "teacher"
+      add_role: role
     });
 
     return res.status(200).json({
@@ -235,21 +237,21 @@ const editStaff = async (req, res) => {
       } catch {
         return res
           .status(400)
-          .json({ Status: 0, message: "Number or ISO code not matched." });
+          .json({ status: 0, message: "Number or ISO code not matched." });
       }
 
       const isValid = phoneUtil.isValidNumber(number);
       if (!isValid)
         return res
           .status(400)
-          .json({ Status: 0, message: "Phone number is not correct." });
+          .json({ status: 0, message: "Phone number is not correct." });
 
       const isCorrectISO =
         phoneUtil.getRegionCodeForNumber(number) === req.body.iso_code;
       if (!isCorrectISO)
         return res
           .status(400)
-          .json({ Status: 0, message: "Phone number is not correct." });
+          .json({ status: 0, message: "Phone number is not correct." });
     }
 
     await staff.update({
@@ -353,7 +355,7 @@ const listStaff = async (req, res) => {
     });
   }
   try {
-    const { page, search } = req.query;
+    const { page, search, role = "teacher" } = req.query;
     if (!page) {
       return res.status(400).json({ status: 0, message: "page is required" });
     }
@@ -371,7 +373,7 @@ const listStaff = async (req, res) => {
     }
 
     const whereCondition = {
-      role: "teacher",
+      role: role,
       school_id,
       is_deleted: false
     };
@@ -390,6 +392,10 @@ const listStaff = async (req, res) => {
         "email",
         "full_name",
         "gender",
+        "mobile_no",
+        "country_code",
+        "experience",
+        "profile_pic",
         "is_blocked",
         "is_deleted",
         [
@@ -411,6 +417,33 @@ const listStaff = async (req, res) => {
                           LIMIT 1
                         )`),
           "clock_out_time"
+        ],
+        [
+          Sequelize.literal(`(
+                          SELECT tv.id
+                          FROM tbl_vehicles tv
+                          WHERE tv.driver_id = User.id
+                          LIMIT 1
+                        )`),
+          "vehicle_id"
+        ],
+        [
+          Sequelize.literal(`(
+                          SELECT tv.vehicle_name
+                          FROM tbl_vehicles tv
+                          WHERE tv.driver_id = User.id
+                          LIMIT 1
+                        )`),
+          "vehicle_name"
+        ],
+        [
+          Sequelize.literal(`(
+                          SELECT tv.registration_plate
+                          FROM tbl_vehicles tv
+                          WHERE tv.driver_id = User.id
+                          LIMIT 1
+                        )`),
+          "registration_plate"
         ]
       ],
       limit,
