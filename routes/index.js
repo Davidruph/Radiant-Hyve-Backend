@@ -9,6 +9,7 @@ const principalRoutes = require("./principalRouts");
 const parentlRoutes = require("./parentRoutes");
 const chatRoutes = require("./chatRoutes");
 const transportRoutes = require("./transportRoutes");
+const driverRoutes = require("./driverRoutes");
 
 // Use the user routes
 router.use(authRoutes);
@@ -19,5 +20,6 @@ router.use(principalRoutes);
 router.use(parentlRoutes);
 router.use(chatRoutes);
 router.use("/api/transport", transportRoutes);
+router.use(driverRoutes);
 
 module.exports = router; // Export router (not app)

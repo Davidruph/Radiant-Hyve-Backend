@@ -441,6 +441,13 @@ const getRoutes = async (req, res) => {
             "pickup_status",
             "current_status",
             "sequence_position"
+          ],
+          include: [
+            {
+              model: db.Student,
+              as: "student",
+              attributes: ["id", "full_name"]
+            }
           ]
         }
       ],
