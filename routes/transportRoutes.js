@@ -7,14 +7,19 @@ const {
   assignDriverToVehicle,
   createRoute,
   getRoutes,
+  cancelRoute,
+  getStudentTransportStatus,
   startRoute,
   updatePickupStatus,
   completeDropoff,
   endRoute,
   addDropoffRecipient,
+  getDropoffRecipients,
+  removeDropoffRecipient,
   getTransportLogs,
   getTransportExceptions,
-  resolveException
+  resolveException,
+  getLiveLocations
 } = require("../controller/schoolAdmin/transportController");
 const { verifyToken } = require("../middleware/verifyToken");
 
@@ -31,6 +36,7 @@ router.post("/vehicle/assign-driver", verifyToken, assignDriverToVehicle);
  */
 router.post("/route/create", verifyToken, createRoute);
 router.get("/route/list", verifyToken, getRoutes);
+router.put("/route/:route_id/cancel", verifyToken, cancelRoute);
 
 /**
  * ROUTE EXECUTION - DRIVER WORKFLOW
@@ -44,6 +50,8 @@ router.post("/route/end", verifyToken, endRoute);
  * DROP-OFF RECIPIENTS
  */
 router.post("/recipient/add", verifyToken, addDropoffRecipient);
+router.get("/recipient/list", verifyToken, getDropoffRecipients);
+router.delete("/recipient/:recipient_id", verifyToken, removeDropoffRecipient);
 
 /**
  * LOGS & EXCEPTIONS
@@ -51,5 +59,7 @@ router.post("/recipient/add", verifyToken, addDropoffRecipient);
 router.get("/logs", verifyToken, getTransportLogs);
 router.get("/exceptions", verifyToken, getTransportExceptions);
 router.put("/exceptions/resolve/:exception_id", verifyToken, resolveException);
+router.get("/live-locations", verifyToken, getLiveLocations);
+router.get("/student/:student_id/status", verifyToken, getStudentTransportStatus);
 
 module.exports = router;

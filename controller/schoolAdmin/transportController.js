@@ -283,6 +283,50 @@ const createRoute = async (req, res) => {
       });
     }
 
+    if (vehicle.status !== "active") {
+      return res.status(400).json({
+        status: 0,
+        message: `Vehicle "${vehicle.vehicle_name}" is not available (status: ${vehicle.status}). Only active vehicles can be assigned to routes.`
+      });
+    }
+
+    // Enforce vehicle capacity
+    if (
+      student_assignments &&
+      vehicle.capacity &&
+      student_assignments.length > vehicle.capacity
+    ) {
+      return res.status(400).json({
+        status: 0,
+        message: `Too many students. ${vehicle.vehicle_name} has a capacity of ${vehicle.capacity} but ${student_assignments.length} students were assigned.`
+      });
+    }
+
+    // Reject routes scheduled in the past
+    const startTime = new Date(scheduled_start_time);
+    if (startTime < new Date()) {
+      return res.status(400).json({
+        status: 0,
+        message: "Scheduled start time must be in the future"
+      });
+    }
+
+    // Validate stop arrival times are in chronological order when provided
+    if (stops && stops.length > 1) {
+      const stopTimes = stops
+        .map((s, i) => ({ idx: i, time: s.scheduled_arrival_time ? new Date(s.scheduled_arrival_time) : null }))
+        .filter((s) => s.time !== null);
+
+      for (let i = 1; i < stopTimes.length; i++) {
+        if (stopTimes[i].time <= stopTimes[i - 1].time) {
+          return res.status(400).json({
+            status: 0,
+            message: `Stop arrival times must be in chronological order. Stop ${stopTimes[i].idx + 1} is not after stop ${stopTimes[i - 1].idx + 1}.`
+          });
+        }
+      }
+    }
+
     // Validate driver exists
     const driver = await db.User.findOne({
       where: { id: driver_id, role: "driver", is_deleted: false }
@@ -309,15 +353,19 @@ const createRoute = async (req, res) => {
       status: "scheduled"
     });
 
-    // Create route stops
+    // Create route stops and capture their generated UUIDs so student
+    // assignments can reference them. The frontend sends temp IDs like
+    // "stop_0", "stop_1" which map to the creation order index.
+    const stopIndexToUUID = {};
+
     if (stops && stops.length > 0) {
       const routeStops = stops.map((stop, index) => ({
         route_id: route.id,
         stop_sequence: index + 1,
         stop_name: stop.stop_name,
-        latitude: stop.latitude,
-        longitude: stop.longitude,
-        address: stop.address,
+        latitude: stop.latitude || null,
+        longitude: stop.longitude || null,
+        address: stop.address || null,
         stop_type: stop.stop_type,
         scheduled_arrival_time: stop.scheduled_arrival_time
           ? new Date(stop.scheduled_arrival_time)
@@ -325,20 +373,53 @@ const createRoute = async (req, res) => {
         status: "pending"
       }));
 
-      await db.RouteStop.bulkCreate(routeStops);
+      // UUID PKs are generated client-side by Sequelize, so bulkCreate
+      // returns instances with their IDs populated.
+      const createdStops = await db.RouteStop.bulkCreate(routeStops);
+      createdStops.forEach((stop, index) => {
+        stopIndexToUUID[`stop_${index}`] = stop.id;
+      });
     }
 
     // Create student transport assignments
     if (student_assignments && student_assignments.length > 0) {
-      const assignments = student_assignments.map((assignment) => ({
-        route_id: route.id,
-        student_id: assignment.student_id,
-        route_stop_id: assignment.route_stop_id,
-        pickup_status: "pending_pickup",
-        current_status: "pending",
-        dropoff_status: "pending",
-        sequence_position: assignment.sequence_position
-      }));
+      const invalidAssignments = student_assignments.filter(
+        (a) => !a.student_id || !a.route_stop_id
+      );
+      if (invalidAssignments.length > 0) {
+        await route.destroy();
+        return res.status(400).json({
+          status: 0,
+          message: "Each student assignment must have a student and a stop selected"
+        });
+      }
+
+      // Prevent duplicate students on the same route
+      const studentIds = student_assignments.map((a) => a.student_id);
+      const uniqueStudentIds = new Set(studentIds);
+      if (uniqueStudentIds.size !== studentIds.length) {
+        await route.destroy();
+        return res.status(400).json({
+          status: 0,
+          message: "A student cannot be assigned to the same route more than once"
+        });
+      }
+
+      const assignments = student_assignments.map((assignment) => {
+        // Resolve temp stop ID (e.g. "stop_0") to the real UUID
+        const resolvedStopId =
+          stopIndexToUUID[assignment.route_stop_id] || assignment.route_stop_id;
+
+        return {
+          route_id: route.id,
+          student_id: assignment.student_id,
+          route_stop_id: resolvedStopId,
+          pickup_status: "pending_pickup",
+          current_status: "pending",
+          dropoff_status: "pending",
+          sequence_position: assignment.sequence_position || 1
+        };
+      });
 
       await db.StudentTransport.bulkCreate(assignments);
     }
@@ -973,27 +1054,355 @@ const addDropoffRecipient = async (req, res) => {
 };
 
 /**
+ * Get authorized drop-off recipients for a student (or all for this school)
+ */
+const getDropoffRecipients = async (req, res) => {
+  const allowedRoles = ["school", "principal", "parent"];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to view recipients"
+    });
+  }
+
+  try {
+    const { student_id } = req.query;
+
+    let school_id = req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    } else if (req.user.role === "parent") {
+      // Parents may only see recipients for their own children
+      if (student_id) {
+        const student = await db.Student.findOne({
+          where: { id: student_id, parent_id: req.user.id }
+        });
+        if (!student) {
+          return res.status(403).json({
+            status: 0,
+            message: "You can only view recipients for your own children"
+          });
+        }
+      }
+    }
+
+    const where = { school_id, is_deleted: false, is_active: true };
+    if (student_id) where.student_id = student_id;
+
+    const recipients = await db.DropOffRecipient.findAll({
+      where,
+      include: [
+        { model: db.Student, as: "student", attributes: ["id", "full_name"] }
+      ],
+      order: [
+        ["student_id", "ASC"],
+        ["is_primary", "DESC"],
+        ["created_at", "ASC"]
+      ]
+    });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Recipients retrieved successfully",
+      data: recipients
+    });
+  } catch (error) {
+    console.error("Get Dropoff Recipients Error:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Deactivate (soft-remove) a drop-off recipient
+ */
+const removeDropoffRecipient = async (req, res) => {
+  const allowedRoles = ["school", "principal", "parent"];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to perform this action"
+    });
+  }
+
+  try {
+    const { recipient_id } = req.params;
+
+    let school_id = req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    const where = { id: recipient_id, school_id, is_deleted: false };
+    // Parents may only remove recipients they own
+    if (req.user.role === "parent") {
+      const recipient = await db.DropOffRecipient.findOne({ where: { id: recipient_id } });
+      if (!recipient) {
+        return res.status(404).json({ status: 0, message: "Recipient not found" });
+      }
+      const student = await db.Student.findOne({
+        where: { id: recipient.student_id, parent_id: req.user.id }
+      });
+      if (!student) {
+        return res.status(403).json({ status: 0, message: "Not authorized" });
+      }
+    }
+
+    const recipient = await db.DropOffRecipient.findOne({ where });
+    if (!recipient) {
+      return res.status(404).json({ status: 0, message: "Recipient not found" });
+    }
+
+    await recipient.update({ is_active: false, is_deleted: true });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Recipient removed successfully"
+    });
+  } catch (error) {
+    console.error("Remove Dropoff Recipient Error:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get the current transport status and recent log history for a specific student.
+ * Used by the admin on the parent/student details page.
+ */
+const getStudentTransportStatus = async (req, res) => {
+  const allowedRoles = ["school", "principal", "super_admin"];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to view this information"
+    });
+  }
+
+  try {
+    const { student_id } = req.params;
+
+    let school_id =
+      req.user.role === "super_admin" ? req.query.school_id : req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    // Active transport: student is currently on a route
+    const activeTransport = await db.StudentTransport.findOne({
+      where: { student_id, is_deleted: false },
+      include: [
+        {
+          model: db.Route,
+          as: "route",
+          where: { school_id, status: "active", is_deleted: false },
+          include: [
+            { model: db.User, as: "driver", attributes: ["id", "full_name"] },
+            {
+              model: db.Vehicle,
+              as: "vehicle",
+              attributes: ["id", "vehicle_name", "registration_plate"]
+            }
+          ]
+        },
+        {
+          model: db.RouteStop,
+          as: "stop",
+          attributes: ["id", "stop_name", "stop_type", "stop_sequence"]
+        }
+      ]
+    });
+
+    // Live location for the active route (if any)
+    let liveLocation = null;
+    if (activeTransport?.route_id) {
+      liveLocation = await db.DriverLocation.findOne({
+        where: { route_id: activeTransport.route_id }
+      });
+    }
+
+    // Recent transport logs for this student (last 20 across all routes)
+    const recentLogs = await db.TransportLog.findAll({
+      where: { student_id },
+      include: [
+        {
+          model: db.Route,
+          as: "route",
+          where: { school_id, is_deleted: false },
+          attributes: ["id", "route_name", "route_type"]
+        },
+        { model: db.User, as: "driver", attributes: ["id", "full_name"] }
+      ],
+      order: [["created_at", "DESC"]],
+      limit: 20
+    });
+
+    // Authorized recipients for this student
+    const recipients = await db.DropOffRecipient.findAll({
+      where: { student_id, is_active: true, is_deleted: false },
+      attributes: [
+        "id",
+        "recipient_name",
+        "recipient_type",
+        "relationship_to_student",
+        "recipient_phone",
+        "is_primary"
+      ],
+      order: [["is_primary", "DESC"]]
+    });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Student transport status retrieved",
+      data: {
+        active_transport: activeTransport,
+        live_location: liveLocation,
+        recent_logs: recentLogs,
+        authorized_recipients: recipients
+      }
+    });
+  } catch (error) {
+    console.error("Get Student Transport Status Error:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Cancel a scheduled route.
+ * Cannot cancel an active route — driver must end it via the driver flow.
+ */
+const cancelRoute = async (req, res) => {
+  if (req.user.role !== "school" && req.user.role !== "principal") {
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to cancel routes"
+    });
+  }
+
+  try {
+    const { route_id } = req.params;
+    const { reason } = req.body;
+
+    let school_id = req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    const route = await db.Route.findOne({
+      where: { id: route_id, school_id, is_deleted: false }
+    });
+
+    if (!route) {
+      return res.status(404).json({ status: 0, message: "Route not found" });
+    }
+
+    if (route.status === "active") {
+      return res.status(400).json({
+        status: 0,
+        message: "Cannot cancel an active route. The driver must end it via the driver app."
+      });
+    }
+
+    if (route.status === "completed" || route.status === "cancelled") {
+      return res.status(400).json({
+        status: 0,
+        message: `Route is already ${route.status}`
+      });
+    }
+
+    await route.update({ status: "cancelled" });
+
+    await db.TransportLog.create({
+      route_id: route.id,
+      driver_id: route.driver_id,
+      event_type: "route_ended",
+      event_description: `Route cancelled by admin${reason ? `: ${reason}` : ""}`,
+      additional_data: { cancelled_by: req.user.id, reason: reason || null }
+    });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Route cancelled successfully",
+      data: route
+    });
+  } catch (error) {
+    console.error("Cancel Route Error:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+/**
  * Get transport logs for a route or student
  */
 const getTransportLogs = async (req, res) => {
+  const allowedRoles = ["school", "principal", "super_admin"];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to view transport logs"
+    });
+  }
+
   try {
     const { route_id, student_id, page = 1 } = req.query;
     const limit = 20;
     const offset = (page - 1) * limit;
 
+    // Scope to caller's school — super_admin may pass school_id as query param
+    let school_id =
+      req.user.role === "super_admin" ? req.query.school_id : req.user.id;
+
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    // Scope logs to routes belonging to this school
+    const routeWhere = { school_id, is_deleted: false };
+    if (route_id) routeWhere.id = route_id;
+
     const where = {};
-    if (route_id) where.route_id = route_id;
     if (student_id) where.student_id = student_id;
 
     const { count, rows } = await db.TransportLog.findAndCountAll({
       where,
       include: [
-        { model: db.User, as: "driver", attributes: ["id", "full_name"] },
         {
-          model: db.Student,
-          as: "student",
-          attributes: ["id", "full_name"]
-        }
+          model: db.Route,
+          as: "route",
+          where: routeWhere,
+          attributes: ["id", "route_name"]
+        },
+        { model: db.User, as: "driver", attributes: ["id", "full_name"] },
+        { model: db.Student, as: "student", attributes: ["id", "full_name"] }
       ],
       limit,
       offset,
@@ -1021,17 +1430,37 @@ const getTransportLogs = async (req, res) => {
 };
 
 /**
- * Get transport exceptions
+ * Get transport exceptions — scoped to caller's school
  */
 const getTransportExceptions = async (req, res) => {
+  const allowedRoles = ["school", "principal", "super_admin"];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to view transport exceptions"
+    });
+  }
+
   try {
-    const { route_id, status = "open", page = 1 } = req.query;
+    const { route_id, status, page = 1 } = req.query;
     const limit = 20;
     const offset = (page - 1) * limit;
+
+    let school_id =
+      req.user.role === "super_admin" ? req.query.school_id : req.user.id;
+
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    }
 
     const where = { is_deleted: false };
     if (route_id) where.route_id = route_id;
     if (status) where.status = status;
+
+    const routeWhere = { school_id, is_deleted: false };
 
     const { count, rows } = await db.TransportException.findAndCountAll({
       where,
@@ -1039,18 +1468,18 @@ const getTransportExceptions = async (req, res) => {
         {
           model: db.Route,
           as: "route",
+          where: routeWhere,
           attributes: ["id", "route_name", "status"]
         },
-        {
-          model: db.Student,
-          as: "student",
-          attributes: ["id", "full_name"]
-        },
+        { model: db.Student, as: "student", attributes: ["id", "full_name"] },
         { model: db.User, as: "resolvedBy", attributes: ["id", "full_name"] }
       ],
       limit,
       offset,
-      order: [["created_at", "DESC"]]
+      order: [
+        ["severity", "ASC"],
+        ["created_at", "DESC"]
+      ]
     });
 
     return res.status(200).json({
@@ -1086,10 +1515,31 @@ const resolveException = async (req, res) => {
 
   try {
     const { exception_id } = req.params;
-    const { resolution_notes } = req.body;
+    const { resolution_notes, action } = req.body;
 
+    const validActions = ["acknowledged", "resolved"];
+    const newStatus =
+      action && validActions.includes(action) ? action : "resolved";
+
+    let school_id = req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    // Ensure the exception belongs to this school
     const exception = await db.TransportException.findOne({
-      where: { id: exception_id, is_deleted: false }
+      where: { id: exception_id, is_deleted: false },
+      include: [
+        {
+          model: db.Route,
+          as: "route",
+          where: { school_id, is_deleted: false },
+          attributes: ["id"]
+        }
+      ]
     });
 
     if (!exception) {
@@ -1100,10 +1550,10 @@ const resolveException = async (req, res) => {
     }
 
     await exception.update({
-      status: "resolved",
+      status: newStatus,
       resolved_by: req.user.id,
       resolved_at: new Date(),
-      resolution_notes
+      resolution_notes: resolution_notes || null
     });
 
     return res.status(200).json({
@@ -1121,6 +1571,63 @@ const resolveException = async (req, res) => {
   }
 };
 
+/**
+ * Get live locations for all currently active routes belonging to this school.
+ * Used by the admin dashboard as an initial load and polling fallback.
+ */
+const getLiveLocations = async (req, res) => {
+  const allowedRoles = ["school", "principal", "super_admin"];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      status: 0,
+      message: "You are not authorized to view live locations"
+    });
+  }
+
+  try {
+    const school_id =
+      req.user.role === "super_admin" ? req.query.school_id : req.user.id;
+
+    const locations = await db.DriverLocation.findAll({
+      where: { school_id },
+      include: [
+        {
+          model: db.Route,
+          as: "route",
+          attributes: ["id", "route_name", "route_type", "status"],
+          where: { status: "active" },
+          include: [
+            {
+              model: db.User,
+              as: "driver",
+              attributes: ["id", "full_name"]
+            },
+            {
+              model: db.Vehicle,
+              as: "vehicle",
+              attributes: ["id", "vehicle_name", "registration_plate"]
+            }
+          ]
+        }
+      ],
+      order: [["last_updated", "DESC"]]
+    });
+
+    return res.status(200).json({
+      status: 1,
+      message: "Live locations retrieved successfully",
+      data: locations
+    });
+  } catch (error) {
+    console.error("Get Live Locations Error:", error);
+    return res.status(500).json({
+      status: 0,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addVehicle,
   getVehicles,
@@ -1128,12 +1635,17 @@ module.exports = {
   assignDriverToVehicle,
   createRoute,
   getRoutes,
+  cancelRoute,
+  getStudentTransportStatus,
   startRoute,
   updatePickupStatus,
   completeDropoff,
   endRoute,
   addDropoffRecipient,
+  getDropoffRecipients,
+  removeDropoffRecipient,
   getTransportLogs,
   getTransportExceptions,
-  resolveException
+  resolveException,
+  getLiveLocations
 };

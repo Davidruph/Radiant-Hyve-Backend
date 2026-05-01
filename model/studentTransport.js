@@ -89,6 +89,16 @@ module.exports = (sequelize) => {
         type: DataTypes.DECIMAL(11, 8),
         allowNull: true
       },
+      dropoff_recipient_type: {
+        type: DataTypes.ENUM("parent", "authorized_person"),
+        allowNull: true,
+        comment: "Type of person who received student at dropoff"
+      },
+      dropoff_recipient_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: "Name of person who received student at dropoff"
+      },
       sequence_position: {
         type: DataTypes.INTEGER,
         allowNull: false,

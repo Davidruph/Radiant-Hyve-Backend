@@ -137,5 +137,41 @@ const send_notification = async (user_id, message, notificationType, data, devic
     }
 };
 
+/**
+ * Save a notification record to the database AND send a push notification.
+ * Use this for all transport events so parents/admins have both in-app
+ * history and a device push.
+ */
+const save_and_send_notification = async ({
+  notification_by,
+  notification_to,
+  notification_type,
+  title,
+  body,
+  school_id,
+  data = {}
+}) => {
+  try {
+    await db.Notification.create({
+      notification_by,
+      notification_to,
+      notification_type,
+      title,
+      body,
+      school_id,
+      notification_status: "Unread"
+    });
+  } catch (err) {
+    console.error("Failed to save notification record:", err.message);
+  }
+
+  await send_notification(
+    notification_to,
+    { title, body },
+    notification_type,
+    data
+  );
+};
+
 // send_notification(9, { title: "DieHard", body: "Hello From DieHard!" }, 1, {})
-module.exports = { send_notification };
+module.exports = { send_notification, save_and_send_notification };

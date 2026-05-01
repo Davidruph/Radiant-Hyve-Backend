@@ -73,6 +73,7 @@ db.TransportException = require("../model/transportException")(
   sequelize,
   DataTypes
 );
+db.DriverLocation = require("../model/driverLocation")(sequelize, DataTypes);
 
 db.Student.hasMany(db.Invoice, { foreignKey: "student_id", as: "invoice" });
 db.Invoice.belongsTo(db.Student, { foreignKey: "student_id", as: "student" });
@@ -444,5 +445,11 @@ db.TransportException.belongsTo(db.User, {
   foreignKey: "resolved_by",
   as: "resolvedBy"
 });
+
+db.Route.hasOne(db.DriverLocation, { foreignKey: "route_id", as: "liveLocation" });
+db.DriverLocation.belongsTo(db.Route, { foreignKey: "route_id", as: "route" });
+
+db.User.hasMany(db.DriverLocation, { foreignKey: "driver_id", as: "liveLocations" });
+db.DriverLocation.belongsTo(db.User, { foreignKey: "driver_id", as: "driver" });
 
 module.exports = db;
