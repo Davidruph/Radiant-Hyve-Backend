@@ -978,6 +978,195 @@ const endRoute = async (req, res) => {
 };
 
 // =====================================================
+// ADMIN MANUAL OVERRIDE
+// Used when driver loses connectivity and admin must act
+// =====================================================
+
+/**
+ * Admin manually overrides a student's pickup status on an active route.
+ * Logs the override with admin identity so the audit trail is clear.
+ */
+const adminOverridePickup = async (req, res) => {
+  if (req.user.role !== "school" && req.user.role !== "principal") {
+    return res.status(403).json({
+      status: 0,
+      message: "Only school admins can perform manual overrides"
+    });
+  }
+
+  try {
+    const { student_transport_id, pickup_status, skip_reason } = req.body;
+
+    const validStatuses = ["picked_up", "absent", "skipped"];
+    if (!validStatuses.includes(pickup_status)) {
+      return res.status(400).json({
+        status: 0,
+        message: "Invalid pickup status"
+      });
+    }
+
+    let school_id = req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({
+        where: { id: req.user.id, is_deleted: false }
+      });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    const studentTransport = await db.StudentTransport.findOne({
+      where: { id: student_transport_id, is_deleted: false }
+    });
+
+    if (!studentTransport) {
+      return res.status(404).json({ status: 0, message: "Student transport record not found" });
+    }
+
+    const route = await db.Route.findOne({
+      where: {
+        id: studentTransport.route_id,
+        school_id,
+        status: "active",
+        is_deleted: false
+      }
+    });
+
+    if (!route) {
+      return res.status(404).json({ status: 0, message: "Active route not found for this school" });
+    }
+
+    const newCurrentStatus =
+      pickup_status === "picked_up" ? "in_vehicle" : "pending";
+
+    await studentTransport.update({
+      pickup_status,
+      current_status: newCurrentStatus,
+      skip_reason: skip_reason || null,
+      pickup_timestamp: new Date()
+    });
+
+    // Mark the RouteStop status
+    const stopStudents = await db.StudentTransport.findAll({
+      where: { route_id: route.id, route_stop_id: studentTransport.route_stop_id, is_deleted: false },
+      attributes: ["pickup_status"]
+    });
+    const pendingAtStop = stopStudents.filter(s => s.pickup_status === "pending_pickup").length;
+    const newStopStatus = pendingAtStop === stopStudents.length ? "pending" : pendingAtStop === 0 ? "completed" : "in_progress";
+    await db.RouteStop.update({ status: newStopStatus }, { where: { id: studentTransport.route_stop_id } });
+
+    await db.TransportLog.create({
+      route_id: route.id,
+      driver_id: route.driver_id,
+      student_id: studentTransport.student_id,
+      event_type: pickup_status === "picked_up" ? "pickup_completed" : pickup_status === "absent" ? "pickup_absent" : "pickup_skipped",
+      event_description: `[ADMIN OVERRIDE by ${req.user.id}] Student pickup status set to ${pickup_status}`,
+      additional_data: { overridden_by: req.user.id, pickup_status, skip_reason: skip_reason || null }
+    });
+
+    // Emit real-time update to admin dashboard
+    const { emitToSockets } = require("../../config/socketConfig");
+    emitToSockets(school_id, "transport:student_update", {
+      route_id: route.id,
+      student_transport_id: studentTransport.id,
+      student_id: studentTransport.student_id,
+      pickup_status,
+      current_status: newCurrentStatus,
+      stop_id: studentTransport.route_stop_id,
+      stop_status: newStopStatus
+    }).catch(() => {});
+
+    return res.status(200).json({
+      status: 1,
+      message: "Student pickup status overridden successfully",
+      data: studentTransport
+    });
+  } catch (error) {
+    console.error("Admin Override Pickup Error:", error);
+    return res.status(500).json({ status: 0, message: "Internal server error", error: error.message });
+  }
+};
+
+/**
+ * Admin manually marks a student as dropped off.
+ */
+const adminOverrideDropoff = async (req, res) => {
+  if (req.user.role !== "school" && req.user.role !== "principal") {
+    return res.status(403).json({
+      status: 0,
+      message: "Only school admins can perform manual overrides"
+    });
+  }
+
+  try {
+    const { student_transport_id, recipient_type, recipient_name } = req.body;
+
+    if (!recipient_type || !recipient_name) {
+      return res.status(400).json({ status: 0, message: "Recipient type and name are required" });
+    }
+
+    let school_id = req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({ where: { id: req.user.id, is_deleted: false } });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    const studentTransport = await db.StudentTransport.findOne({
+      where: { id: student_transport_id, is_deleted: false }
+    });
+
+    if (!studentTransport) {
+      return res.status(404).json({ status: 0, message: "Student transport record not found" });
+    }
+
+    if (studentTransport.pickup_status !== "picked_up") {
+      return res.status(400).json({ status: 0, message: "Cannot drop off a student who was not picked up" });
+    }
+
+    const route = await db.Route.findOne({
+      where: { id: studentTransport.route_id, school_id, status: "active", is_deleted: false }
+    });
+
+    if (!route) {
+      return res.status(404).json({ status: 0, message: "Active route not found" });
+    }
+
+    await studentTransport.update({
+      current_status: "dropped_off",
+      dropoff_status: "completed",
+      dropoff_recipient_type: recipient_type,
+      dropoff_recipient_name: recipient_name,
+      dropoff_timestamp: new Date()
+    });
+
+    await db.TransportLog.create({
+      route_id: route.id,
+      driver_id: route.driver_id,
+      student_id: studentTransport.student_id,
+      event_type: "dropoff_completed",
+      event_description: `[ADMIN OVERRIDE by ${req.user.id}] Student dropped off to ${recipient_type}`,
+      additional_data: { overridden_by: req.user.id, recipient_type, recipient_name }
+    });
+
+    const { emitToSockets } = require("../../config/socketConfig");
+    emitToSockets(school_id, "transport:student_update", {
+      route_id: route.id,
+      student_transport_id: studentTransport.id,
+      student_id: studentTransport.student_id,
+      current_status: "dropped_off",
+      dropoff_status: "completed"
+    }).catch(() => {});
+
+    return res.status(200).json({
+      status: 1,
+      message: "Student dropoff overridden successfully",
+      data: studentTransport
+    });
+  } catch (error) {
+    console.error("Admin Override Dropoff Error:", error);
+    return res.status(500).json({ status: 0, message: "Internal server error", error: error.message });
+  }
+};
+
+// =====================================================
 // DROP-OFF RECIPIENT MANAGEMENT
 // =====================================================
 
@@ -1183,7 +1372,7 @@ const removeDropoffRecipient = async (req, res) => {
  * Used by the admin on the parent/student details page.
  */
 const getStudentTransportStatus = async (req, res) => {
-  const allowedRoles = ["school", "principal", "super_admin"];
+  const allowedRoles = ["school", "principal", "super_admin", "parent"];
   if (!allowedRoles.includes(req.user.role)) {
     return res.status(403).json({
       status: 0,
@@ -1194,23 +1383,48 @@ const getStudentTransportStatus = async (req, res) => {
   try {
     const { student_id } = req.params;
 
-    let school_id =
-      req.user.role === "super_admin" ? req.query.school_id : req.user.id;
-    if (req.user.role === "principal") {
+    // Determine school_id scope and validate parent ownership
+    let school_id = null;
+
+    if (req.user.role === "super_admin") {
+      school_id = req.query.school_id || null;
+    } else if (req.user.role === "principal") {
       const principal = await db.User.findOne({
         where: { id: req.user.id, is_deleted: false }
       });
       school_id = principal?.school_id || req.user.id;
+    } else if (req.user.role === "school") {
+      school_id = req.user.id;
+    } else if (req.user.role === "parent") {
+      // Verify this student belongs to the requesting parent
+      const student = await db.Student.findOne({
+        where: { id: student_id, parent_id: req.user.id }
+      });
+      if (!student) {
+        return res.status(403).json({
+          status: 0,
+          message: "You can only view transport status for your own children"
+        });
+      }
+      // No school_id filter needed — the parent-student check is the security boundary
     }
 
-    // Active transport: student is currently on a route
+    // Route filter — only scope by school_id for admin roles
+    const routeWhere = { status: "active", is_deleted: false };
+    if (school_id) routeWhere.school_id = school_id;
+
+    // Active transport — required:true ensures INNER JOIN so cancelled/completed
+    // routes can never leak through even under edge-case Sequelize behaviour.
+    // Order by created_at DESC so the most recent assignment wins when a
+    // student has been on more than one route.
     const activeTransport = await db.StudentTransport.findOne({
       where: { student_id, is_deleted: false },
       include: [
         {
           model: db.Route,
           as: "route",
-          where: { school_id, status: "active", is_deleted: false },
+          where: routeWhere,
+          required: true,
           include: [
             { model: db.User, as: "driver", attributes: ["id", "full_name"] },
             {
@@ -1223,9 +1437,11 @@ const getStudentTransportStatus = async (req, res) => {
         {
           model: db.RouteStop,
           as: "stop",
+          required: false,
           attributes: ["id", "stop_name", "stop_type", "stop_sequence"]
         }
-      ]
+      ],
+      order: [["created_at", "DESC"]]
     });
 
     // Live location for the active route (if any)
@@ -1236,14 +1452,22 @@ const getStudentTransportStatus = async (req, res) => {
       });
     }
 
-    // Recent transport logs for this student (last 20 across all routes)
+    // Recent transport logs — exclude cancelled routes so the parent only
+    // sees meaningful activity (completed or currently active).
+    const logsRouteWhere = {
+      is_deleted: false,
+      status: { [Op.in]: ["active", "completed"] }
+    };
+    if (school_id) logsRouteWhere.school_id = school_id;
+
     const recentLogs = await db.TransportLog.findAll({
       where: { student_id },
       include: [
         {
           model: db.Route,
           as: "route",
-          where: { school_id, is_deleted: false },
+          where: logsRouteWhere,
+          required: true,
           attributes: ["id", "route_name", "route_type"]
         },
         { model: db.User, as: "driver", attributes: ["id", "full_name"] }
@@ -1283,6 +1507,72 @@ const getStudentTransportStatus = async (req, res) => {
       message: "Internal server error",
       error: error.message
     });
+  }
+};
+
+/**
+ * Update basic route details (name, times, notes).
+ * Only allowed for scheduled routes — active/completed routes cannot be edited.
+ */
+const updateRoute = async (req, res) => {
+  if (req.user.role !== "school" && req.user.role !== "principal") {
+    return res.status(403).json({ status: 0, message: "You are not authorized to update routes" });
+  }
+
+  try {
+    const { route_id } = req.params;
+    const { route_name, scheduled_start_time, scheduled_end_time, notes } = req.body;
+
+    let school_id = req.user.id;
+    if (req.user.role === "principal") {
+      const principal = await db.User.findOne({ where: { id: req.user.id, is_deleted: false } });
+      school_id = principal?.school_id || req.user.id;
+    }
+
+    const route = await db.Route.findOne({ where: { id: route_id, school_id, is_deleted: false } });
+
+    if (!route) {
+      return res.status(404).json({ status: 0, message: "Route not found" });
+    }
+
+    if (route.status !== "scheduled") {
+      return res.status(400).json({
+        status: 0,
+        message: `Cannot edit a ${route.status} route. Only scheduled routes can be modified.`
+      });
+    }
+
+    if (scheduled_start_time) {
+      const startTime = new Date(scheduled_start_time);
+      if (startTime < new Date()) {
+        return res.status(400).json({ status: 0, message: "Scheduled start time must be in the future" });
+      }
+    }
+
+    const updateData = {};
+    if (route_name) updateData.route_name = route_name;
+    if (scheduled_start_time) updateData.scheduled_start_time = new Date(scheduled_start_time);
+    if (scheduled_end_time !== undefined) {
+      updateData.scheduled_end_time = scheduled_end_time ? new Date(scheduled_end_time) : null;
+    }
+    if (notes !== undefined) updateData.notes = notes;
+
+    await route.update(updateData);
+
+    const updatedRoute = await db.Route.findOne({
+      where: { id: route_id },
+      include: [
+        { model: db.Vehicle, as: "vehicle" },
+        { model: db.User, as: "driver", attributes: ["id", "full_name"] },
+        { model: db.RouteStop, as: "stops" },
+        { model: db.StudentTransport, as: "students", include: [{ model: db.Student, as: "student" }] }
+      ]
+    });
+
+    return res.status(200).json({ status: 1, message: "Route updated successfully", data: updatedRoute });
+  } catch (error) {
+    console.error("Update Route Error:", error);
+    return res.status(500).json({ status: 0, message: "Internal server error", error: error.message });
   }
 };
 
@@ -1635,8 +1925,11 @@ module.exports = {
   assignDriverToVehicle,
   createRoute,
   getRoutes,
+  updateRoute,
   cancelRoute,
   getStudentTransportStatus,
+  adminOverridePickup,
+  adminOverrideDropoff,
   startRoute,
   updatePickupStatus,
   completeDropoff,

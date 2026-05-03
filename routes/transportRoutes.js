@@ -7,8 +7,11 @@ const {
   assignDriverToVehicle,
   createRoute,
   getRoutes,
+  updateRoute,
   cancelRoute,
   getStudentTransportStatus,
+  adminOverridePickup,
+  adminOverrideDropoff,
   startRoute,
   updatePickupStatus,
   completeDropoff,
@@ -36,6 +39,7 @@ router.post("/vehicle/assign-driver", verifyToken, assignDriverToVehicle);
  */
 router.post("/route/create", verifyToken, createRoute);
 router.get("/route/list", verifyToken, getRoutes);
+router.put("/route/:route_id", verifyToken, updateRoute);
 router.put("/route/:route_id/cancel", verifyToken, cancelRoute);
 
 /**
@@ -60,6 +64,8 @@ router.get("/logs", verifyToken, getTransportLogs);
 router.get("/exceptions", verifyToken, getTransportExceptions);
 router.put("/exceptions/resolve/:exception_id", verifyToken, resolveException);
 router.get("/live-locations", verifyToken, getLiveLocations);
+router.post("/admin/override/pickup", verifyToken, adminOverridePickup);
+router.post("/admin/override/dropoff", verifyToken, adminOverrideDropoff);
 router.get("/student/:student_id/status", verifyToken, getStudentTransportStatus);
 
 module.exports = router;

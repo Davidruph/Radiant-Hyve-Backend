@@ -52,6 +52,24 @@ const start = async () => {
         // await db.Student.sync({ alter : true });
         // await db.Invoice.sync({ alter : true });
 
+        // Auto-create transport tables added during the transport module build.
+        // sync() with no options uses CREATE TABLE IF NOT EXISTS — safe to run on every boot.
+        await db.DriverLocation.sync();
+
+        // Add new columns to tbl_student_transports if they don't exist yet.
+        // Each ALTER is wrapped in try/catch so re-runs are harmless.
+        const addColumnIfMissing = async (sql) => {
+          try { await db.sequelize.query(sql); } catch (_) {}
+        };
+        await addColumnIfMissing(
+          "ALTER TABLE tbl_student_transports ADD COLUMN dropoff_recipient_type ENUM('parent','authorized_person') NULL COMMENT 'Type of person who received student at dropoff' AFTER dropoff_longitude"
+        );
+        await addColumnIfMissing(
+          "ALTER TABLE tbl_student_transports ADD COLUMN dropoff_recipient_name VARCHAR(255) NULL COMMENT 'Name of person who received student at dropoff' AFTER dropoff_recipient_type"
+        );
+
+        console.log('Transport tables ready.');
+
         server.listen(PORT, () => {
             console.log(`${projectName} is running on ${process.env.NODE_ENV == "LOCAL" ? "http" : "https"}://${HOST}:${PORT}/ ...`);
         });
