@@ -153,6 +153,15 @@ const startRoute = async (req, res) => {
       actual_start_time: new Date()
     });
 
+    // For dropoff routes students are already on the bus (loaded at school).
+    // Auto-mark them as picked_up + in_vehicle so the dropoff flow works normally.
+    if (route.route_type === "dropoff") {
+      await db.StudentTransport.update(
+        { pickup_status: "picked_up", current_status: "in_vehicle", pickup_timestamp: new Date() },
+        { where: { route_id: route.id, pickup_status: "pending_pickup", is_deleted: false } }
+      );
+    }
+
     // Log the route start event
     await db.TransportLog.create({
       route_id: route.id,
@@ -189,6 +198,12 @@ const startRoute = async (req, res) => {
         }
       ]
     });
+
+    // Notify admin dashboard that route is now active
+    emitToSockets(route.school_id, "transport:route_update", {
+      route_id: route_id,
+      status: "active"
+    }).catch(() => {});
 
     return res.status(200).json({
       status: 1,
@@ -653,21 +668,33 @@ const endRoute = async (req, res) => {
       });
     }
 
-    // Block route completion if any picked-up student has not been dropped off
-    const studentsStillInVehicle = route.students.filter(
-      (s) =>
-        s.pickup_status === "picked_up" && s.current_status !== "dropped_off"
-    );
+    // Route-type-aware completion check:
+    // - pickup: all students must be processed (no one still pending_pickup)
+    // - dropoff/round_trip: all picked-up students must be dropped off
+    let blockedStudents = [];
+    let blockMessage = "";
 
-    if (studentsStillInVehicle.length > 0) {
+    if (route.route_type === "pickup") {
+      blockedStudents = route.students.filter(
+        (s) => s.pickup_status === "pending_pickup"
+      );
+      blockMessage = `Cannot end route — ${blockedStudents.length} student(s) not yet processed. Mark each student as picked up, absent, or skipped first.`;
+    } else {
+      blockedStudents = route.students.filter(
+        (s) => s.pickup_status === "picked_up" && s.current_status !== "dropped_off"
+      );
+      blockMessage = `Cannot end route — ${blockedStudents.length} student(s) still in vehicle. All picked-up students must be dropped off first.`;
+    }
+
+    if (blockedStudents.length > 0) {
       const exceptions = await Promise.all(
-        studentsStillInVehicle.map((s) =>
+        blockedStudents.map((s) =>
           db.TransportException.create({
             route_id: route.id,
             student_id: s.student_id,
             exception_type: "student_not_accounted_for",
             severity: "critical",
-            description: `Route end attempted but student has not been dropped off`,
+            description: `Route end attempted but student has not been ${route.route_type === "pickup" ? "processed" : "dropped off"}`,
             status: "open"
           })
         )
@@ -689,7 +716,7 @@ const endRoute = async (req, res) => {
           notification_to: route.school_id,
           notification_type: "transport_exception_critical",
           title: "CRITICAL: Student Not Accounted For",
-          body: `Route "${route.route_name}" cannot end — a student has not been dropped off.`,
+          body: `Route "${route.route_name}" cannot end — a student has not been accounted for.`,
           school_id: route.school_id,
           data: exceptionPayload
         }).catch(() => {});
@@ -697,8 +724,8 @@ const endRoute = async (req, res) => {
 
       return res.status(400).json({
         status: 0,
-        message: `Cannot end route — ${studentsStillInVehicle.length} student(s) still in vehicle. All picked-up students must be dropped off first.`,
-        unaccounted_students: studentsStillInVehicle.map((s) => s.student_id)
+        message: blockMessage,
+        unaccounted_students: blockedStudents.map((s) => s.student_id)
       });
     }
 
@@ -724,6 +751,12 @@ const endRoute = async (req, res) => {
 
     // Remove live location record — route is done, no stale pin on admin map
     db.DriverLocation.destroy({ where: { route_id: route.id } }).catch(() => {});
+
+    // Notify admin dashboard that route is now completed
+    emitToSockets(route.school_id, "transport:route_update", {
+      route_id: route_id,
+      status: "completed"
+    }).catch(() => {});
 
     // Notify admin that the route completed successfully
     save_and_send_notification({

@@ -446,6 +446,12 @@ const createRoute = async (req, res) => {
       ]
     });
 
+    // Notify the assigned driver in real time so their route list updates immediately
+    const { emitToSockets } = require("../../config/socketConfig");
+    emitToSockets(driver_id, "transport:route_assigned", {
+      route: completeRoute
+    }).catch(() => {});
+
     return res.status(201).json({
       status: 1,
       message: "Route created successfully",
@@ -1409,8 +1415,15 @@ const getStudentTransportStatus = async (req, res) => {
       // No school_id filter needed — the parent-student check is the security boundary
     }
 
-    // Route filter — only scope by school_id for admin roles
-    const routeWhere = { status: "active", is_deleted: false };
+    // Route filter — only scope by school_id for admin roles.
+    // Restrict to routes that actually started today so stale "active" routes
+    // from previous days (driver forgot to end them) never surface to parents.
+    const todayStart = moment().startOf("day").toDate();
+    const routeWhere = {
+      status: "active",
+      is_deleted: false,
+      actual_start_time: { [Op.gte]: todayStart }
+    };
     if (school_id) routeWhere.school_id = school_id;
 
     // Active transport — required:true ensures INNER JOIN so cancelled/completed
@@ -1452,8 +1465,9 @@ const getStudentTransportStatus = async (req, res) => {
       });
     }
 
-    // Recent transport logs — exclude cancelled routes so the parent only
-    // sees meaningful activity (completed or currently active).
+    // Recent transport logs — scoped to today only.
+    // Logs from previous days must not show when today has no active route,
+    // otherwise the parent sees a misleading "other routes" activity feed.
     const logsRouteWhere = {
       is_deleted: false,
       status: { [Op.in]: ["active", "completed"] }
@@ -1461,7 +1475,10 @@ const getStudentTransportStatus = async (req, res) => {
     if (school_id) logsRouteWhere.school_id = school_id;
 
     const recentLogs = await db.TransportLog.findAll({
-      where: { student_id },
+      where: {
+        student_id,
+        created_at: { [Op.gte]: todayStart }
+      },
       include: [
         {
           model: db.Route,
