@@ -1895,30 +1895,42 @@ const getLiveLocations = async (req, res) => {
     const school_id =
       req.user.role === "super_admin" ? req.query.school_id : req.user.id;
 
-    const locations = await db.DriverLocation.findAll({
-      where: { school_id },
+    // Split into two queries to avoid a cross-table JOIN that triggers a MySQL
+    // collation mismatch (utf8mb4_general_ci vs utf8mb4_unicode_ci) between
+    // tbl_driver_locations.route_id and tbl_routes.id.
+    const activeRoutes = await db.Route.findAll({
+      where: { school_id, status: "active", is_deleted: false },
+      attributes: ["id", "route_name", "route_type", "status"],
       include: [
+        { model: db.User, as: "driver", attributes: ["id", "full_name"] },
         {
-          model: db.Route,
-          as: "route",
-          attributes: ["id", "route_name", "route_type", "status"],
-          where: { status: "active" },
-          include: [
-            {
-              model: db.User,
-              as: "driver",
-              attributes: ["id", "full_name"]
-            },
-            {
-              model: db.Vehicle,
-              as: "vehicle",
-              attributes: ["id", "vehicle_name", "registration_plate"]
-            }
-          ]
+          model: db.Vehicle,
+          as: "vehicle",
+          attributes: ["id", "vehicle_name", "registration_plate"]
         }
-      ],
+      ]
+    });
+
+    if (activeRoutes.length === 0) {
+      return res.status(200).json({
+        status: 1,
+        message: "Live locations retrieved successfully",
+        data: []
+      });
+    }
+
+    const routeIds = activeRoutes.map((r) => r.id);
+    const routeMap = Object.fromEntries(activeRoutes.map((r) => [r.id, r]));
+
+    const rawLocations = await db.DriverLocation.findAll({
+      where: { school_id, route_id: { [Op.in]: routeIds } },
       order: [["last_updated", "DESC"]]
     });
+
+    const locations = rawLocations.map((loc) => ({
+      ...loc.toJSON(),
+      route: routeMap[loc.route_id] ?? null
+    }));
 
     return res.status(200).json({
       status: 1,
