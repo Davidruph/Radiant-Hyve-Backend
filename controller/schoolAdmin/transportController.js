@@ -452,6 +452,18 @@ const createRoute = async (req, res) => {
       route: completeRoute
     }).catch(() => {});
 
+    // Email driver — fire-and-forget
+    if (completeRoute.driver?.email) {
+      const { sendRouteAssignedEmail } = require("../../helpers/transportEmails");
+      sendRouteAssignedEmail({
+        driverEmail: completeRoute.driver.email,
+        driverName: completeRoute.driver.full_name || "Driver",
+        routeName: completeRoute.route_name,
+        routeType: completeRoute.route_type,
+        scheduledTime: completeRoute.scheduled_start_time
+      }).catch(() => {});
+    }
+
     return res.status(201).json({
       status: 1,
       message: "Route created successfully",

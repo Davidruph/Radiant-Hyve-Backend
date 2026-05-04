@@ -4,6 +4,16 @@ const { Op } = require("sequelize");
 const moment = require("moment");
 const { emitToSockets } = require("../../config/socketConfig");
 const { save_and_send_notification } = require("../../helpers/notification");
+const {
+  sendRouteStartedEmail,
+  sendStudentPickedUpEmail,
+  sendStudentAbsentParentEmail,
+  sendStudentAbsentAdminEmail,
+  sendStudentSkippedParentEmail,
+  sendStudentSkippedAdminEmail,
+  sendStudentDroppedOffEmail,
+  sendRouteCompletedEmail
+} = require("../../helpers/transportEmails");
 
 /**
  * Get routes assigned to driver
@@ -203,6 +213,24 @@ const startRoute = async (req, res) => {
     emitToSockets(route.school_id, "transport:route_update", {
       route_id: route_id,
       status: "active"
+    }).catch(() => {});
+
+    // Email admin — fire-and-forget
+    Promise.all([
+      db.User.findOne({ where: { id: route.school_id }, attributes: ["full_name", "email"] }),
+      db.User.findOne({ where: { id: req.user.id }, attributes: ["full_name"] })
+    ]).then(([admin, driver]) => {
+      if (admin?.email) {
+        sendRouteStartedEmail({
+          adminEmail: admin.email,
+          adminName: admin.full_name || "Admin",
+          driverName: driver?.full_name || "Driver",
+          routeName: updatedRoute.route_name,
+          vehicleName: updatedRoute.vehicle?.vehicle_name,
+          studentsCount: updatedRoute.students?.length || 0,
+          startedAt: new Date()
+        }).catch(() => {});
+      }
     }).catch(() => {});
 
     return res.status(200).json({
@@ -428,6 +456,69 @@ const updatePickupStatus = async (req, res) => {
           pickup_status
         }
       }).catch(() => {});
+
+      // Email parent — fire-and-forget
+      db.User.findOne({ where: { id: student.parent_id }, attributes: ["email", "full_name"] })
+        .then((parentUser) => {
+          if (!parentUser?.email) return;
+          if (pickup_status === "picked_up") {
+            sendStudentPickedUpEmail({
+              parentEmail: parentUser.email,
+              parentName: parentUser.full_name || "Parent",
+              studentName: student.full_name,
+              routeName: route.route_name,
+              pickedUpAt: new Date()
+            }).catch(() => {});
+          } else if (pickup_status === "absent") {
+            sendStudentAbsentParentEmail({
+              parentEmail: parentUser.email,
+              parentName: parentUser.full_name || "Parent",
+              studentName: student.full_name,
+              routeName: route.route_name,
+              stopName: studentTransport.stop?.stop_name
+            }).catch(() => {});
+          } else if (pickup_status === "skipped") {
+            sendStudentSkippedParentEmail({
+              parentEmail: parentUser.email,
+              parentName: parentUser.full_name || "Parent",
+              studentName: student.full_name,
+              routeName: route.route_name,
+              skipReason: skip_reason
+            }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Email admin for absent/skipped — fire-and-forget
+    if (pickup_status === "absent" || pickup_status === "skipped") {
+      Promise.all([
+        db.User.findOne({ where: { id: route.school_id }, attributes: ["email", "full_name"] }),
+        db.User.findOne({ where: { id: req.user.id }, attributes: ["full_name"] }),
+        db.RouteStop.findOne({ where: { id: studentTransport.route_stop_id }, attributes: ["stop_name"] })
+      ]).then(([admin, driver, stop]) => {
+        if (!admin?.email) return;
+        const studentName = student?.full_name || "Student";
+        if (pickup_status === "absent") {
+          sendStudentAbsentAdminEmail({
+            adminEmail: admin.email,
+            adminName: admin.full_name || "Admin",
+            studentName,
+            routeName: route.route_name,
+            stopName: stop?.stop_name,
+            driverName: driver?.full_name || "Driver"
+          }).catch(() => {});
+        } else {
+          sendStudentSkippedAdminEmail({
+            adminEmail: admin.email,
+            adminName: admin.full_name || "Admin",
+            studentName,
+            routeName: route.route_name,
+            skipReason: skip_reason,
+            driverName: driver?.full_name || "Driver"
+          }).catch(() => {});
+        }
+      }).catch(() => {});
     }
 
     return res.status(200).json({
@@ -610,6 +701,22 @@ const completeDropoff = async (req, res) => {
           recipient_name
         }
       }).catch(() => {});
+
+      // Email parent — fire-and-forget
+      db.User.findOne({ where: { id: student.parent_id }, attributes: ["email", "full_name"] })
+        .then((parentUser) => {
+          if (parentUser?.email) {
+            sendStudentDroppedOffEmail({
+              parentEmail: parentUser.email,
+              parentName: parentUser.full_name || "Parent",
+              studentName: student.full_name,
+              routeName: route.route_name,
+              recipientName: recipient_name,
+              droppedOffAt: new Date()
+            }).catch(() => {});
+          }
+        })
+        .catch(() => {});
     }
 
     return res.status(200).json({
@@ -769,6 +876,23 @@ const endRoute = async (req, res) => {
       data: {
         route_id: route.id,
         total_students: route.students.length
+      }
+    }).catch(() => {});
+
+    // Email admin — fire-and-forget
+    Promise.all([
+      db.User.findOne({ where: { id: route.school_id }, attributes: ["email", "full_name"] }),
+      db.User.findOne({ where: { id: req.user.id }, attributes: ["full_name"] })
+    ]).then(([admin, driver]) => {
+      if (admin?.email) {
+        sendRouteCompletedEmail({
+          adminEmail: admin.email,
+          adminName: admin.full_name || "Admin",
+          routeName: route.route_name,
+          driverName: driver?.full_name || "Driver",
+          studentsCount: route.students.length,
+          completedAt: now
+        }).catch(() => {});
       }
     }).catch(() => {});
 
